@@ -1,0 +1,76 @@
+[tool.poetry]
+name = "cracker-backend"
+version = "0.1.0"
+description = ""
+authors = ["tc-dev <dev@togglecorp.com>"]
+license = "GNU Affero General Public License v3.0"
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11.3"
+requests = "*"
+django-environ = "*"
+Django = ">=4.2,<4.3"
+drf-writable-nested = "*"
+djangorestframework = "*"
+psycopg2-binary = "==2.9.6"
+django-cors-headers = "*"
+django-premailer = "*"
+django-storages = "*"
+django-admin-autocomplete-filter = "*"
+strawberry-graphql = "^0.225.0"
+strawberry-graphql-django = "0.37.1"
+sentry-sdk = "*"
+ipython = "*"
+factory-boy = "*"
+user-agents = "*"
+django-ses = "3"
+celery = {extras = ["redis"], version = "^5.3.4"}
+django-redis = "^5.3.0"
+uwsgi = "*"
+aws-sns-message-validator = "*"
+
+[tool.poetry.dev-dependencies]
+pytest = "*"
+pytest-profiling = "*"
+pytest-ordering = "*"
+pytest-django = "*"
+django-stubs = "==4.2.6"  # NOTE: 4.2.7 is messing with TextChoices/IntergerChoices
+djangorestframework-stubs = { version = "*", allow-prereleases = true }
+celery-types = "*"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "main.settings"
+log_cli = true
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 125
+# NOTE: Update in .pre-commit-config.yaml as well
+extend-exclude = "(__pycache__|.*snap_test_.*\\.py|.+\\/.+\\/migrations\\/.*)"
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+skip = [
+    "**/__pycache__",
+    "**/snap_test_*.py",
+    ".venv/",
+    "**/migrations/*.py",
+]
+
+[tool.pyright]
+exclude = [
+    "**/__pycache__",
+    "**/snap_test_*.py",
+    ".venv/",
+    "**/migrations/*.py",
+]
+reportMissingImports = true
+reportMissingTypeStubs = false
+venvPath = "."
+venv = ".venv"
