@@ -1,3 +1,4 @@
+import datetime
 import json
 import typing
 
@@ -15,6 +16,12 @@ GenericScalar = strawberry.scalar(
     description="The GenericScalar scalar type represents a generic GraphQL scalar value that could be: List or Object.",
     serialize=lambda v: v,
     parse_value=lambda v: v,
+)
+
+TimeDuration = strawberry.scalar(
+    typing.NewType("TimeDuration", int),
+    serialize=lambda v: v.seconds,
+    parse_value=lambda v: datetime.timedelta(seconds=v),
 )
 
 

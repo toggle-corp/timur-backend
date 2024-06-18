@@ -23,12 +23,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(
     DJANGO_DEBUG=(bool, False),
     DJANGO_SECRET_KEY=str,
-    DJANGO_DB_NAME=str,
-    DJANGO_DB_USER=str,
-    DJANGO_DB_PASSWORD=str,
-    DJANGO_DB_HOST=str,
-    DJANGO_DB_PORT=int,
     DJANGO_CORS_ORIGIN_REGEX_WHITELIST=(list, []),
+    # Database
+    DB_NAME=str,
+    DB_USER=str,
+    DB_PASSWORD=str,
+    DB_HOST=str,
+    DB_PORT=int,
     # Redis
     CELERY_REDIS_URL=str,
     DJANGO_CACHE_REDIS_URL=str,
@@ -118,7 +119,6 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.gis",
     # External apps
-    "prettyjson",
     "admin_auto_filters",
     "django_premailer",
     "storages",
@@ -128,6 +128,7 @@ INSTALLED_APPS = [
     "apps.user",
     "apps.project",
     "apps.track",
+    "apps.journal",
 ]
 
 MIDDLEWARE = [
@@ -156,11 +157,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "main.template_context_processor.app_environment",
             ],
-            "libraries": {
-                "qb_tags": "main.template_tags",
-            },
         },
     },
 ]
@@ -173,12 +170,12 @@ WSGI_APPLICATION = "main.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.contrib.gis.db.backends.postgis",
-        "HOST": env("DJANGO_DB_HOST"),
-        "PORT": env("DJANGO_DB_PORT"),
-        "NAME": env("DJANGO_DB_NAME"),
-        "USER": env("DJANGO_DB_USER"),
-        "PASSWORD": env("DJANGO_DB_PASSWORD"),
+        "ENGINE": "django.db.backends.postgresql",
+        "HOST": env("DB_HOST"),
+        "PORT": env("DB_PORT"),
+        "NAME": env("DB_NAME"),
+        "USER": env("DB_USER"),
+        "PASSWORD": env("DB_PASSWORD"),
         "OPTIONS": {"options": "-c search_path=public"},
     },
 }
@@ -393,8 +390,10 @@ else:
 
 # Strawberry
 # -- Pagination
-DEFAULT_PAGINATION_LIMIT = 50
-MAX_PAGINATION_LIMIT = 100
+STRAWBERRY_ENUM_TO_STRAWBERRY_ENUM_MAP = "main.graphql.enums.ENUM_TO_STRAWBERRY_ENUM_MAP"
+STRAWBERRY_DEFAULT_PAGINATION_LIMIT = 50
+STRAWBERRY_MAX_PAGINATION_LIMIT = 100
+
 
 # Redis
 CELERY_REDIS_URL = env("CELERY_REDIS_URL")
@@ -424,9 +423,3 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_EVENT_QUEUE_PREFIX = "cracker-celery-"
 CELERY_ACKS_LATE = True
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
-
-# Misc
-ENKETO_DOMAIN = env("ENKETO_DOMAIN")
-
-ALLOW_DUMMY_DATA_SCRIPT = env("ALLOW_DUMMY_DATA_SCRIPT")
-ENABLE_BREAKING_MODE = env("ENABLE_BREAKING_MODE")

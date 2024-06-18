@@ -12,4 +12,4 @@ class UserType:
 
     @strawberry_django.field
     def display_name(self, root: User) -> str:
-        return root.get_full_name()
+        return root.display_name

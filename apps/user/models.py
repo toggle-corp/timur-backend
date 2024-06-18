@@ -26,5 +26,7 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         # Make sure email/username are same and lowercase
         self.email = self.email.lower()
+        if self.pk is None:
+            super().save(*args, **kwargs)
         self.display_name = self.get_full_name() or f"User#{self.pk}"
         return super().save(*args, **kwargs)

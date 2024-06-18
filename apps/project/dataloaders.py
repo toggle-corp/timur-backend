@@ -1,3 +1,5 @@
+import typing
+
 from asgiref.sync import sync_to_async
 from django.utils.functional import cached_property
 from strawberry.dataloader import DataLoader
@@ -6,17 +8,20 @@ from apps.common.dataloaders import load_model_objects
 
 from .models import Client, Contractor, Project
 
-
-def load_client(keys: list[int]) -> list[Client]:
-    return load_model_objects(Client, keys)
-
-
-def load_contractor(keys: list[int]) -> list[Contractor]:
-    return load_model_objects(Contractor, keys)
+if typing.TYPE_CHECKING:
+    from .types import ClientType, ContractorType, ProjectType
 
 
-def load_project(keys: list[int]) -> list[Project]:
-    return load_model_objects(Project, keys)
+def load_client(keys: list[int]) -> list["ClientType"]:
+    return load_model_objects(Client, keys)  # type: ignore[reportReturnType]
+
+
+def load_contractor(keys: list[int]) -> list["ContractorType"]:
+    return load_model_objects(Contractor, keys)  # type: ignore[reportReturnType]
+
+
+def load_project(keys: list[int]) -> list["ProjectType"]:
+    return load_model_objects(Project, keys)  # type: ignore[reportReturnType]
 
 
 class ProjectDataLoader:

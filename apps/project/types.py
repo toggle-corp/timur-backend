@@ -47,8 +47,8 @@ class ProjectType(UserResourceTypeMixin):
 
     @strawberry_django.field
     async def client(self, root: Project, info: Info) -> ClientType:
-        return info.context.dl.project.load_client.load(root.client_id)
+        return await info.context.dl.project.load_client.load(root.client_id)
 
     @strawberry_django.field
     async def contractor(self, root: Project, info: Info) -> ContractorType:
-        return info.context.dl.project.load_contractor.load(root.contractor_id)
+        return await info.context.dl.project.load_contractor.load(root.contractor_id)

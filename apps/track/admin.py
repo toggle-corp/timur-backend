@@ -20,9 +20,9 @@ class MilestoneAdmin(admin.ModelAdmin):
     def get_queryset(self, request: HttpRequest) -> models.QuerySet[Milestone]:
         return super().get_queryset(request).select_related("project")
 
-    @admin.display(ordering="project__title", description="Project")
+    @admin.display(ordering="project__name", description="Project")
     def get_project(self, obj):
-        return obj.project.title
+        return obj.project.name
 
 
 @admin.register(Task)
@@ -34,24 +34,23 @@ class TaskAdmin(admin.ModelAdmin):
         AutocompleteFilterFactory("Created By", "created_by"),
         "is_archived",
     )
-    autocomplete_fields = ("project",)
-    list_display = ("name", "get_milestone", "get_project", "is_archived")
+    autocomplete_fields = ("milestone",)
+    list_display = ("name", "get_project", "get_milestone", "is_archived")
 
     def get_queryset(self, request: HttpRequest) -> models.QuerySet[Milestone]:
         return super().get_queryset(request).select_related("milestone", "milestone__project")
 
-    @admin.display(ordering="project__title", description="Project")
+    @admin.display(ordering="project__name", description="Project")
     def get_project(self, obj):
-        return obj.milestone.project.title
+        return obj.milestone.project.name
 
-    @admin.display(ordering="milestone__title", description="Milestone")
+    @admin.display(ordering="milestone__name", description="Milestone")
     def get_milestone(self, obj):
-        return obj.milestone.title
+        return obj.milestone.name
 
 
 @admin.register(TimeTrack)
 class TimeTrackAdmin(admin.ModelAdmin):
-    search_fields = ("name",)
     list_filter = (
         "date",
         "task_type",
@@ -59,13 +58,14 @@ class TimeTrackAdmin(admin.ModelAdmin):
         AutocompleteFilterFactory("Project", "task__milestone__project"),
         AutocompleteFilterFactory("Milestone", "task__milestone"),
         AutocompleteFilterFactory("Task", "task"),
-        AutocompleteFilterFactory("Created By", "created_by"),
+        AutocompleteFilterFactory("User", "user"),
     )
     autocomplete_fields = ("task",)
     list_display = (
         "get_milestone",
         "get_project",
         "get_task",
+        "get_user",
         "task_type",
         "date",
         "duration",
@@ -73,16 +73,20 @@ class TimeTrackAdmin(admin.ModelAdmin):
     )
 
     def get_queryset(self, request: HttpRequest) -> models.QuerySet[Milestone]:
-        return super().get_queryset(request).select_related("task", "task__milestone", "task__milestone__project")
+        return super().get_queryset(request).select_related("user", "task", "task__milestone", "task__milestone__project")
 
-    @admin.display(ordering="project__title", description="Project")
+    @admin.display(ordering="project__name", description="Project")
     def get_project(self, obj):
-        return obj.task.milestone.project.title
+        return obj.task.milestone.project.name
 
-    @admin.display(ordering="milestone__title", description="Milestone")
+    @admin.display(ordering="milestone__name", description="Milestone")
     def get_milestone(self, obj):
-        return obj.task.milestone.title
+        return obj.task.milestone.name
 
-    @admin.display(ordering="task__title", description="Task")
+    @admin.display(ordering="task__name", description="Task")
     def get_task(self, obj):
-        return obj.task.title
+        return obj.task.name
+
+    @admin.display(ordering="user__name", description="User")
+    def get_user(self, obj):
+        return obj.user

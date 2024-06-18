@@ -1,0 +1,501 @@
+type AppEnumCollection {
+  TimeTrackTaskType: [AppEnumCollectionTimeTrackTaskType!]!
+  JournalLeaveType: [AppEnumCollectionJournalLeaveType!]!
+}
+
+type AppEnumCollectionJournalLeaveType {
+  key: JournalLeaveTypeEnum!
+  label: String!
+}
+
+type AppEnumCollectionTimeTrackTaskType {
+  key: TimeTrackTaskTypeEnum!
+  label: String!
+}
+
+input ClientFilter {
+  id: IDBaseFilterLookup
+  name: StrFilterLookup
+  AND: ClientFilter
+  OR: ClientFilter
+  NOT: ClientFilter
+  DISTINCT: Boolean
+}
+
+input ClientOrder {
+  id: Ordering
+  name: Ordering
+}
+
+type ClientType {
+  id: ID!
+  name: String!
+}
+
+type ClientTypeCountList {
+  limit: Int!
+  offset: Int!
+  count: Int!
+  items: [ClientType!]!
+}
+
+input ContractorFilter {
+  id: IDBaseFilterLookup
+  name: StrFilterLookup
+  AND: ContractorFilter
+  OR: ContractorFilter
+  NOT: ContractorFilter
+  DISTINCT: Boolean
+}
+
+input ContractorOrder {
+  id: Ordering
+  name: Ordering
+}
+
+type ContractorType {
+  id: ID!
+  name: String!
+}
+
+type ContractorTypeCountList {
+  limit: Int!
+  offset: Int!
+  count: Int!
+  items: [ContractorType!]!
+}
+
+"""A generic type to return error messages"""
+scalar CustomErrorType
+
+"""Date (isoformat)"""
+scalar Date
+
+input DateDateFilterLookup {
+  """Exact match. Filter will be skipped on `null` value"""
+  exact: Date
+
+  """Assignment test. Filter will be skipped on `null` value"""
+  isNull: Boolean
+
+  """
+  Exact match of items in a given list. Filter will be skipped on `null` value
+  """
+  inList: [Date!]
+
+  """Greater than. Filter will be skipped on `null` value"""
+  gt: Date
+
+  """Greater than or equal to. Filter will be skipped on `null` value"""
+  gte: Date
+
+  """Less than. Filter will be skipped on `null` value"""
+  lt: Date
+
+  """Less than or equal to. Filter will be skipped on `null` value"""
+  lte: Date
+
+  """Inclusive range test (between)"""
+  range: DateRangeLookup
+  year: IntComparisonFilterLookup
+  month: IntComparisonFilterLookup
+  day: IntComparisonFilterLookup
+  weekDay: IntComparisonFilterLookup
+  isoWeekDay: IntComparisonFilterLookup
+  week: IntComparisonFilterLookup
+  isoYear: IntComparisonFilterLookup
+  quarter: IntComparisonFilterLookup
+}
+
+input DateRangeLookup {
+  start: Date = null
+  end: Date = null
+}
+
+input DjangoModelFilterInput {
+  pk: ID!
+}
+
+input IDBaseFilterLookup {
+  """Exact match. Filter will be skipped on `null` value"""
+  exact: ID
+
+  """Assignment test. Filter will be skipped on `null` value"""
+  isNull: Boolean
+
+  """
+  Exact match of items in a given list. Filter will be skipped on `null` value
+  """
+  inList: [ID!]
+}
+
+input IntComparisonFilterLookup {
+  """Exact match. Filter will be skipped on `null` value"""
+  exact: Int
+
+  """Assignment test. Filter will be skipped on `null` value"""
+  isNull: Boolean
+
+  """
+  Exact match of items in a given list. Filter will be skipped on `null` value
+  """
+  inList: [Int!]
+
+  """Greater than. Filter will be skipped on `null` value"""
+  gt: Int
+
+  """Greater than or equal to. Filter will be skipped on `null` value"""
+  gte: Int
+
+  """Less than. Filter will be skipped on `null` value"""
+  lt: Int
+
+  """Less than or equal to. Filter will be skipped on `null` value"""
+  lte: Int
+
+  """Inclusive range test (between)"""
+  range: IntRangeLookup
+}
+
+input IntRangeLookup {
+  start: Int = null
+  end: Int = null
+}
+
+enum JournalLeaveTypeEnum {
+  FULL
+  FIRST_HALF
+  SECOND_HALF
+}
+
+type JournalType {
+  id: ID!
+  userId: ID!
+  date: Date!
+  leaveType: JournalLeaveTypeEnum
+  leaveTypeDisplay: String
+  journalText: String
+  user: UserType!
+}
+
+type JournalTypeMutationResponseType {
+  ok: Boolean!
+  errors: CustomErrorType
+  result: JournalType
+}
+
+input JournalUpdateInput {
+  leaveType: JournalLeaveTypeEnum
+  journalText: String
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input MilestoneFilter {
+  id: IDBaseFilterLookup
+  projectId: IDBaseFilterLookup
+  AND: MilestoneFilter
+  OR: MilestoneFilter
+  NOT: MilestoneFilter
+  DISTINCT: Boolean
+}
+
+input MilestoneOrder {
+  id: Ordering
+  name: Ordering
+  createdAt: Ordering
+}
+
+type MilestoneType {
+  id: ID!
+  projectId: ID!
+  isArchived: Boolean!
+  name: String!
+  project: ProjectType!
+}
+
+type MilestoneTypeCountList {
+  limit: Int!
+  offset: Int!
+  count: Int!
+  items: [MilestoneType!]!
+}
+
+type Mutation {
+  public: PublicMutation!
+  private: PrivateMutation!
+}
+
+type MutationEmptyResponseType {
+  ok: Boolean!
+  errors: CustomErrorType
+}
+
+input OffsetPaginationInput {
+  offset: Int! = 0
+  limit: Int! = -1
+}
+
+enum Ordering {
+  ASC
+  ASC_NULLS_FIRST
+  ASC_NULLS_LAST
+  DESC
+  DESC_NULLS_FIRST
+  DESC_NULLS_LAST
+}
+
+type PrivateMutation {
+  createTimeTrack(data: TimeTrackCreateInput!): TimeTrackTypeMutationResponseType!
+  updateTimeTrack(data: TimeTrackUpdateInput!): TimeTrackTypeMutationResponseType!
+  updateJournal(date: Date!, data: JournalUpdateInput!): JournalTypeMutationResponseType!
+  id: ID!
+}
+
+type PrivateQuery {
+  noop: ID!
+  clients(filters: ClientFilter, order: ClientOrder, pagination: OffsetPaginationInput): ClientTypeCountList!
+  contractors(filters: ContractorFilter, order: ContractorOrder, pagination: OffsetPaginationInput): ContractorTypeCountList!
+  projects(filters: ProjectFilter, order: ProjectOrder, pagination: OffsetPaginationInput): ProjectTypeCountList!
+  client(pk: ID!): ClientType
+  contractor(pk: ID!): ContractorType
+  project(pk: ID!): ProjectType
+  milestones(filters: MilestoneFilter, order: MilestoneOrder, pagination: OffsetPaginationInput): MilestoneTypeCountList!
+  tasks(filters: TaskFilter, order: TaskOrder, pagination: OffsetPaginationInput): TaskTypeCountList!
+  timeTracks(filters: TimeTrackFilter, order: TimeTrackOrder, pagination: OffsetPaginationInput): TimeTrackTypeCountList!
+  allMilestones: [MilestoneType!]!
+  allTasks: [TaskType!]!
+  myTimeTracks(date: Date!): [TimeTrackType!]!
+  milestone(pk: ID!): MilestoneType
+  task(pk: ID!): TaskType
+  journal(date: Date!): JournalType
+  id: ID!
+}
+
+input ProjectFilter {
+  id: IDBaseFilterLookup
+  client: DjangoModelFilterInput
+  contractor: DjangoModelFilterInput
+  AND: ProjectFilter
+  OR: ProjectFilter
+  NOT: ProjectFilter
+  DISTINCT: Boolean
+}
+
+input ProjectOrder {
+  id: Ordering
+  name: Ordering
+}
+
+type ProjectType {
+  id: ID!
+  clientId: ID!
+  contractorId: ID!
+  name: String!
+  description: String
+  client: ClientType!
+  contractor: ContractorType!
+}
+
+type ProjectTypeCountList {
+  limit: Int!
+  offset: Int!
+  count: Int!
+  items: [ProjectType!]!
+}
+
+type PublicMutation {
+  login(data: LoginInput!): UserMeTypeMutationResponseType!
+  logout: MutationEmptyResponseType!
+  id: ID!
+}
+
+type PublicQuery {
+  me: UserMeType
+  id: ID!
+}
+
+type Query {
+  public: PublicQuery!
+  private: PrivateQuery!
+  enums: AppEnumCollection!
+}
+
+input StrFilterLookup {
+  """Exact match. Filter will be skipped on `null` value"""
+  exact: String
+
+  """Assignment test. Filter will be skipped on `null` value"""
+  isNull: Boolean
+
+  """
+  Exact match of items in a given list. Filter will be skipped on `null` value
+  """
+  inList: [String!]
+
+  """Case-insensitive exact match. Filter will be skipped on `null` value"""
+  iExact: String
+
+  """
+  Case-sensitive containment test. Filter will be skipped on `null` value
+  """
+  contains: String
+
+  """
+  Case-insensitive containment test. Filter will be skipped on `null` value
+  """
+  iContains: String
+
+  """Case-sensitive starts-with. Filter will be skipped on `null` value"""
+  startsWith: String
+
+  """Case-insensitive starts-with. Filter will be skipped on `null` value"""
+  iStartsWith: String
+
+  """Case-sensitive ends-with. Filter will be skipped on `null` value"""
+  endsWith: String
+
+  """Case-insensitive ends-with. Filter will be skipped on `null` value"""
+  iEndsWith: String
+
+  """
+  Case-sensitive regular expression match. Filter will be skipped on `null` value
+  """
+  regex: String
+
+  """
+  Case-insensitive regular expression match. Filter will be skipped on `null` value
+  """
+  iRegex: String
+}
+
+input TaskFilter {
+  id: IDBaseFilterLookup
+  milestoneId: IDBaseFilterLookup
+  AND: TaskFilter
+  OR: TaskFilter
+  NOT: TaskFilter
+  DISTINCT: Boolean
+  project: ID
+}
+
+input TaskOrder {
+  id: Ordering
+  name: Ordering
+  createdAt: Ordering
+}
+
+type TaskType {
+  id: ID!
+  isArchived: Boolean!
+  milestoneId: ID!
+  name: String!
+  milestone: MilestoneType!
+}
+
+type TaskTypeCountList {
+  limit: Int!
+  offset: Int!
+  count: Int!
+  items: [TaskType!]!
+}
+
+scalar TimeDuration
+
+input TimeTrackCreateInput {
+  task: ID!
+  date: Date!
+  taskType: TimeTrackTaskTypeEnum!
+  description: String
+  isDone: Boolean
+  duration: TimeDuration
+  clientId: ID
+}
+
+input TimeTrackFilter {
+  id: IDBaseFilterLookup
+  user: DjangoModelFilterInput
+  task: DjangoModelFilterInput
+  date: DateDateFilterLookup
+  taskTypes: [TimeTrackTaskTypeEnum!]!
+  AND: TimeTrackFilter
+  OR: TimeTrackFilter
+  NOT: TimeTrackFilter
+  DISTINCT: Boolean
+  project: ID
+  milestone: ID
+}
+
+input TimeTrackOrder {
+  id: Ordering
+  date: Ordering
+}
+
+enum TimeTrackTaskTypeEnum {
+  DEVELOPMENT
+  QUALITY_ASSURANCE
+  DESIGNING
+  MEETING
+  INTERNAL_MEETING
+}
+
+type TimeTrackType {
+  id: ID!
+  date: Date!
+  userId: ID!
+  taskId: ID!
+  isDone: Boolean!
+  duration: TimeDuration
+  taskType: TimeTrackTaskTypeEnum!
+  taskTypeDisplay: String!
+  description: String
+  user: UserType!
+  task: TaskType!
+}
+
+type TimeTrackTypeCountList {
+  limit: Int!
+  offset: Int!
+  count: Int!
+  items: [TimeTrackType!]!
+}
+
+type TimeTrackTypeMutationResponseType {
+  ok: Boolean!
+  errors: CustomErrorType
+  result: TimeTrackType
+}
+
+input TimeTrackUpdateInput {
+  task: ID
+  date: Date
+  taskType: TimeTrackTaskTypeEnum
+  description: String
+  isDone: Boolean
+  duration: TimeDuration
+  clientId: ID
+}
+
+type UserMeType {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  displayName: String!
+  email: String!
+}
+
+type UserMeTypeMutationResponseType {
+  ok: Boolean!
+  errors: CustomErrorType
+  result: UserMeType
+}
+
+type UserType {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  displayName: String!
+}

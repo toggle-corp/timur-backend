@@ -68,8 +68,13 @@ def convert_serializer_field_to_generic_scalar(_):
     return types.GenericScalar
 
 
+@get_strawberry_type_from_serializer_field.register(serializers.DurationField)  # type: ignore[reportArgumentType]
+def convert_serializer_field_to_duration(_):
+    return types.TimeDuration
+
+
 @get_strawberry_type_from_serializer_field.register(serializers.Field)  # type: ignore[reportArgumentType]
-def convert_serializer_field_to_string(field):
+def convert_serializer_field_to_string(_):
     return str
 
 
@@ -177,10 +182,6 @@ def convert_serializer_field(field, convert_choices_to_enum=True, force_optional
         graphql_type = str
     else:
         graphql_type = get_strawberry_type_from_serializer_field(field)
-        # if graphql_type == str:
-        #   is_required = not field.null and not field.blank
-        #   kwargs['parse_value'] -> null -> '' -- when not is_required
-        #   XXX: does UNSET has any issue here?
 
     # if it is a tuple or a list it means that we are returning
     # the graphql type and the child type

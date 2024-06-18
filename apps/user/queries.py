@@ -17,10 +17,11 @@ class UserType:
 
 @strawberry_django.type(User)
 class UserMeType(UserType):
+    id: strawberry.ID
     email: strawberry.auto
-    phone_number: strawberry.auto
-    country: strawberry.auto
-    city: strawberry.auto
+    first_name: strawberry.auto
+    last_name: strawberry.auto
+    display_name: strawberry.auto
 
 
 @strawberry.type

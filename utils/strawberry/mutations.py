@@ -221,10 +221,11 @@ class MutationEmptyResponseType:
     errors: typing.Optional[CustomErrorType] = None
 
 
-def get_serializer_context(info: Info):
+def get_serializer_context(info: Info, extra_context: typing.Optional[dict]):
     return {
         "graphql_info": info,
         "request": info.context.request,
+        "extra_context": extra_context,
     }
 
 
@@ -273,11 +274,12 @@ class ModelMutation:
         serializer_class,
         data,
         info,
+        extra_context: typing.Optional[dict],
         **kwargs,
     ) -> tuple[CustomErrorType | None, models.Model | None]:
         serializer = serializer_class(
             data=data,
-            context=get_serializer_context(info),
+            context=get_serializer_context(info, extra_context=extra_context),
             **kwargs,
         )
         if errors := mutation_is_not_valid(serializer):
@@ -303,13 +305,16 @@ class ModelMutation:
             logger.error("Failed to handle delete mutation", exc_info=True)
             return _CustomErrorType.generate_message(), None
 
-    async def handle_create_mutation(self, data, info: Info, permission) -> MutationResponseType:
+    async def handle_create_mutation(
+        self, data, info: Info, permission, extra_context: typing.Optional[dict] = None
+    ) -> MutationResponseType:
         if errors := self.check_permissions(info, permission):
             return MutationResponseType(ok=False, errors=errors)
         errors, saved_instance = await self.handle_mutation(
             self.serializer_class,
             process_input_data(data),
             info,
+            extra_context,
         )
         if errors:
             return MutationResponseType(ok=False, errors=errors)
@@ -321,6 +326,7 @@ class ModelMutation:
         info: Info,
         permission,
         instance: models.Model,
+        extra_context: typing.Optional[dict] = None,
     ) -> MutationResponseType:
         if errors := self.check_permissions(info, permission):
             return MutationResponseType(ok=False, errors=errors)
@@ -328,6 +334,7 @@ class ModelMutation:
             self.serializer_class,
             process_input_data(data),
             info,
+            extra_context,
             instance=instance,
             partial=True,
         )

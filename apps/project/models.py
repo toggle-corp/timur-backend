@@ -6,9 +6,15 @@ from apps.common.models import UserResource
 class Client(UserResource):
     name = models.CharField(max_length=225)
 
+    def __str__(self):
+        return self.name
+
 
 class Contractor(UserResource):
     name = models.CharField(max_length=225)
+
+    def __str__(self):
+        return self.name
 
 
 class Project(UserResource):
@@ -20,3 +26,6 @@ class Project(UserResource):
 
     client_id: int
     contractor_id: int
+
+    def __str__(self):
+        return self.name

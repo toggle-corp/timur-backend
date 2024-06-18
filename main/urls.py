@@ -15,9 +15,30 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path
 
+from main.graphql.schema import CustomAsyncGraphQLView
+from main.graphql.schema import schema as graphql_schema
+
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path("admin/", admin.site.urls, name="admin"),
+    # path('health-check/', include('health_check.urls')),
+    path(
+        "graphql/",
+        CustomAsyncGraphQLView.as_view(
+            schema=graphql_schema,
+            graphiql=False,
+        ),
+    ),
 ]
+
+
+if settings.DEBUG:
+    urlpatterns.append(path("graphiql/", CustomAsyncGraphQLView.as_view(schema=graphql_schema)))
+
+    # Static and media file URLs
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

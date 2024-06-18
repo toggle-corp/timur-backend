@@ -129,6 +129,3 @@ dmypy.json
 
 # editors
 .idea/
-
-# In app data
-apps/cap_feed/geographical/

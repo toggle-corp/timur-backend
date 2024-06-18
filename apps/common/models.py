@@ -23,6 +23,6 @@ class UserResource(models.Model):
     created_by_id: int
     modified_by_id: int
 
-    class Meta(models.Model.Meta):
+    class Meta:  # type: ignore[reportIncompatibleVariableOverride]
         abstract = True
         ordering = ["-id"]

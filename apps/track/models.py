@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 from apps.common.models import UserResource
 from apps.project.models import Project
@@ -12,6 +13,9 @@ class Milestone(UserResource):
 
     project_id: int
 
+    def __str__(self):
+        return self.name
+
 
 class Task(UserResource):
     name = models.CharField(max_length=225)
@@ -20,14 +24,17 @@ class Task(UserResource):
 
     milestone_id: int
 
+    def __str__(self):
+        return self.name
+
 
 class TimeTrack(models.Model):
     class TaskType(models.IntegerChoices):
-        DEVELOPMENT = 1, "Development"
-        QUALITY_ASSURANCE = 2, "Quality Assurance"
-        DESIGNING = 3, "Designing"
-        MEETING = 4, "Meeting"
-        INTERNAL_MEETING = 5, "Meeting (Internal)"
+        DEVELOPMENT = 1, _("Development")
+        QUALITY_ASSURANCE = 2, _("Quality Assurance")
+        DESIGNING = 3, _("Designing")
+        MEETING = 4, _("Meeting")
+        INTERNAL_MEETING = 5, _("Meeting (Internal)")
         # TODO: Add/Remove
 
     user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="+")

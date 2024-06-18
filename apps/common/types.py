@@ -18,11 +18,11 @@ class UserResourceTypeMixin:
 
     @strawberry_django.field
     async def created_by(self, root: UserResource, info: Info) -> UserType:
-        return info.context.dl.user.load_user.load(root.created_by_id)
+        return await info.context.dl.user.load_user.load(root.created_by_id)
 
     @strawberry_django.field
     async def modified_by(self, root: UserResource, info: Info) -> UserType:
-        return info.context.dl.user.load_user.load(root.modified_by_id)
+        return await info.context.dl.user.load_user.load(root.modified_by_id)
 
 
 class ClientIdMixin:

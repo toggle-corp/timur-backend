@@ -8,7 +8,7 @@ from apps.user.types import UserType
 from main.graphql.context import Info
 from utils.common import get_queryset_for_model
 from utils.strawberry.enums import enum_display_field, enum_field
-from utils.strawberry.types import string_field
+from utils.strawberry.types import TimeDuration, string_field
 
 from .models import Milestone, Task, TimeTrack
 
@@ -27,7 +27,7 @@ class MilestoneType(UserResourceTypeMixin):
 
     @strawberry_django.field
     async def project(self, root: Milestone, info: Info) -> ProjectType:
-        return info.context.dl.project.load_project.load(root.project_id)
+        return await info.context.dl.project.load_project.load(root.project_id)
 
 
 @strawberry_django.type(Task)
@@ -44,7 +44,7 @@ class TaskType(UserResourceTypeMixin):
 
     @strawberry_django.field
     async def milestone(self, root: Task, info: Info) -> MilestoneType:
-        return info.context.dl.track.load_milestone.load(root.milestone_id)
+        return await info.context.dl.track.load_milestone.load(root.milestone_id)
 
 
 @strawberry_django.type(TimeTrack)
@@ -54,7 +54,7 @@ class TimeTrackType(ClientIdMixin):
     user_id: strawberry.ID
     task_id: strawberry.ID
     is_done: strawberry.auto
-    duration: strawberry.auto
+    duration: TimeDuration | None
 
     task_type = enum_field(TimeTrack.task_type)
     task_type_display = enum_display_field(TimeTrack.task_type)
@@ -66,8 +66,8 @@ class TimeTrackType(ClientIdMixin):
 
     @strawberry_django.field
     async def user(self, root: TimeTrack, info: Info) -> UserType:
-        return info.context.dl.user.load_user.load(root.user_id)
+        return await info.context.dl.user.load_user.load(root.user_id)
 
     @strawberry_django.field
     async def task(self, root: TimeTrack, info: Info) -> TaskType:
-        return info.context.dl.track.load_task.load(root.task_id)
+        return await info.context.dl.track.load_task.load(root.task_id)
