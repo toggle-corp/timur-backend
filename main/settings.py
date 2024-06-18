@@ -119,6 +119,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.gis",
     # External apps
+    "reversion",
     "admin_auto_filters",
     "django_premailer",
     "storages",
@@ -420,6 +421,6 @@ CACHES = {
 CELERY_BROKER_URL = CELERY_REDIS_URL
 CELERY_RESULT_BACKEND = CELERY_REDIS_URL
 CELERY_TIMEZONE = TIME_ZONE
-CELERY_EVENT_QUEUE_PREFIX = "cracker-celery-"
+CELERY_EVENT_QUEUE_PREFIX = "timur-celery-"
 CELERY_ACKS_LATE = True
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True

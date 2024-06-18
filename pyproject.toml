@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "cracker-backend"
+name = "timur-backend"
 version = "0.1.0"
 description = ""
 authors = ["tc-dev <dev@togglecorp.com>"]
@@ -19,8 +19,7 @@ django-cors-headers = "*"
 django-premailer = "*"
 django-storages = "*"
 django-admin-autocomplete-filter = "*"
-strawberry-graphql = "^0.225.0"
-strawberry-graphql-django = "0.37.1"
+strawberry-graphql-django = {extras = ["strawberry-graphql"], version = "0.44.2"}
 sentry-sdk = "*"
 ipython = "*"
 factory-boy = "*"
@@ -28,6 +27,7 @@ user-agents = "*"
 django-ses = "3"
 celery = {extras = ["redis"], version = "^5.3.4"}
 django-redis = "^5.3.0"
+django-reversion = "*"
 uwsgi = "*"
 aws-sns-message-validator = "*"
 
