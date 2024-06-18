@@ -22,11 +22,11 @@ class ContractAdmin(VersionAdmin, UserResourceAdmin):
         "is_archived",
     )
     autocomplete_fields = ("project",)
-    list_display = ("name", "get_project", "is_archived")
+    list_display = ("name", "created_by", "get_project", "is_archived")
     inlines = [ContractTaskInline]
 
     def get_queryset(self, request: HttpRequest) -> models.QuerySet[Contract]:
-        return super().get_queryset(request).select_related("project")
+        return super().get_queryset(request).select_related("created_by", "project")
 
     @admin.display(ordering="project__name", description="Project")
     def get_project(self, obj):
@@ -43,10 +43,10 @@ class TaskAdmin(VersionAdmin, UserResourceAdmin):
         "is_archived",
     )
     autocomplete_fields = ("contract",)
-    list_display = ("name", "get_project", "get_contract", "is_archived")
+    list_display = ("name", "created_by", "get_project", "get_contract", "is_archived")
 
     def get_queryset(self, request: HttpRequest) -> models.QuerySet[Contract]:
-        return super().get_queryset(request).select_related("contract", "contract__project")
+        return super().get_queryset(request).select_related("created_by", "contract", "contract__project")
 
     @admin.display(ordering="project__name", description="Project")
     def get_project(self, obj):

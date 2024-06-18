@@ -27,9 +27,9 @@ class User(AbstractUser):
         blank=True,
         max_length=255,
     )
-    department = models.PositiveSmallIntegerField(choices=Department.choices)
+    department = models.PositiveSmallIntegerField(choices=Department.choices, null=True)
 
-    objects = CustomUserManager()  # type: ignore[reportAssignmentType]
+    objects: CustomUserManager = CustomUserManager()  # type: ignore[reportAssignmentType]
 
     pk: int
 

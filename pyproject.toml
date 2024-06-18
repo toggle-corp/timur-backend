@@ -32,6 +32,7 @@ uwsgi = "*"
 aws-sns-message-validator = "*"
 
 [tool.poetry.dev-dependencies]
+dacite = "*"
 pytest = "*"
 pytest-profiling = "*"
 pytest-ordering = "*"

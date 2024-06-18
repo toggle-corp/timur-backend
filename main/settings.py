@@ -86,7 +86,6 @@ env = environ.Env(
     SMTP_EMAIL_PASSWORD=str,
     # MISC
     ALLOW_DUMMY_DATA_SCRIPT=(bool, False),  # WARNING
-    ENABLE_BREAKING_MODE=(bool, False),  # Only enable if you know what you are doing
 )
 
 # Quick-start development settings - unsuitable for production
@@ -97,6 +96,7 @@ SECRET_KEY = env("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env("DJANGO_DEBUG")
+ALLOW_DUMMY_DATA_SCRIPT = env("ALLOW_DUMMY_DATA_SCRIPT")
 
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOST")
 
