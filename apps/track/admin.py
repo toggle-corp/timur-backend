@@ -3,11 +3,11 @@ from django.contrib import admin
 from django.db import models
 from django.http import HttpRequest
 
-from .models import Milestone, Task, TimeTrack
+from .models import Contract, Task, TimeTrack
 
 
-@admin.register(Milestone)
-class MilestoneAdmin(admin.ModelAdmin):
+@admin.register(Contract)
+class ContractAdmin(admin.ModelAdmin):
     search_fields = ("name",)
     list_filter = (
         AutocompleteFilterFactory("Project", "project"),
@@ -17,7 +17,7 @@ class MilestoneAdmin(admin.ModelAdmin):
     autocomplete_fields = ("project",)
     list_display = ("name", "get_project", "is_archived")
 
-    def get_queryset(self, request: HttpRequest) -> models.QuerySet[Milestone]:
+    def get_queryset(self, request: HttpRequest) -> models.QuerySet[Contract]:
         return super().get_queryset(request).select_related("project")
 
     @admin.display(ordering="project__name", description="Project")
@@ -29,24 +29,24 @@ class MilestoneAdmin(admin.ModelAdmin):
 class TaskAdmin(admin.ModelAdmin):
     search_fields = ("name",)
     list_filter = (
-        AutocompleteFilterFactory("Project", "milestone__project"),
-        AutocompleteFilterFactory("Milestone", "milestone"),
+        AutocompleteFilterFactory("Project", "contract__project"),
+        AutocompleteFilterFactory("Contract", "contract"),
         AutocompleteFilterFactory("Created By", "created_by"),
         "is_archived",
     )
-    autocomplete_fields = ("milestone",)
-    list_display = ("name", "get_project", "get_milestone", "is_archived")
+    autocomplete_fields = ("contract",)
+    list_display = ("name", "get_project", "get_contract", "is_archived")
 
-    def get_queryset(self, request: HttpRequest) -> models.QuerySet[Milestone]:
-        return super().get_queryset(request).select_related("milestone", "milestone__project")
+    def get_queryset(self, request: HttpRequest) -> models.QuerySet[Contract]:
+        return super().get_queryset(request).select_related("contract", "contract__project")
 
     @admin.display(ordering="project__name", description="Project")
     def get_project(self, obj):
-        return obj.milestone.project.name
+        return obj.contract.project.name
 
-    @admin.display(ordering="milestone__name", description="Milestone")
-    def get_milestone(self, obj):
-        return obj.milestone.name
+    @admin.display(ordering="contract__name", description="Contract")
+    def get_contract(self, obj):
+        return obj.contract.name
 
 
 @admin.register(TimeTrack)
@@ -55,14 +55,14 @@ class TimeTrackAdmin(admin.ModelAdmin):
         "date",
         "task_type",
         "is_done",
-        AutocompleteFilterFactory("Project", "task__milestone__project"),
-        AutocompleteFilterFactory("Milestone", "task__milestone"),
+        AutocompleteFilterFactory("Project", "task__contract__project"),
+        AutocompleteFilterFactory("Contract", "task__contract"),
         AutocompleteFilterFactory("Task", "task"),
         AutocompleteFilterFactory("User", "user"),
     )
     autocomplete_fields = ("task",)
     list_display = (
-        "get_milestone",
+        "get_contract",
         "get_project",
         "get_task",
         "get_user",
@@ -72,16 +72,16 @@ class TimeTrackAdmin(admin.ModelAdmin):
         "is_done",
     )
 
-    def get_queryset(self, request: HttpRequest) -> models.QuerySet[Milestone]:
-        return super().get_queryset(request).select_related("user", "task", "task__milestone", "task__milestone__project")
+    def get_queryset(self, request: HttpRequest) -> models.QuerySet[Contract]:
+        return super().get_queryset(request).select_related("user", "task", "task__contract", "task__contract__project")
 
     @admin.display(ordering="project__name", description="Project")
     def get_project(self, obj):
-        return obj.task.milestone.project.name
+        return obj.task.contract.project.name
 
-    @admin.display(ordering="milestone__name", description="Milestone")
-    def get_milestone(self, obj):
-        return obj.task.milestone.name
+    @admin.display(ordering="contract__name", description="Contract")
+    def get_contract(self, obj):
+        return obj.task.contract.name
 
     @admin.display(ordering="task__name", description="Task")
     def get_task(self, obj):

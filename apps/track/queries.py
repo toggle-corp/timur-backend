@@ -6,18 +6,18 @@ import strawberry_django
 from main.graphql.context import Info
 from utils.strawberry.paginations import CountList, pagination_field
 
-from .filters import MilestoneFilter, TaskFilter, TimeTrackFilter
-from .orders import MilestoneOrder, TaskOrder, TimeTrackOrder
-from .types import MilestoneType, TaskType, TimeTrackType
+from .filters import ContractFilter, TaskFilter, TimeTrackFilter
+from .orders import ContractOrder, TaskOrder, TimeTrackOrder
+from .types import ContractType, TaskType, TimeTrackType
 
 
 @strawberry.type
 class PrivateQuery:
     # Paginated ----------------------------
-    milestones: CountList[MilestoneType] = pagination_field(
+    contracts: CountList[ContractType] = pagination_field(
         pagination=True,
-        filters=MilestoneFilter,
-        order=MilestoneOrder,
+        filters=ContractFilter,
+        order=ContractOrder,
     )
 
     tasks: CountList[TaskType] = pagination_field(
@@ -33,13 +33,13 @@ class PrivateQuery:
     )
 
     # Unbounded ----------------------------
-    @strawberry_django.field
-    async def all_milestones(self, info: Info) -> list[MilestoneType]:
-        return [milestone async for milestone in MilestoneType.get_queryset(None, None, info)]
+    @strawberry_django.field(description="Return all UnArchived contracts")
+    async def all_contracts(self, info: Info) -> list[ContractType]:
+        return [contract async for contract in ContractType.get_queryset(None, None, info).filter(is_archived=False)]
 
-    @strawberry_django.field
+    @strawberry_django.field(description="Return all UnArchived tasks")
     async def all_tasks(self, info: Info) -> list[TaskType]:
-        return [task async for task in TaskType.get_queryset(None, None, info)]
+        return [task async for task in TaskType.get_queryset(None, None, info).filter(is_archived=False)]
 
     @strawberry_django.field
     async def my_time_tracks(self, info: Info, date: datetime.date) -> list[TimeTrackType]:
@@ -55,8 +55,8 @@ class PrivateQuery:
 
     # Single ----------------------------
     @strawberry_django.field
-    async def milestone(self, info: Info, pk: strawberry.ID) -> MilestoneType | None:
-        return await MilestoneType.get_queryset(None, None, info).filter(pk=pk).afirst()
+    async def contract(self, info: Info, pk: strawberry.ID) -> ContractType | None:
+        return await ContractType.get_queryset(None, None, info).filter(pk=pk).afirst()
 
     @strawberry_django.field
     async def task(self, info: Info, pk: strawberry.ID) -> TaskType | None:

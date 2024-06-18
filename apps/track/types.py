@@ -10,31 +10,37 @@ from utils.common import get_queryset_for_model
 from utils.strawberry.enums import enum_display_field, enum_field
 from utils.strawberry.types import TimeDuration, string_field
 
-from .models import Milestone, Task, TimeTrack
+from .models import Contract, Task, TimeTrack
 
 
-@strawberry_django.type(Milestone)
-class MilestoneType(UserResourceTypeMixin):
+@strawberry_django.type(Contract)
+class ContractType(UserResourceTypeMixin):
     id: strawberry.ID
     project_id: strawberry.ID
+    total_estimated_hours: strawberry.auto
     is_archived: strawberry.auto
 
-    name = string_field(Milestone.name)
+    name = string_field(Contract.name)
 
     @staticmethod
     def get_queryset(_, queryset: models.QuerySet | None, info: Info):
-        return get_queryset_for_model(Milestone, queryset)
+        return get_queryset_for_model(Contract, queryset)
 
     @strawberry_django.field
-    async def project(self, root: Milestone, info: Info) -> ProjectType:
+    async def project(self, root: Contract, info: Info) -> ProjectType:
         return await info.context.dl.project.load_project.load(root.project_id)
+
+    @strawberry_django.field(description="Sum of all task's estimated hours under this contract")
+    async def total_tasks_estimated_hours(self, root: Contract, info: Info) -> float:
+        return await info.context.dl.track.load_total_tasks_estimated_hours_by_contract.load(root.pk)
 
 
 @strawberry_django.type(Task)
 class TaskType(UserResourceTypeMixin):
     id: strawberry.ID
+    estimated_hours: strawberry.auto
     is_archived: strawberry.auto
-    milestone_id: strawberry.ID
+    contract_id: strawberry.ID
 
     name = string_field(Task.name)
 
@@ -43,8 +49,8 @@ class TaskType(UserResourceTypeMixin):
         return get_queryset_for_model(Task, queryset)
 
     @strawberry_django.field
-    async def milestone(self, root: Task, info: Info) -> MilestoneType:
-        return await info.context.dl.track.load_milestone.load(root.milestone_id)
+    async def contract(self, root: Task, info: Info) -> ContractType:
+        return await info.context.dl.track.load_contract.load(root.contract_id)
 
 
 @strawberry_django.type(TimeTrack)
