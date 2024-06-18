@@ -13,6 +13,19 @@ type AppEnumCollectionTimeTrackTaskType {
   label: String!
 }
 
+input BoolBaseFilterLookup {
+  """Exact match. Filter will be skipped on `null` value"""
+  exact: Boolean
+
+  """Assignment test. Filter will be skipped on `null` value"""
+  isNull: Boolean
+
+  """
+  Exact match of items in a given list. Filter will be skipped on `null` value
+  """
+  inList: [Boolean!]
+}
+
 input ClientFilter {
   id: IDBaseFilterLookup
   name: StrFilterLookup
@@ -37,6 +50,41 @@ type ClientTypeCountList {
   offset: Int!
   count: Int!
   items: [ClientType!]!
+}
+
+input ContractFilter {
+  id: IDBaseFilterLookup
+  projectId: IDBaseFilterLookup
+  isArchived: BoolBaseFilterLookup
+  AND: ContractFilter
+  OR: ContractFilter
+  NOT: ContractFilter
+  DISTINCT: Boolean
+}
+
+input ContractOrder {
+  id: Ordering
+  name: Ordering
+  createdAt: Ordering
+}
+
+type ContractType {
+  id: ID!
+  projectId: ID!
+  totalEstimatedHours: Float
+  isArchived: Boolean!
+  name: String!
+  project: ProjectType!
+
+  """Sum of all task's estimated hours under this contract"""
+  totalTasksEstimatedHours: Float!
+}
+
+type ContractTypeCountList {
+  limit: Int!
+  offset: Int!
+  count: Int!
+  items: [ContractType!]!
 }
 
 input ContractorFilter {
@@ -194,36 +242,6 @@ input LoginInput {
   password: String!
 }
 
-input MilestoneFilter {
-  id: IDBaseFilterLookup
-  projectId: IDBaseFilterLookup
-  AND: MilestoneFilter
-  OR: MilestoneFilter
-  NOT: MilestoneFilter
-  DISTINCT: Boolean
-}
-
-input MilestoneOrder {
-  id: Ordering
-  name: Ordering
-  createdAt: Ordering
-}
-
-type MilestoneType {
-  id: ID!
-  projectId: ID!
-  isArchived: Boolean!
-  name: String!
-  project: ProjectType!
-}
-
-type MilestoneTypeCountList {
-  limit: Int!
-  offset: Int!
-  count: Int!
-  items: [MilestoneType!]!
-}
-
 type Mutation {
   public: PublicMutation!
   private: PrivateMutation!
@@ -263,13 +281,17 @@ type PrivateQuery {
   client(pk: ID!): ClientType
   contractor(pk: ID!): ContractorType
   project(pk: ID!): ProjectType
-  milestones(filters: MilestoneFilter, order: MilestoneOrder, pagination: OffsetPaginationInput): MilestoneTypeCountList!
+  contracts(filters: ContractFilter, order: ContractOrder, pagination: OffsetPaginationInput): ContractTypeCountList!
   tasks(filters: TaskFilter, order: TaskOrder, pagination: OffsetPaginationInput): TaskTypeCountList!
   timeTracks(filters: TimeTrackFilter, order: TimeTrackOrder, pagination: OffsetPaginationInput): TimeTrackTypeCountList!
-  allMilestones: [MilestoneType!]!
+
+  """Return all UnArchived contracts"""
+  allContracts: [ContractType!]!
+
+  """Return all UnArchived tasks"""
   allTasks: [TaskType!]!
   myTimeTracks(date: Date!): [TimeTrackType!]!
-  milestone(pk: ID!): MilestoneType
+  contract(pk: ID!): ContractType
   task(pk: ID!): TaskType
   journal(date: Date!): JournalType
   id: ID!
@@ -374,7 +396,8 @@ input StrFilterLookup {
 
 input TaskFilter {
   id: IDBaseFilterLookup
-  milestoneId: IDBaseFilterLookup
+  contractId: IDBaseFilterLookup
+  isArchived: BoolBaseFilterLookup
   AND: TaskFilter
   OR: TaskFilter
   NOT: TaskFilter
@@ -390,10 +413,11 @@ input TaskOrder {
 
 type TaskType {
   id: ID!
+  estimatedHours: Float
   isArchived: Boolean!
-  milestoneId: ID!
+  contractId: ID!
   name: String!
-  milestone: MilestoneType!
+  contract: ContractType!
 }
 
 type TaskTypeCountList {
@@ -426,7 +450,7 @@ input TimeTrackFilter {
   NOT: TimeTrackFilter
   DISTINCT: Boolean
   project: ID
-  milestone: ID
+  contract: ID
 }
 
 input TimeTrackOrder {
@@ -435,11 +459,13 @@ input TimeTrackOrder {
 }
 
 enum TimeTrackTaskTypeEnum {
+  DESIGN
   DEVELOPMENT
-  QUALITY_ASSURANCE
-  DESIGNING
+  DEV_OPS
+  DOCUMENTATION
+  INTERNAL_DISCUSSION
   MEETING
-  INTERNAL_MEETING
+  QUALITY_ASSURANCE
 }
 
 type TimeTrackType {

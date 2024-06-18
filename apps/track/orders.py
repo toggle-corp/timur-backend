@@ -1,11 +1,11 @@
 import strawberry
 import strawberry_django
 
-from .models import Milestone, Task, TimeTrack
+from .models import Contract, Task, TimeTrack
 
 
-@strawberry_django.ordering.order(Milestone)
-class MilestoneOrder:
+@strawberry_django.ordering.order(Contract)
+class ContractOrder:
     id: strawberry.auto
     name: strawberry.auto
     created_at: strawberry.auto

@@ -6,12 +6,14 @@ from apps.project.models import Project
 from apps.user.models import User
 
 
-class Milestone(UserResource):
+class Contract(UserResource):
     name = models.CharField(max_length=225)
-    project = models.ForeignKey(Project, on_delete=models.PROTECT, related_name="milestones")
+    project = models.ForeignKey(Project, on_delete=models.PROTECT, related_name="contracts")
+    total_estimated_hours = models.FloatField(null=True, blank=True)
     is_archived = models.BooleanField(default=False)
 
     project_id: int
+    tasks: models.QuerySet["Task"]
 
     def __str__(self):
         return self.name
@@ -19,10 +21,11 @@ class Milestone(UserResource):
 
 class Task(UserResource):
     name = models.CharField(max_length=225)
-    milestone = models.ForeignKey(Milestone, on_delete=models.PROTECT, related_name="tasks")
+    contract = models.ForeignKey(Contract, on_delete=models.PROTECT, related_name="tasks")
+    estimated_hours = models.FloatField(null=True, blank=True)
     is_archived = models.BooleanField(default=False)
 
-    milestone_id: int
+    contract_id: int
 
     def __str__(self):
         return self.name
@@ -30,12 +33,14 @@ class Task(UserResource):
 
 class TimeTrack(models.Model):
     class TaskType(models.IntegerChoices):
-        DEVELOPMENT = 1, _("Development")
-        QUALITY_ASSURANCE = 2, _("Quality Assurance")
-        DESIGNING = 3, _("Designing")
-        MEETING = 4, _("Meeting")
-        INTERNAL_MEETING = 5, _("Meeting (Internal)")
-        # TODO: Add/Remove
+        # Using 4 digit for future ordering support
+        DESIGN = 1000, _("Design")
+        DEVELOPMENT = 1100, _("Development")
+        DEV_OPS = 1200, _("DevOps")
+        DOCUMENTATION = 2000, _("Documentation")
+        INTERNAL_DISCUSSION = 3000, _("Documentation")
+        MEETING = 4000, _("Meeting")
+        QUALITY_ASSURANCE = 5000, _("QA")
 
     user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="+")
     task = models.ForeignKey(Task, on_delete=models.PROTECT, related_name="+")
