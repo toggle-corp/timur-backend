@@ -36,7 +36,7 @@ pytest = "*"
 pytest-profiling = "*"
 pytest-ordering = "*"
 pytest-django = "*"
-django-stubs = "==4.2.6"  # NOTE: 4.2.7 is messing with TextChoices/IntergerChoices
+django-stubs = "==4.2.7"  # NOTE: 4.2.7 is messing with TextChoices/IntergerChoices
 djangorestframework-stubs = { version = "*", allow-prereleases = true }
 celery-types = "*"
 
