@@ -3,11 +3,18 @@ from django.contrib import admin
 from django.db import models
 from django.http import HttpRequest
 
+from apps.common.admin import UserResourceAdmin, UserResourceTabularInline, VersionAdmin
+
 from .models import Contract, Task, TimeTrack
 
 
+class ContractTaskInline(UserResourceTabularInline):
+    model = Task
+    ordering = ("pk",)
+
+
 @admin.register(Contract)
-class ContractAdmin(admin.ModelAdmin):
+class ContractAdmin(VersionAdmin, UserResourceAdmin):
     search_fields = ("name",)
     list_filter = (
         AutocompleteFilterFactory("Project", "project"),
@@ -16,6 +23,7 @@ class ContractAdmin(admin.ModelAdmin):
     )
     autocomplete_fields = ("project",)
     list_display = ("name", "get_project", "is_archived")
+    inlines = [ContractTaskInline]
 
     def get_queryset(self, request: HttpRequest) -> models.QuerySet[Contract]:
         return super().get_queryset(request).select_related("project")
@@ -26,7 +34,7 @@ class ContractAdmin(admin.ModelAdmin):
 
 
 @admin.register(Task)
-class TaskAdmin(admin.ModelAdmin):
+class TaskAdmin(VersionAdmin, UserResourceAdmin):
     search_fields = ("name",)
     list_filter = (
         AutocompleteFilterFactory("Project", "contract__project"),
@@ -60,7 +68,10 @@ class TimeTrackAdmin(admin.ModelAdmin):
         AutocompleteFilterFactory("Task", "task"),
         AutocompleteFilterFactory("User", "user"),
     )
-    autocomplete_fields = ("task",)
+    autocomplete_fields = (
+        "user",
+        "task",
+    )
     list_display = (
         "get_contract",
         "get_project",
