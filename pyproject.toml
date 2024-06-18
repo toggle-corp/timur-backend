@@ -25,7 +25,7 @@ sentry-sdk = "*"
 ipython = "*"
 factory-boy = "*"
 user-agents = "*"
-django-ses = "3"
+django-ses = "3.6.0"
 celery = {extras = ["redis"], version = "^5.3.4"}
 django-redis = "^5.3.0"
 uwsgi = "*"
