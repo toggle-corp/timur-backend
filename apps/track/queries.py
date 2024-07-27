@@ -39,7 +39,8 @@ class PrivateQuery:
 
     @strawberry_django.field(description="Return all UnArchived tasks")
     async def all_tasks(self, info: Info) -> list[TaskType]:
-        return [task async for task in TaskType.get_queryset(None, None, info).filter(is_archived=False)]
+        qs = TaskType.get_queryset(None, None, info).filter(is_archived=False, contract__is_archived=False)
+        return [task async for task in qs]
 
     @strawberry_django.field
     async def my_time_tracks(self, info: Info, date: datetime.date) -> list[TimeTrackType]:

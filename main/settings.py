@@ -86,7 +86,6 @@ env = environ.Env(
     SMTP_EMAIL_PASSWORD=str,
     # MISC
     ALLOW_DUMMY_DATA_SCRIPT=(bool, False),  # WARNING
-    ENABLE_BREAKING_MODE=(bool, False),  # Only enable if you know what you are doing
 )
 
 # Quick-start development settings - unsuitable for production
@@ -97,6 +96,7 @@ SECRET_KEY = env("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env("DJANGO_DEBUG")
+ALLOW_DUMMY_DATA_SCRIPT = env("ALLOW_DUMMY_DATA_SCRIPT")
 
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOST")
 
@@ -119,6 +119,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.gis",
     # External apps
+    "reversion",
     "admin_auto_filters",
     "django_premailer",
     "storages",
@@ -420,6 +421,6 @@ CACHES = {
 CELERY_BROKER_URL = CELERY_REDIS_URL
 CELERY_RESULT_BACKEND = CELERY_REDIS_URL
 CELERY_TIMEZONE = TIME_ZONE
-CELERY_EVENT_QUEUE_PREFIX = "cracker-celery-"
+CELERY_EVENT_QUEUE_PREFIX = "timur-celery-"
 CELERY_ACKS_LATE = True
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True

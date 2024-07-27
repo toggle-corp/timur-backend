@@ -16,7 +16,7 @@ class Contract(UserResource):
     tasks: models.QuerySet["Task"]
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.total_estimated_hours} hours)"
 
 
 class Task(UserResource):
