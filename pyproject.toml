@@ -19,7 +19,7 @@ django-cors-headers = "*"
 django-premailer = "*"
 django-storages = "*"
 django-admin-autocomplete-filter = "*"
-strawberry-graphql-django = {extras = ["strawberry-graphql"], version = "0.44.2"}
+strawberry-graphql-django = {extras = ["strawberry-graphql"], version = "0.47.1"}
 sentry-sdk = "*"
 ipython = "*"
 factory-boy = "*"
