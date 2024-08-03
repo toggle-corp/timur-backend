@@ -84,6 +84,11 @@ env = environ.Env(
     SMTP_EMAIL_PORT=int,
     SMTP_EMAIL_USERNAME=str,
     SMTP_EMAIL_PASSWORD=str,
+    # Google SSO
+    USE_GOOGLE_OAUTH=(bool, False),
+    GOOGLE_OAUTH_CLIENT_ID=(str, None),
+    GOOGLE_OAUTH_SECRET=(str, None),
+    GOOGLE_OAUTH_REDIRECT_URL=(str, None),
     # MISC
     ALLOW_DUMMY_DATA_SCRIPT=(bool, False),  # WARNING
 )
@@ -126,6 +131,7 @@ INSTALLED_APPS = [
     "corsheaders",
     # Internal apps
     "apps.common",  # Common
+    "apps.standup",
     "apps.user",
     "apps.project",
     "apps.track",
@@ -424,3 +430,12 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_EVENT_QUEUE_PREFIX = "timur-celery-"
 CELERY_ACKS_LATE = True
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+# Google SSO
+USE_GOOGLE_OAUTH = env("USE_GOOGLE_OAUTH")
+GOOGLE_OAUTH_CLIENT_ID = env("GOOGLE_OAUTH_CLIENT_ID")
+GOOGLE_OAUTH_SECRET = env("GOOGLE_OAUTH_SECRET")
+GOOGLE_OAUTH_REDIRECT_URL = env("GOOGLE_OAUTH_REDIRECT_URL")
+# TODO: We need these lines below to allow the Google sign in popup to work.
+SECURE_REFERRER_POLICY = "no-referrer-when-downgrade"
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"

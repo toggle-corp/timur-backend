@@ -1,0 +1,68 @@
+from django.http import HttpResponse
+from django.shortcuts import render, redirect
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
+from django.contrib.auth import login
+from google.oauth2 import id_token
+from google.auth.transport import requests
+
+from apps.user.models import User
+
+
+@csrf_exempt
+def dev_sign_in(request):
+    """
+    For server-side development only, Used to simulate frontend sign_in
+    """
+    return render(
+        request,
+        'common/sign_in.html',
+        context=dict(
+            GOOGLE_OAUTH_CLIENT_ID=settings.GOOGLE_OAUTH_CLIENT_ID,
+            GOOGLE_OAUTH_REDIRECT_URL=settings.GOOGLE_OAUTH_REDIRECT_URL,
+        ),
+    )
+
+
+@csrf_exempt
+def google_oauth(request):
+    """
+    Google calls this URL after the user has signed in with their Google account.
+    """
+    token = request.POST['credential']
+
+    try:
+        user_data = id_token.verify_oauth2_token(
+            token, requests.Request(), settings.GOOGLE_OAUTH_CLIENT_ID
+        )
+        """
+        {
+            'hd': 'togglecorp.com',
+            'email': 'xxxxxxxxx@togglecorp.com',
+            'email_verified': True,
+            'picture': 'https://lh3.googleusercontent.com/a/xx',
+            'given_name': 'XXXXX',
+            'family_name': 'YYYY',
+        }
+        """
+        # TODO: Handle this properly
+        assert user_data["email_verified"] is True
+    except ValueError:
+        return HttpResponse(status=403)
+
+    email = user_data['email'].lowercase()
+    if user := User.objects.filter(email=email).first():
+        user.first_name = user_data['given_name']
+        user.last_name = user_data['family_name']
+        # TODO: User picture?
+        user.save(update_fields=('first_name', 'last_name'))
+        login(request, user)
+    else:
+        new_user = User.objects.create(
+            email=email,
+            first_name=user_data['given_name'],
+            last_name=user_data['family_name'],
+        )
+        login(request, new_user)
+
+    return redirect(settings.APP_FRONTEND_HOST)

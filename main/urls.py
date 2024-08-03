@@ -1,25 +1,9 @@
-"""
-URL configuration for main project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
-
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path
 
+from apps.common.views import dev_sign_in, google_oauth
 from main.graphql.schema import CustomAsyncGraphQLView
 from main.graphql.schema import schema as graphql_schema
 
@@ -33,11 +17,17 @@ urlpatterns = [
             graphiql=False,
         ),
     ),
+    path("o/google", google_oauth),
 ]
 
 
 if settings.DEBUG:
-    urlpatterns.append(path("graphiql/", CustomAsyncGraphQLView.as_view(schema=graphql_schema)))
+    urlpatterns.extend(
+        [
+            path("graphiql/", CustomAsyncGraphQLView.as_view(schema=graphql_schema)),
+            path("dev/sign_in/", dev_sign_in, name="dev-sign-in"),
+        ]
+    )
 
     # Static and media file URLs
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
