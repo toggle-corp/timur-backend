@@ -183,3 +183,5 @@ class TestCase(BaseTestCase):
             [self._dict_with_keys(item, ignore_keys=ignore_keys, include_keys=include_keys) for item in right],
             messages,
         )
+
+    def no_op(*args, **_): ...

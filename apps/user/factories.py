@@ -12,6 +12,7 @@ class UserFactory(DjangoModelFactory):
 
     class Meta:  # type: ignore[reportIncompatibleVariab]
         model = User
+        skip_postgeneration_save = True
 
     @factory.post_generation
     def password(obj, create, password, **_):

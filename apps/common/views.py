@@ -33,20 +33,16 @@ def google_oauth(request):
 
     try:
         user_data = id_token.verify_oauth2_token(token, requests.Request(), settings.GOOGLE_OAUTH_CLIENT_ID)
-        """
-        {
-            'hd': 'togglecorp.com',
-            'email': 'xxxxxxxxx@togglecorp.com',
-            'email_verified': True,
-            'picture': 'https://lh3.googleusercontent.com/a/xx',
-            'given_name': 'XXXXX',
-            'family_name': 'YYYY',
-        }
-        """
-        # TODO: Handle this properly
-        assert user_data["email_verified"] is True
+        if user_data["email_verified"] is not True:
+            return HttpResponse(
+                "Email is not verified",
+                status=400,
+            )
     except ValueError:
-        return HttpResponse(status=403)
+        return HttpResponse(
+            "Failed to process",
+            status=403,
+        )
 
     email = user_data["email"].lower()
     if user := User.objects.filter(email=email).first():
