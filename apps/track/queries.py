@@ -6,9 +6,9 @@ import strawberry_django
 from main.graphql.context import Info
 from utils.strawberry.paginations import CountList, pagination_field
 
-from .filters import ContractFilter, TaskFilter, TimeTrackFilter
-from .orders import ContractOrder, TaskOrder, TimeTrackOrder
-from .types import ContractType, TaskType, TimeTrackType
+from .filters import ContractFilter, TaskFilter, TimeEntryFilter
+from .orders import ContractOrder, TaskOrder, TimeEntryOrder
+from .types import ContractType, TaskType, TimeEntryType
 
 
 @strawberry.type
@@ -26,10 +26,10 @@ class PrivateQuery:
         order=TaskOrder,
     )
 
-    time_tracks: CountList[TimeTrackType] = pagination_field(
+    time_entries: CountList[TimeEntryType] = pagination_field(
         pagination=True,
-        filters=TimeTrackFilter,
-        order=TimeTrackOrder,
+        filters=TimeEntryFilter,
+        order=TimeEntryOrder,
     )
 
     # Unbounded ----------------------------
@@ -44,16 +44,16 @@ class PrivateQuery:
         return [task async for task in qs]
 
     @strawberry_django.field
-    async def my_time_tracks(self, info: Info, date: datetime.date) -> list[TimeTrackType]:
+    async def my_time_entries(self, info: Info, date: datetime.date) -> list[TimeEntryType]:
         qs = (
-            TimeTrackType.get_queryset(None, None, info)
+            TimeEntryType.get_queryset(None, None, info)
             .filter(
                 date=date,
                 user=info.context.request.user,
             )
             .order_by("-id")
         )
-        return [time_track async for time_track in qs]
+        return [time_entry async for time_entry in qs]
 
     # Single ----------------------------
     @strawberry_django.field

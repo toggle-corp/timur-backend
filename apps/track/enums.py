@@ -2,9 +2,9 @@ import strawberry
 
 from utils.strawberry.enums import get_enum_name_from_django_field
 
-from .models import TimeTrack
+from .models import TimeEntry
 
-TimeTrackTaskTypeEnum = strawberry.enum(TimeTrack.TaskType, name="TimeTrackTaskTypeEnum")
+TimeEntryTaskTypeEnum = strawberry.enum(TimeEntry.TaskType, name="TimeEntryTaskTypeEnum")
 
 
-enum_map = {get_enum_name_from_django_field(field): enum for field, enum in ((TimeTrack.task_type, TimeTrackTaskTypeEnum),)}
+enum_map = {get_enum_name_from_django_field(field): enum for field, enum in ((TimeEntry.task_type, TimeEntryTaskTypeEnum),)}

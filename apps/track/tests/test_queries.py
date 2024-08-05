@@ -1,11 +1,11 @@
 from apps.project.factories import ClientFactory, ContractorFactory, ProjectFactory
-from apps.track.factories import ContractFactory, TaskFactory, TimeTrackFactory
-from apps.track.models import TimeTrack
+from apps.track.factories import ContractFactory, TaskFactory, TimeEntryFactory
+from apps.track.models import TimeEntry
 from apps.user.factories import UserFactory
 from main.tests import TestCase
 
 
-class TestTrackQuery(TestCase):
+class TestEntryQuery(TestCase):
     class Query:
         ALL_ACTIVE_CONTRACTS = """
             query MyQuery {
@@ -44,10 +44,10 @@ class TestTrackQuery(TestCase):
             }
         """
 
-        MY_TIME_TRACKS = """
+        MY_TIME_ENTRIES = """
             query MyQuery($date: Date!) {
               private {
-                myTimeTracks(date: $date) {
+                myTimeEntries(date: $date) {
                   id
                   date
                   taskId
@@ -180,7 +180,7 @@ class TestTrackQuery(TestCase):
             None,
         )
 
-    def test_my_time_tracks(self):
+    def test_my_time_entries(self):
         # Dataset
         # -- MY
         tasks = [
@@ -194,31 +194,31 @@ class TestTrackQuery(TestCase):
         for count, task in tasks:
             common_kwargs = dict(
                 user=self.user,
-                task_type=TimeTrack.TaskType.DEVELOPMENT,
+                task_type=TimeEntry.TaskType.DEVELOPMENT,
                 duration="00:30",
                 task=task,
                 date=date,
             )
-            time_entries.extend(TimeTrackFactory.create_batch(count, **common_kwargs))
+            time_entries.extend(TimeEntryFactory.create_batch(count, **common_kwargs))
             # Noise data
             # -- Another date
-            TimeTrackFactory.create_batch(count, **{**common_kwargs, "date": "2024-01-07"})
+            TimeEntryFactory.create_batch(count, **{**common_kwargs, "date": "2024-01-07"})
             # -- Another user
-            TimeTrackFactory.create_batch(count, **{**common_kwargs, "user": self.user_2})
+            TimeEntryFactory.create_batch(count, **{**common_kwargs, "user": self.user_2})
 
         # Without authentication -----
         content = self.query_check(
-            self.Query.MY_TIME_TRACKS,
+            self.Query.MY_TIME_ENTRIES,
             assert_errors=True,
         )
         assert content["data"] is None
 
         # With authentication -----
         self.force_login(self.user)
-        content = self.query_check(self.Query.MY_TIME_TRACKS, variables={"date": date})
+        content = self.query_check(self.Query.MY_TIME_ENTRIES, variables={"date": date})
         self.maxDiff = None
         self.assertEqual(
-            content["data"]["private"]["myTimeTracks"],
+            content["data"]["private"]["myTimeEntries"],
             [
                 dict(
                     id=self.gID(entry.pk),
@@ -250,4 +250,4 @@ class TestTrackQuery(TestCase):
     # - Clients
     # - Contractors
     # - Contractor
-    # - TimeTracks
+    # - TimeEntrys

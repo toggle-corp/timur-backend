@@ -31,7 +31,7 @@ class Task(UserResource):
         return self.name
 
 
-class TimeTrack(models.Model):
+class TimeEntry(models.Model):
     class TaskType(models.IntegerChoices):
         # Using 4 digit for future ordering support
         DESIGN = 1000, _("Design")

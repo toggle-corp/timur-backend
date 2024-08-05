@@ -5,7 +5,7 @@ from django.http import HttpRequest
 
 from apps.common.admin import UserResourceAdmin, UserResourceTabularInline, VersionAdmin
 
-from .models import Contract, Task, TimeTrack
+from .models import Contract, Task, TimeEntry
 
 
 class ContractTaskInline(UserResourceTabularInline):
@@ -57,8 +57,8 @@ class TaskAdmin(VersionAdmin, UserResourceAdmin):
         return obj.contract.name
 
 
-@admin.register(TimeTrack)
-class TimeTrackAdmin(admin.ModelAdmin):
+@admin.register(TimeEntry)
+class TimeEntryAdmin(admin.ModelAdmin):
     list_filter = (
         "date",
         "task_type",

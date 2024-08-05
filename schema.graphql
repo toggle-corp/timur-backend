@@ -1,5 +1,5 @@
 type AppEnumCollection {
-  TimeTrackTaskType: [AppEnumCollectionTimeTrackTaskType!]!
+  TimeEntryTaskType: [AppEnumCollectionTimeEntryTaskType!]!
   JournalLeaveType: [AppEnumCollectionJournalLeaveType!]!
 }
 
@@ -8,8 +8,8 @@ type AppEnumCollectionJournalLeaveType {
   label: String!
 }
 
-type AppEnumCollectionTimeTrackTaskType {
-  key: TimeTrackTaskTypeEnum!
+type AppEnumCollectionTimeEntryTaskType {
+  key: TimeEntryTaskTypeEnum!
   label: String!
 }
 
@@ -35,12 +35,20 @@ input ClientFilter {
   DISTINCT: Boolean
 }
 
+interface ClientIdMixin {
+  clientId: ID!
+}
+
 input ClientOrder {
   id: Ordering
   name: Ordering
 }
 
-type ClientType {
+type ClientType implements UserResourceTypeMixin {
+  createdAt: DateTime!
+  modifiedAt: DateTime!
+  createdBy: UserType!
+  modifiedBy: UserType!
   id: ID!
   name: String!
 }
@@ -68,7 +76,11 @@ input ContractOrder {
   createdAt: Ordering
 }
 
-type ContractType {
+type ContractType implements UserResourceTypeMixin {
+  createdAt: DateTime!
+  modifiedAt: DateTime!
+  createdBy: UserType!
+  modifiedBy: UserType!
   id: ID!
   projectId: ID!
   totalEstimatedHours: Float
@@ -101,7 +113,11 @@ input ContractorOrder {
   name: Ordering
 }
 
-type ContractorType {
+type ContractorType implements UserResourceTypeMixin {
+  createdAt: DateTime!
+  modifiedAt: DateTime!
+  createdBy: UserType!
+  modifiedBy: UserType!
   id: ID!
   name: String!
 }
@@ -159,6 +175,9 @@ input DateRangeLookup {
   start: Date = null
   end: Date = null
 }
+
+"""Date with time (isoformat)"""
+scalar DateTime
 
 input DjangoModelFilterInput {
   pk: ID!
@@ -267,14 +286,14 @@ enum Ordering {
 }
 
 type PrivateMutation {
-  createTimeTrack(data: TimeTrackCreateInput!): TimeTrackTypeMutationResponseType!
-  updateTimeTrack(data: TimeTrackUpdateInput!): TimeTrackTypeMutationResponseType!
+  createTimeEntry(data: TimeEntryCreateInput!): TimeEntryTypeMutationResponseType!
+  updateTimeEntry(id: ID!, data: TimeEntryUpdateInput!): TimeEntryTypeMutationResponseType!
+  bulkTimeEntry(items: [TimeEntryBulkCreateInput!] = [], deleteIds: [ID!] = []): TimeEntryTypeBulkMutationResponseType!
   updateJournal(date: Date!, data: JournalUpdateInput!): JournalTypeMutationResponseType!
   id: ID!
 }
 
 type PrivateQuery {
-  noop: ID!
   clients(filters: ClientFilter, order: ClientOrder, pagination: OffsetPaginationInput): ClientTypeCountList!
   contractors(filters: ContractorFilter, order: ContractorOrder, pagination: OffsetPaginationInput): ContractorTypeCountList!
   projects(filters: ProjectFilter, order: ProjectOrder, pagination: OffsetPaginationInput): ProjectTypeCountList!
@@ -283,14 +302,14 @@ type PrivateQuery {
   project(pk: ID!): ProjectType
   contracts(filters: ContractFilter, order: ContractOrder, pagination: OffsetPaginationInput): ContractTypeCountList!
   tasks(filters: TaskFilter, order: TaskOrder, pagination: OffsetPaginationInput): TaskTypeCountList!
-  timeTracks(filters: TimeTrackFilter, order: TimeTrackOrder, pagination: OffsetPaginationInput): TimeTrackTypeCountList!
+  timeEntries(filters: TimeEntryFilter, order: TimeEntryOrder, pagination: OffsetPaginationInput): TimeEntryTypeCountList!
 
   """Return all UnArchived contracts"""
-  allContracts: [ContractType!]!
+  allActiveContracts: [ContractType!]!
 
   """Return all UnArchived tasks"""
-  allTasks: [TaskType!]!
-  myTimeTracks(date: Date!): [TimeTrackType!]!
+  allActiveTasks: [TaskType!]!
+  myTimeEntries(date: Date!): [TimeEntryType!]!
   contract(pk: ID!): ContractType
   task(pk: ID!): TaskType
   journal(date: Date!): JournalType
@@ -312,7 +331,11 @@ input ProjectOrder {
   name: Ordering
 }
 
-type ProjectType {
+type ProjectType implements UserResourceTypeMixin {
+  createdAt: DateTime!
+  modifiedAt: DateTime!
+  createdBy: UserType!
+  modifiedBy: UserType!
   id: ID!
   clientId: ID!
   contractorId: ID!
@@ -411,7 +434,11 @@ input TaskOrder {
   createdAt: Ordering
 }
 
-type TaskType {
+type TaskType implements UserResourceTypeMixin {
+  createdAt: DateTime!
+  modifiedAt: DateTime!
+  createdBy: UserType!
+  modifiedBy: UserType!
   id: ID!
   estimatedHours: Float
   isArchived: Boolean!
@@ -427,38 +454,54 @@ type TaskTypeCountList {
   items: [TaskType!]!
 }
 
+"""Time (isoformat)"""
+scalar Time
+
 scalar TimeDuration
 
-input TimeTrackCreateInput {
+input TimeEntryBulkCreateInput {
   task: ID!
   date: Date!
-  taskType: TimeTrackTaskTypeEnum!
+  taskType: TimeEntryTaskTypeEnum!
+  id: ID
   description: String
   isDone: Boolean
   duration: TimeDuration
+  startTime: Time
   clientId: ID
 }
 
-input TimeTrackFilter {
+input TimeEntryCreateInput {
+  task: ID!
+  date: Date!
+  taskType: TimeEntryTaskTypeEnum!
+  description: String
+  isDone: Boolean
+  duration: TimeDuration
+  startTime: Time
+  clientId: ID
+}
+
+input TimeEntryFilter {
   id: IDBaseFilterLookup
   user: DjangoModelFilterInput
   task: DjangoModelFilterInput
   date: DateDateFilterLookup
-  taskTypes: [TimeTrackTaskTypeEnum!]!
-  AND: TimeTrackFilter
-  OR: TimeTrackFilter
-  NOT: TimeTrackFilter
+  taskTypes: [TimeEntryTaskTypeEnum!]!
+  AND: TimeEntryFilter
+  OR: TimeEntryFilter
+  NOT: TimeEntryFilter
   DISTINCT: Boolean
   project: ID
   contract: ID
 }
 
-input TimeTrackOrder {
+input TimeEntryOrder {
   id: Ordering
   date: Ordering
 }
 
-enum TimeTrackTaskTypeEnum {
+enum TimeEntryTaskTypeEnum {
   DESIGN
   DEVELOPMENT
   DEV_OPS
@@ -468,40 +511,49 @@ enum TimeTrackTaskTypeEnum {
   QUALITY_ASSURANCE
 }
 
-type TimeTrackType {
+type TimeEntryType implements ClientIdMixin {
+  clientId: ID!
   id: ID!
   date: Date!
   userId: ID!
   taskId: ID!
   isDone: Boolean!
+  startTime: Time
   duration: TimeDuration
-  taskType: TimeTrackTaskTypeEnum!
+  taskType: TimeEntryTaskTypeEnum!
   taskTypeDisplay: String!
   description: String
   user: UserType!
   task: TaskType!
 }
 
-type TimeTrackTypeCountList {
+type TimeEntryTypeBulkMutationResponseType {
+  errors: [CustomErrorType!]
+  results: [TimeEntryType!]
+  deleted: [TimeEntryType!]
+}
+
+type TimeEntryTypeCountList {
   limit: Int!
   offset: Int!
   count: Int!
-  items: [TimeTrackType!]!
+  items: [TimeEntryType!]!
 }
 
-type TimeTrackTypeMutationResponseType {
+type TimeEntryTypeMutationResponseType {
   ok: Boolean!
   errors: CustomErrorType
-  result: TimeTrackType
+  result: TimeEntryType
 }
 
-input TimeTrackUpdateInput {
+input TimeEntryUpdateInput {
   task: ID
   date: Date
-  taskType: TimeTrackTaskTypeEnum
+  taskType: TimeEntryTaskTypeEnum
   description: String
   isDone: Boolean
   duration: TimeDuration
+  startTime: Time
   clientId: ID
 }
 
@@ -517,6 +569,13 @@ type UserMeTypeMutationResponseType {
   ok: Boolean!
   errors: CustomErrorType
   result: UserMeType
+}
+
+interface UserResourceTypeMixin {
+  createdAt: DateTime!
+  modifiedAt: DateTime!
+  createdBy: UserType!
+  modifiedBy: UserType!
 }
 
 type UserType {

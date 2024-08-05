@@ -8,43 +8,43 @@ from utils.strawberry.mutations import (
     MutationResponseType,
 )
 
-from .serializers import TimeTrackBulkSerializer, TimeTrackSerializer
-from .types import TimeTrackType
+from .serializers import TimeEntryBulkSerializer, TimeEntrySerializer
+from .types import TimeEntryType
 
-TimeTrackMutation = ModelMutation("TimeTrack", TimeTrackSerializer)
-TimeTrackBulkMutation = ModelMutation("TimeTrackBulk", TimeTrackBulkSerializer)
+TimeEntryMutation = ModelMutation("TimeEntry", TimeEntrySerializer)
+TimeEntryBulkMutation = ModelMutation("TimeEntryBulk", TimeEntryBulkSerializer)
 
 
 @strawberry.type
 class PrivateMutation:
     @strawberry.mutation
-    async def create_time_track(
+    async def create_time_entry(
         self,
-        data: TimeTrackMutation.InputType,  # type: ignore[reportInvalidTypeForm]
+        data: TimeEntryMutation.InputType,  # type: ignore[reportInvalidTypeForm]
         info: Info,
-    ) -> MutationResponseType[TimeTrackType]:
-        return await TimeTrackMutation.handle_create_mutation(data, info, None)
+    ) -> MutationResponseType[TimeEntryType]:
+        return await TimeEntryMutation.handle_create_mutation(data, info, None)
 
     @strawberry.mutation
-    async def update_time_track(
+    async def update_time_entry(
         self,
         id: strawberry.ID,
-        data: TimeTrackMutation.PartialInputType,  # type: ignore[reportInvalidTypeForm]
+        data: TimeEntryMutation.PartialInputType,  # type: ignore[reportInvalidTypeForm]
         info: Info,
-    ) -> MutationResponseType[TimeTrackType]:
-        queryset = TimeTrackType.get_queryset(None, None, info).filter(user=info.context.request.user)
+    ) -> MutationResponseType[TimeEntryType]:
+        queryset = TimeEntryType.get_queryset(None, None, info).filter(user=info.context.request.user)
         instance = await get_object_or_404_async(queryset, id=id)
-        return await TimeTrackMutation.handle_update_mutation(data, info, None, instance)
+        return await TimeEntryMutation.handle_update_mutation(data, info, None, instance)
 
     @strawberry.mutation
-    async def bulk_time_track(
+    async def bulk_time_entry(
         self,
         info: Info,
-        items: list[TimeTrackBulkMutation.InputType] | None = [],  # type: ignore[reportInvalidTypeForm]
+        items: list[TimeEntryBulkMutation.InputType] | None = [],  # type: ignore[reportInvalidTypeForm]
         delete_ids: list[strawberry.ID] | None = [],
-    ) -> BulkMutationResponseType[TimeTrackType]:
-        queryset = TimeTrackType.get_queryset(None, None, info).filter(user=info.context.request.user)
-        return await TimeTrackBulkMutation.handle_bulk_mutation(
+    ) -> BulkMutationResponseType[TimeEntryType]:
+        queryset = TimeEntryType.get_queryset(None, None, info).filter(user=info.context.request.user)
+        return await TimeEntryBulkMutation.handle_bulk_mutation(
             queryset,
             items,
             delete_ids,

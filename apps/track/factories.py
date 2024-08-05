@@ -1,7 +1,7 @@
 import factory
 from factory.django import DjangoModelFactory
 
-from .models import Contract, Task, TimeTrack
+from .models import Contract, Task, TimeEntry
 
 
 class ContractFactory(DjangoModelFactory):
@@ -18,6 +18,6 @@ class TaskFactory(DjangoModelFactory):
         model = Task
 
 
-class TimeTrackFactory(DjangoModelFactory):
+class TimeEntryFactory(DjangoModelFactory):
     class Meta:  # type: ignore[reportIncompatibleVariab]
-        model = TimeTrack
+        model = TimeEntry

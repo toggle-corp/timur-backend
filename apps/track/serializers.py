@@ -3,12 +3,12 @@ from rest_framework import serializers
 from apps.common.serializers import TempClientIdMixin
 from utils.strawberry.serializers import IntegerIDField
 
-from .models import TimeTrack
+from .models import TimeEntry
 
 
-class TimeTrackSerializer(TempClientIdMixin, serializers.ModelSerializer):
+class TimeEntrySerializer(TempClientIdMixin, serializers.ModelSerializer):
     class Meta:  # type: ignore[reportIncompatibleVariab]
-        model = TimeTrack
+        model = TimeEntry
         fields = (
             "task",
             "date",
@@ -25,12 +25,12 @@ class TimeTrackSerializer(TempClientIdMixin, serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-class TimeTrackBulkSerializer(TimeTrackSerializer):
+class TimeEntryBulkSerializer(TimeEntrySerializer):
     # Required by mutation
     id = IntegerIDField(required=False)
 
-    class Meta(TimeTrackSerializer.Meta):
+    class Meta(TimeEntrySerializer.Meta):
         fields = (
             "id",
-            *TimeTrackSerializer.Meta.fields,
+            *TimeEntrySerializer.Meta.fields,
         )

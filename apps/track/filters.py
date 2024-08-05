@@ -2,8 +2,8 @@ import strawberry
 import strawberry_django
 from django.db import models
 
-from .enums import TimeTrackTaskTypeEnum
-from .models import Contract, Task, TimeTrack
+from .enums import TimeEntryTaskTypeEnum
+from .models import Contract, Task, TimeEntry
 
 
 @strawberry_django.filters.filter(Contract, lookups=True)
@@ -29,14 +29,14 @@ class TaskFilter:
         return queryset, models.Q(**{f"{prefix}contract__project": value})
 
 
-@strawberry_django.filters.filter(TimeTrack, lookups=True)
-class TimeTrackFilter:
+@strawberry_django.filters.filter(TimeEntry, lookups=True)
+class TimeEntryFilter:
     id: strawberry.auto
     user: strawberry.auto
     task: strawberry.auto
     date: strawberry.auto
 
-    task_types: list[TimeTrackTaskTypeEnum]  # type: ignore[reportInvalidTypeForm]
+    task_types: list[TimeEntryTaskTypeEnum]  # type: ignore[reportInvalidTypeForm]
 
     @strawberry_django.filter_field
     def project(

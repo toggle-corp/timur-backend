@@ -1,14 +1,14 @@
 from apps.project.factories import ClientFactory, ContractorFactory, ProjectFactory
-from apps.track.factories import ContractFactory, TaskFactory, TimeTrackFactory
-from apps.track.models import TimeTrack
+from apps.track.factories import ContractFactory, TaskFactory, TimeEntryFactory
+from apps.track.models import TimeEntry
 from apps.user.factories import UserFactory
 from main.tests import TestCase
 
 
-class TestTrackBulkMutation(TestCase):
+class TestEntryBulkMutation(TestCase):
     class Mutation:
-        BULK_TIME_TRACK = """
-            fragment TimeTrackTypeResponse on TimeTrackType {
+        BULK_TIME_ENTRY = """
+            fragment TimeEntryTypeResponse on TimeEntryType {
               id
               clientId
               userId
@@ -23,16 +23,16 @@ class TestTrackBulkMutation(TestCase):
 
             mutation MyMutation(
                 $deleteIds: [ID!],
-                $items: [TimeTrackBulkCreateInput!],
+                $items: [TimeEntryBulkCreateInput!],
             ) {
               private {
-                bulkTimeTrack(items: $items, deleteIds: $deleteIds) {
+                bulkTimeEntry(items: $items, deleteIds: $deleteIds) {
                   errors
                   results {
-                    ...TimeTrackTypeResponse
+                    ...TimeEntryTypeResponse
                   }
                   deleted {
-                    ...TimeTrackTypeResponse
+                    ...TimeEntryTypeResponse
                   }
                 }
               }
@@ -74,10 +74,10 @@ class TestTrackBulkMutation(TestCase):
             estimated_hours=20,
         )
 
-        cls.common_time_track_kwargs = dict(
+        cls.common_time_entry_kwargs = dict(
             task=cls.active_tasks[1],
             date="2021-01-02",
-            task_type=TimeTrack.TaskType.DEVELOPMENT,
+            task_type=TimeEntry.TaskType.DEVELOPMENT,
             description="Norm description",
             is_done=False,
             duration="00:40",
@@ -86,7 +86,7 @@ class TestTrackBulkMutation(TestCase):
 
     def _query(self, _data, **kwargs):
         return self.query_check(
-            self.Mutation.BULK_TIME_TRACK,
+            self.Mutation.BULK_TIME_ENTRY,
             variables=_data,
             **kwargs,
         )
@@ -94,12 +94,12 @@ class TestTrackBulkMutation(TestCase):
     def _get_ids(self, items):
         return [item.pk for item in items]
 
-    def test_bulk_time_track_unauthenticated(self):
+    def test_bulk_time_entry_unauthenticated(self):
         # Without authentication -----
         content = self._query({}, assert_errors=True)
         assert content["data"] is None
 
-    def test_bulk_time_track_create(self):
+    def test_bulk_time_entry_create(self):
         # With authentication -----
         self.force_login(self.user)
 
@@ -108,7 +108,7 @@ class TestTrackBulkMutation(TestCase):
                 dict(
                     task=self.gID(self.active_tasks[0].pk),
                     date="2021-01-01",
-                    taskType=self.genum(TimeTrack.TaskType.DEVELOPMENT),
+                    taskType=self.genum(TimeEntry.TaskType.DEVELOPMENT),
                     description="Normal description",
                     isDone=True,
                     duration=30 * 60,
@@ -119,7 +119,7 @@ class TestTrackBulkMutation(TestCase):
         }
 
         content = self._query(data)
-        resp_data = content["data"]["private"]["bulkTimeTrack"]
+        resp_data = content["data"]["private"]["bulkTimeEntry"]
         assert resp_data["errors"] == []
         assert resp_data["deleted"] == []
         self.assertListDictEqual(
@@ -134,18 +134,18 @@ class TestTrackBulkMutation(TestCase):
             ignore_keys=["id", "task"],
         )
 
-    def test_bulk_time_track_update(self):
+    def test_bulk_time_entry_update(self):
         # With authentication -----
         self.force_login(self.user)
-        time_tracks = TimeTrackFactory.create_batch(5, **self.common_time_track_kwargs, user=self.user)
+        time_entries = TimeEntryFactory.create_batch(5, **self.common_time_entry_kwargs, user=self.user)
 
         data = {
             "items": [
                 dict(
-                    id=self.gID(time_tracks[0].pk),
+                    id=self.gID(time_entries[0].pk),
                     task=self.gID(self.active_tasks[0].pk),
                     date="2021-01-01",
-                    taskType=self.genum(TimeTrack.TaskType.DESIGN),
+                    taskType=self.genum(TimeEntry.TaskType.DESIGN),
                     description="Normal description - 0",
                     isDone=True,
                     duration=30 * 60,
@@ -153,19 +153,19 @@ class TestTrackBulkMutation(TestCase):
                     clientId="client-id-01",
                 ),
                 dict(
-                    id=self.gID(time_tracks[1].pk),
+                    id=self.gID(time_entries[1].pk),
                     task=self.gID(self.active_tasks[0].pk),
                     date="2021-01-02",
-                    taskType=self.genum(TimeTrack.TaskType.DEV_OPS),
+                    taskType=self.genum(TimeEntry.TaskType.DEV_OPS),
                     description="Normal description - 1",
                     duration=30 * 60,
                     startTime="09:32:00",
                     clientId="client-id-02",
                 ),
                 dict(
-                    id=self.gID(time_tracks[2].pk),
+                    id=self.gID(time_entries[2].pk),
                     task=self.gID(self.active_tasks[0].pk),
-                    taskType=self.genum(TimeTrack.TaskType.DEV_OPS),
+                    taskType=self.genum(TimeEntry.TaskType.DEV_OPS),
                     date="2021-01-02",
                     description="Normal description - 2",
                     clientId="client-id-03",
@@ -173,24 +173,24 @@ class TestTrackBulkMutation(TestCase):
             ],
         }
 
-        default_time_track_kwargs = {
-            "date": self.common_time_track_kwargs["date"],
-            "isDone": self.common_time_track_kwargs["is_done"],
-            "startTime": self.common_time_track_kwargs["start_time"],
-            "duration": 40 * 60,  # self.common_time_track_kwargs["duration"]
+        default_time_entry_kwargs = {
+            "date": self.common_time_entry_kwargs["date"],
+            "isDone": self.common_time_entry_kwargs["is_done"],
+            "startTime": self.common_time_entry_kwargs["start_time"],
+            "duration": 40 * 60,  # self.common_time_entry_kwargs["duration"]
             "userId": self.gID(self.user.pk),
             "taskId": self.gID(self.active_tasks[0].pk),
         }
 
         content = self._query(data)
-        resp_data = content["data"]["private"]["bulkTimeTrack"]
+        resp_data = content["data"]["private"]["bulkTimeEntry"]
         assert resp_data["errors"] == []
         assert resp_data["deleted"] == []
         self.assertListDictEqual(
             resp_data["results"],
             [
                 {
-                    **default_time_track_kwargs,
+                    **default_time_entry_kwargs,
                     **item,
                 }
                 for item in data["items"][:3]
@@ -198,80 +198,80 @@ class TestTrackBulkMutation(TestCase):
             ignore_keys=["task"],
         )
 
-    def test_bulk_time_track_delete(self):
+    def test_bulk_time_entry_delete(self):
         # With authentication -----
         self.force_login(self.user)
-        time_tracks = TimeTrackFactory.create_batch(5, **self.common_time_track_kwargs, user=self.user)
-        others_time_tracks = TimeTrackFactory.create_batch(5, **self.common_time_track_kwargs, user=self.user_02)
+        time_entries = TimeEntryFactory.create_batch(5, **self.common_time_entry_kwargs, user=self.user)
+        others_time_entries = TimeEntryFactory.create_batch(5, **self.common_time_entry_kwargs, user=self.user_02)
 
-        try_to_deleted = [*time_tracks[:4], *others_time_tracks]
-        needs_to_be_deleted = time_tracks[:4]
-        needs_to_be_preserved = [*time_tracks[4:], *others_time_tracks]
+        try_to_deleted = [*time_entries[:4], *others_time_entries]
+        needs_to_be_deleted = time_entries[:4]
+        needs_to_be_preserved = [*time_entries[4:], *others_time_entries]
         data = {
-            "deleteIds": [time_track.pk for time_track in try_to_deleted],
+            "deleteIds": [time_entry.pk for time_entry in try_to_deleted],
         }
 
         content = self._query(data)
-        resp_data = content["data"]["private"]["bulkTimeTrack"]
+        resp_data = content["data"]["private"]["bulkTimeEntry"]
         assert resp_data["errors"] == []
         assert resp_data["results"] == []
         self.assertListDictEqual(
             resp_data["deleted"],
             [
                 {
-                    "id": self.gID(time_track.pk),
+                    "id": self.gID(time_entry.pk),
                 }
-                for time_track in needs_to_be_deleted
+                for time_entry in needs_to_be_deleted
             ],
             include_keys=["id"],
         )
 
-        current_time_track_ids = set(TimeTrack.objects.values_list("id", flat=True))
+        current_time_entry_ids = set(TimeEntry.objects.values_list("id", flat=True))
 
-        assert current_time_track_ids.isdisjoint(
+        assert current_time_entry_ids.isdisjoint(
             set([i.pk for i in needs_to_be_deleted])
-        ), "Most of the user's time_track should be deleted"
+        ), "Most of the user's time_entry should be deleted"
 
         assert set(self._get_ids(needs_to_be_preserved)).issubset(
-            current_time_track_ids
-        ), "All other user's time_track should't be deleted"
+            current_time_entry_ids
+        ), "All other user's time_entry should't be deleted"
 
-    def test_bulk_time_track_mix(self):
+    def test_bulk_time_entry_mix(self):
         """
         This is mix of all of the above cases.
         NOTE: Will have duplicate piece of code
         """
         # With authentication -----
         self.force_login(self.user)
-        time_tracks = TimeTrackFactory.create_batch(5, **self.common_time_track_kwargs, user=self.user)
-        others_time_tracks = TimeTrackFactory.create_batch(5, **self.common_time_track_kwargs, user=self.user_02)
+        time_entries = TimeEntryFactory.create_batch(5, **self.common_time_entry_kwargs, user=self.user)
+        others_time_entries = TimeEntryFactory.create_batch(5, **self.common_time_entry_kwargs, user=self.user_02)
 
-        # From test_bulk_time_track_delete
-        try_to_deleted = [*time_tracks[2:], *others_time_tracks]
-        needs_to_be_deleted = time_tracks[2:]
-        needs_to_be_preserved = [*time_tracks[:2], *others_time_tracks]
+        # From test_bulk_time_entry_delete
+        try_to_deleted = [*time_entries[2:], *others_time_entries]
+        needs_to_be_deleted = time_entries[2:]
+        needs_to_be_preserved = [*time_entries[:2], *others_time_entries]
 
         data = {
-            # From test_bulk_time_track_delete
-            "deleteIds": [time_track.pk for time_track in try_to_deleted],
+            # From test_bulk_time_entry_delete
+            "deleteIds": [time_entry.pk for time_entry in try_to_deleted],
             "items": [
-                # From test_bulk_time_track_create
+                # From test_bulk_time_entry_create
                 dict(
                     task=self.gID(self.active_tasks[0].pk),
                     date="2021-01-01",
-                    taskType=self.genum(TimeTrack.TaskType.DEVELOPMENT),
+                    taskType=self.genum(TimeEntry.TaskType.DEVELOPMENT),
                     description="Normal description - 0",
                     isDone=True,
                     duration=30 * 60,
                     startTime="09:30:00",
                     clientId="client-id-00",
                 ),
-                # From test_bulk_time_track_update
+                # From test_bulk_time_entry_update
                 dict(
-                    id=self.gID(time_tracks[0].pk),
+                    id=self.gID(time_entries[0].pk),
                     task=self.gID(self.active_tasks[0].pk),
                     date="2021-01-01",
-                    taskType=self.genum(TimeTrack.TaskType.DESIGN),
+                    taskType=self.genum(TimeEntry.TaskType.DESIGN),
                     description="Normal description - 1",
                     isDone=True,
                     duration=30 * 60,
@@ -279,10 +279,10 @@ class TestTrackBulkMutation(TestCase):
                     clientId="client-id-01",
                 ),
                 dict(
-                    id=self.gID(time_tracks[1].pk),
+                    id=self.gID(time_entries[1].pk),
                     task=self.gID(self.active_tasks[0].pk),
                     date="2021-01-02",
-                    taskType=self.genum(TimeTrack.TaskType.DEV_OPS),
+                    taskType=self.genum(TimeEntry.TaskType.DEV_OPS),
                     description="Normal description - 2",
                     duration=30 * 60,
                     startTime="09:32:00",
@@ -290,9 +290,9 @@ class TestTrackBulkMutation(TestCase):
                 ),
                 # -- NOTE: This will be deleted and re-created
                 dict(
-                    id=self.gID(time_tracks[2].pk),
+                    id=self.gID(time_entries[2].pk),
                     task=self.gID(self.active_tasks[0].pk),
-                    taskType=self.genum(TimeTrack.TaskType.DEV_OPS),
+                    taskType=self.genum(TimeEntry.TaskType.DEV_OPS),
                     date="2021-01-02",
                     description="Normal description - 3",
                     clientId="client-id-03",
@@ -300,12 +300,12 @@ class TestTrackBulkMutation(TestCase):
             ],
         }
 
-        # From test_bulk_time_track_update
-        default_time_track_kwargs = {
-            "date": self.common_time_track_kwargs["date"],
-            "isDone": self.common_time_track_kwargs["is_done"],
-            "startTime": self.common_time_track_kwargs["start_time"],
-            "duration": 40 * 60,  # self.common_time_track_kwargs["duration"]
+        # From test_bulk_time_entry_update
+        default_time_entry_kwargs = {
+            "date": self.common_time_entry_kwargs["date"],
+            "isDone": self.common_time_entry_kwargs["is_done"],
+            "startTime": self.common_time_entry_kwargs["start_time"],
+            "duration": 40 * 60,  # self.common_time_entry_kwargs["duration"]
             "userId": self.gID(self.user.pk),
             "taskId": self.gID(self.active_tasks[0].pk),
         }
@@ -313,7 +313,7 @@ class TestTrackBulkMutation(TestCase):
         self.maxDiff = None
 
         content = self._query(data)
-        resp_data = content["data"]["private"]["bulkTimeTrack"]
+        resp_data = content["data"]["private"]["bulkTimeEntry"]
         assert resp_data["errors"] == []
 
         # Create
@@ -324,11 +324,11 @@ class TestTrackBulkMutation(TestCase):
             ],
             [
                 {
-                    **default_time_track_kwargs,
+                    **default_time_entry_kwargs,
                     **data["items"][0],
                 },
                 {
-                    **default_time_track_kwargs,
+                    **default_time_entry_kwargs,
                     **data["items"][3],
                     "startTime": None,
                     "duration": None,
@@ -344,7 +344,7 @@ class TestTrackBulkMutation(TestCase):
             resp_data["results"][1:2],
             [
                 {
-                    **default_time_track_kwargs,
+                    **default_time_entry_kwargs,
                     **item,
                 }
                 for item in data["items"][1:2]
@@ -356,19 +356,19 @@ class TestTrackBulkMutation(TestCase):
             resp_data["deleted"],
             [
                 {
-                    "id": self.gID(time_track.pk),
+                    "id": self.gID(time_entry.pk),
                 }
-                for time_track in needs_to_be_deleted
+                for time_entry in needs_to_be_deleted
             ],
             include_keys=["id"],
         )
 
-        current_time_track_ids = set(TimeTrack.objects.values_list("id", flat=True))
+        current_time_entry_ids = set(TimeEntry.objects.values_list("id", flat=True))
 
-        assert current_time_track_ids.isdisjoint(
+        assert current_time_entry_ids.isdisjoint(
             set(self._get_ids(needs_to_be_deleted))
-        ), "Most of the user's time_track should be deleted"
+        ), "Most of the user's time_entry should be deleted"
 
         assert set(self._get_ids(needs_to_be_preserved)).issubset(
-            current_time_track_ids
-        ), "All other user's time_track should't be deleted"
+            current_time_entry_ids
+        ), "All other user's time_entry should't be deleted"
