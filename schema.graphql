@@ -1,5 +1,5 @@
 type AppEnumCollection {
-  TimeEntryTaskType: [AppEnumCollectionTimeEntryTaskType!]!
+  TimeEntryType: [AppEnumCollectionTimeEntryType!]!
   JournalLeaveType: [AppEnumCollectionJournalLeaveType!]!
 }
 
@@ -8,8 +8,8 @@ type AppEnumCollectionJournalLeaveType {
   label: String!
 }
 
-type AppEnumCollectionTimeEntryTaskType {
-  key: TimeEntryTaskTypeEnum!
+type AppEnumCollectionTimeEntryType {
+  key: TimeEntryTypeEnum!
   label: String!
 }
 
@@ -462,7 +462,7 @@ scalar TimeDuration
 input TimeEntryBulkCreateInput {
   task: ID!
   date: Date!
-  taskType: TimeEntryTaskTypeEnum!
+  type: TimeEntryTypeEnum!
   id: ID
   description: String
   isDone: Boolean
@@ -474,7 +474,7 @@ input TimeEntryBulkCreateInput {
 input TimeEntryCreateInput {
   task: ID!
   date: Date!
-  taskType: TimeEntryTaskTypeEnum!
+  type: TimeEntryTypeEnum!
   description: String
   isDone: Boolean
   duration: TimeDuration
@@ -487,7 +487,7 @@ input TimeEntryFilter {
   user: DjangoModelFilterInput
   task: DjangoModelFilterInput
   date: DateDateFilterLookup
-  taskTypes: [TimeEntryTaskTypeEnum!]!
+  types: [TimeEntryTypeEnum!]!
   AND: TimeEntryFilter
   OR: TimeEntryFilter
   NOT: TimeEntryFilter
@@ -501,16 +501,6 @@ input TimeEntryOrder {
   date: Ordering
 }
 
-enum TimeEntryTaskTypeEnum {
-  DESIGN
-  DEVELOPMENT
-  DEV_OPS
-  DOCUMENTATION
-  INTERNAL_DISCUSSION
-  MEETING
-  QUALITY_ASSURANCE
-}
-
 type TimeEntryType implements ClientIdMixin {
   clientId: ID!
   id: ID!
@@ -520,8 +510,8 @@ type TimeEntryType implements ClientIdMixin {
   isDone: Boolean!
   startTime: Time
   duration: TimeDuration
-  taskType: TimeEntryTaskTypeEnum!
-  taskTypeDisplay: String!
+  type: TimeEntryTypeEnum!
+  typeDisplay: String!
   description: String
   user: UserType!
   task: TaskType!
@@ -540,6 +530,16 @@ type TimeEntryTypeCountList {
   items: [TimeEntryType!]!
 }
 
+enum TimeEntryTypeEnum {
+  DESIGN
+  DEVELOPMENT
+  DEV_OPS
+  DOCUMENTATION
+  INTERNAL_DISCUSSION
+  MEETING
+  QUALITY_ASSURANCE
+}
+
 type TimeEntryTypeMutationResponseType {
   ok: Boolean!
   errors: CustomErrorType
@@ -549,7 +549,7 @@ type TimeEntryTypeMutationResponseType {
 input TimeEntryUpdateInput {
   task: ID
   date: Date
-  taskType: TimeEntryTaskTypeEnum
+  type: TimeEntryTypeEnum
   description: String
   isDone: Boolean
   duration: TimeDuration

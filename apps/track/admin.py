@@ -61,7 +61,7 @@ class TaskAdmin(VersionAdmin, UserResourceAdmin):
 class TimeEntryAdmin(admin.ModelAdmin):
     list_filter = (
         "date",
-        "task_type",
+        "type",
         "is_done",
         AutocompleteFilterFactory("Project", "task__contract__project"),
         AutocompleteFilterFactory("Contract", "task__contract"),
@@ -77,7 +77,7 @@ class TimeEntryAdmin(admin.ModelAdmin):
         "get_project",
         "get_task",
         "get_user",
-        "task_type",
+        "type",
         "date",
         "duration",
         "is_done",

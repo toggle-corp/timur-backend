@@ -32,7 +32,7 @@ class Task(UserResource):
 
 
 class TimeEntry(models.Model):
-    class TaskType(models.IntegerChoices):
+    class Type(models.IntegerChoices):
         # Using 4 digit for future ordering support
         DESIGN = 1000, _("Design")
         DEVELOPMENT = 1100, _("Development")
@@ -46,7 +46,7 @@ class TimeEntry(models.Model):
     task = models.ForeignKey(Task, on_delete=models.PROTECT, related_name="+")
     date = models.DateField()
 
-    task_type = models.PositiveSmallIntegerField(choices=TaskType.choices)
+    type = models.PositiveSmallIntegerField(choices=Type.choices)
 
     start_time = models.TimeField(null=True, blank=True)
     description = models.TextField(blank=True)

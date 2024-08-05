@@ -12,7 +12,7 @@ class TimeEntrySerializer(TempClientIdMixin, serializers.ModelSerializer):
         fields = (
             "task",
             "date",
-            "task_type",
+            "type",
             "description",
             "is_done",
             "duration",

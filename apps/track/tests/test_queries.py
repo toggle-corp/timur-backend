@@ -55,8 +55,8 @@ class TestEntryQuery(TestCase):
                     id
                     name
                   }
-                  taskType
-                  taskTypeDisplay
+                  type
+                  typeDisplay
                   userId
                   user {
                     id
@@ -194,7 +194,7 @@ class TestEntryQuery(TestCase):
         for count, task in tasks:
             common_kwargs = dict(
                 user=self.user,
-                task_type=TimeEntry.TaskType.DEVELOPMENT,
+                type=TimeEntry.Type.DEVELOPMENT,
                 duration="00:30",
                 task=task,
                 date=date,
@@ -228,8 +228,8 @@ class TestEntryQuery(TestCase):
                         id=self.gID(entry.task.id),
                         name=self.gID(entry.task.name),
                     ),
-                    taskType=self.genum(entry.task_type),
-                    taskTypeDisplay=entry.task_type.label,
+                    type=self.genum(entry.type),
+                    typeDisplay=entry.type.label,
                     userId=self.gID(self.user.id),
                     user=dict(
                         id=self.gID(self.user.id),

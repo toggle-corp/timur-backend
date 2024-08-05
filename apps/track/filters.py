@@ -2,7 +2,7 @@ import strawberry
 import strawberry_django
 from django.db import models
 
-from .enums import TimeEntryTaskTypeEnum
+from .enums import TimeEntryTypeEnum
 from .models import Contract, Task, TimeEntry
 
 
@@ -36,7 +36,7 @@ class TimeEntryFilter:
     task: strawberry.auto
     date: strawberry.auto
 
-    task_types: list[TimeEntryTaskTypeEnum]  # type: ignore[reportInvalidTypeForm]
+    types: list[TimeEntryTypeEnum]  # type: ignore[reportInvalidTypeForm]
 
     @strawberry_django.filter_field
     def project(

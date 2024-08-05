@@ -63,8 +63,8 @@ class TimeEntryType(ClientIdMixin):
     start_time: strawberry.auto
     duration: TimeDuration | None
 
-    task_type = enum_field(TimeEntry.task_type)
-    task_type_display = enum_display_field(TimeEntry.task_type)
+    type = enum_field(TimeEntry.type)
+    type_display = enum_display_field(TimeEntry.type)
     description = string_field(TimeEntry.description)
 
     @staticmethod

@@ -14,7 +14,7 @@ class TestEntryBulkMutation(TestCase):
               userId
               date
               taskId
-              taskType
+              type
               isDone
               duration
               description
@@ -77,7 +77,7 @@ class TestEntryBulkMutation(TestCase):
         cls.common_time_entry_kwargs = dict(
             task=cls.active_tasks[1],
             date="2021-01-02",
-            task_type=TimeEntry.TaskType.DEVELOPMENT,
+            type=TimeEntry.Type.DEVELOPMENT,
             description="Norm description",
             is_done=False,
             duration="00:40",
@@ -108,7 +108,7 @@ class TestEntryBulkMutation(TestCase):
                 dict(
                     task=self.gID(self.active_tasks[0].pk),
                     date="2021-01-01",
-                    taskType=self.genum(TimeEntry.TaskType.DEVELOPMENT),
+                    type=self.genum(TimeEntry.Type.DEVELOPMENT),
                     description="Normal description",
                     isDone=True,
                     duration=30 * 60,
@@ -145,7 +145,7 @@ class TestEntryBulkMutation(TestCase):
                     id=self.gID(time_entries[0].pk),
                     task=self.gID(self.active_tasks[0].pk),
                     date="2021-01-01",
-                    taskType=self.genum(TimeEntry.TaskType.DESIGN),
+                    type=self.genum(TimeEntry.Type.DESIGN),
                     description="Normal description - 0",
                     isDone=True,
                     duration=30 * 60,
@@ -156,7 +156,7 @@ class TestEntryBulkMutation(TestCase):
                     id=self.gID(time_entries[1].pk),
                     task=self.gID(self.active_tasks[0].pk),
                     date="2021-01-02",
-                    taskType=self.genum(TimeEntry.TaskType.DEV_OPS),
+                    type=self.genum(TimeEntry.Type.DEV_OPS),
                     description="Normal description - 1",
                     duration=30 * 60,
                     startTime="09:32:00",
@@ -165,7 +165,7 @@ class TestEntryBulkMutation(TestCase):
                 dict(
                     id=self.gID(time_entries[2].pk),
                     task=self.gID(self.active_tasks[0].pk),
-                    taskType=self.genum(TimeEntry.TaskType.DEV_OPS),
+                    type=self.genum(TimeEntry.Type.DEV_OPS),
                     date="2021-01-02",
                     description="Normal description - 2",
                     clientId="client-id-03",
@@ -259,7 +259,7 @@ class TestEntryBulkMutation(TestCase):
                 dict(
                     task=self.gID(self.active_tasks[0].pk),
                     date="2021-01-01",
-                    taskType=self.genum(TimeEntry.TaskType.DEVELOPMENT),
+                    type=self.genum(TimeEntry.Type.DEVELOPMENT),
                     description="Normal description - 0",
                     isDone=True,
                     duration=30 * 60,
@@ -271,7 +271,7 @@ class TestEntryBulkMutation(TestCase):
                     id=self.gID(time_entries[0].pk),
                     task=self.gID(self.active_tasks[0].pk),
                     date="2021-01-01",
-                    taskType=self.genum(TimeEntry.TaskType.DESIGN),
+                    type=self.genum(TimeEntry.Type.DESIGN),
                     description="Normal description - 1",
                     isDone=True,
                     duration=30 * 60,
@@ -282,7 +282,7 @@ class TestEntryBulkMutation(TestCase):
                     id=self.gID(time_entries[1].pk),
                     task=self.gID(self.active_tasks[0].pk),
                     date="2021-01-02",
-                    taskType=self.genum(TimeEntry.TaskType.DEV_OPS),
+                    type=self.genum(TimeEntry.Type.DEV_OPS),
                     description="Normal description - 2",
                     duration=30 * 60,
                     startTime="09:32:00",
@@ -292,7 +292,7 @@ class TestEntryBulkMutation(TestCase):
                 dict(
                     id=self.gID(time_entries[2].pk),
                     task=self.gID(self.active_tasks[0].pk),
-                    taskType=self.genum(TimeEntry.TaskType.DEV_OPS),
+                    type=self.genum(TimeEntry.Type.DEV_OPS),
                     date="2021-01-02",
                     description="Normal description - 3",
                     clientId="client-id-03",
