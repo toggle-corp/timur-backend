@@ -34,12 +34,13 @@ class PrivateQuery:
 
     # Unbounded ----------------------------
     @strawberry_django.field(description="Return all UnArchived contracts")
-    async def all_contracts(self, info: Info) -> list[ContractType]:
-        return [contract async for contract in ContractType.get_queryset(None, None, info).filter(is_archived=False)]
+    async def all_active_contracts(self, info: Info) -> list[ContractType]:
+        qs = ContractType.get_queryset(None, None, info).filter(is_archived=False).order_by("-id")
+        return [contract async for contract in qs]
 
     @strawberry_django.field(description="Return all UnArchived tasks")
-    async def all_tasks(self, info: Info) -> list[TaskType]:
-        qs = TaskType.get_queryset(None, None, info).filter(is_archived=False, contract__is_archived=False)
+    async def all_active_tasks(self, info: Info) -> list[TaskType]:
+        qs = TaskType.get_queryset(None, None, info).filter(is_archived=False, contract__is_archived=False).order_by("-id")
         return [task async for task in qs]
 
     @strawberry_django.field
@@ -50,7 +51,7 @@ class PrivateQuery:
                 date=date,
                 user=info.context.request.user,
             )
-            .all()
+            .order_by("-id")
         )
         return [time_track async for time_track in qs]
 

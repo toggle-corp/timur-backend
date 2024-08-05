@@ -310,7 +310,11 @@ class ModelMutation:
             return _CustomErrorType.generate_message(), None
 
     async def handle_create_mutation(
-        self, data, info: Info, permission, extra_context: typing.Optional[dict] = None
+        self,
+        data,
+        info: Info,
+        permission,
+        extra_context: typing.Optional[dict] = None,
     ) -> MutationResponseType:
         if errors := self.check_permissions(info, permission):
             return MutationResponseType(ok=False, errors=errors)
@@ -358,3 +362,59 @@ class ModelMutation:
         if errors:
             return MutationResponseType(ok=False, errors=errors)
         return MutationResponseType(result=deleted_instance)
+
+    async def handle_bulk_mutation(
+        self,
+        base_queryset: models.QuerySet,
+        items: list | None,
+        delete_ids: list[strawberry.ID] | None,
+        info: Info,
+        permission,
+        extra_context: typing.Optional[dict] = None,
+    ) -> BulkMutationResponseType:
+        if errors := self.check_permissions(info, permission):
+            return BulkMutationResponseType(errors=[errors])
+
+        errors = []
+
+        # Delete - First
+        deleted_instances = []
+        delete_qs = base_queryset.filter(id__in=delete_ids).order_by("id")
+        async for item in delete_qs.all():
+            _errors, _saved_instance = await self.handle_delete(item)
+            if _errors:
+                errors.append(_errors)
+            else:
+                deleted_instances.append(_saved_instance)
+
+        # Create/Update - Then
+        results = []
+        for data in items or []:
+            _data = process_input_data(data)
+            assert isinstance(_data, dict)
+            _id = _data.pop("id", None)
+            instance = None
+            if _id:
+                instance = await base_queryset.filter(id=_id).afirst()
+            partial = False
+            if instance:
+                partial = True
+            _errors, _saved_instance = await self.handle_mutation(
+                self.serializer_class,
+                _data,
+                info,
+                extra_context,
+                instance=instance,
+                partial=partial,
+            )
+            if _errors:
+                errors.append(_errors)
+            else:
+                results.append(_saved_instance)
+
+        return BulkMutationResponseType(
+            errors=errors,
+            # Data
+            results=results,
+            deleted=deleted_instances,
+        )

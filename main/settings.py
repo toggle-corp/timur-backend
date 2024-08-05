@@ -74,7 +74,6 @@ env = environ.Env(
     PYTEST_XDIST_WORKER=(str, None),
     # EMAIL
     EMAIL_FROM=str,
-    DJANGO_ADMINS=(list, ["Admin <admin@thedeep.io>"]),
     EMAIL_BACKEND=(str, ""),  # SES|SMTP -> CONSOLE is used by default
     # -- SES Credentials - Role is preferred
     AWS_SES_AWS_ACCESS_KEY_ID=(str, None),
@@ -377,7 +376,6 @@ TOKEN_DEFAULT_RESET_TIMEOUT_DAYS = 7
 
 # EMAIL
 SPECIFED_EMAIL_BACKEND = env("EMAIL_BACKEND").upper()
-ADMINS = env("DJANGO_ADMINS")
 EMAIL_FROM = env("EMAIL_FROM")
 
 if not TESTING and SPECIFED_EMAIL_BACKEND == "SES":

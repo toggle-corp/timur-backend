@@ -38,5 +38,7 @@ class User(AbstractUser):
         self.email = self.email.lower()
         if self.pk is None:
             super().save(*args, **kwargs)
+            # Remove force_insert since we have already inserted
+            kwargs.pop("force_insert", None)
         self.display_name = self.get_full_name() or f"User#{self.pk}"
         return super().save(*args, **kwargs)

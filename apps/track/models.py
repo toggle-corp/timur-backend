@@ -47,6 +47,8 @@ class TimeTrack(models.Model):
     date = models.DateField()
 
     task_type = models.PositiveSmallIntegerField(choices=TaskType.choices)
+
+    start_time = models.TimeField(null=True, blank=True)
     description = models.TextField(blank=True)
     is_done = models.BooleanField(default=False)
 

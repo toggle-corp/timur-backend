@@ -35,5 +35,4 @@ class PublicQuery:
 
 
 @strawberry.type
-class PrivateQuery:
-    noop: strawberry.ID = strawberry.ID("noop")
+class PrivateQuery: ...

@@ -60,6 +60,7 @@ class TimeTrackType(ClientIdMixin):
     user_id: strawberry.ID
     task_id: strawberry.ID
     is_done: strawberry.auto
+    start_time: strawberry.auto
     duration: TimeDuration | None
 
     task_type = enum_field(TimeTrack.task_type)

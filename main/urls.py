@@ -14,7 +14,7 @@ urlpatterns = [
         "graphql/",
         CustomAsyncGraphQLView.as_view(
             schema=graphql_schema,
-            graphiql=False,
+            graphql_ide=False,
         ),
     ),
     path("o/google", google_oauth),

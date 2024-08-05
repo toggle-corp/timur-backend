@@ -2,12 +2,17 @@ import strawberry
 
 from main.graphql.context import Info
 from utils.common import get_object_or_404_async
-from utils.strawberry.mutations import ModelMutation, MutationResponseType
+from utils.strawberry.mutations import (
+    BulkMutationResponseType,
+    ModelMutation,
+    MutationResponseType,
+)
 
-from .serializers import TimeTrackSerializer
+from .serializers import TimeTrackBulkSerializer, TimeTrackSerializer
 from .types import TimeTrackType
 
 TimeTrackMutation = ModelMutation("TimeTrack", TimeTrackSerializer)
+TimeTrackBulkMutation = ModelMutation("TimeTrackBulk", TimeTrackBulkSerializer)
 
 
 @strawberry.type
@@ -23,9 +28,26 @@ class PrivateMutation:
     @strawberry.mutation
     async def update_time_track(
         self,
+        id: strawberry.ID,
         data: TimeTrackMutation.PartialInputType,  # type: ignore[reportInvalidTypeForm]
         info: Info,
     ) -> MutationResponseType[TimeTrackType]:
         queryset = TimeTrackType.get_queryset(None, None, info).filter(user=info.context.request.user)
         instance = await get_object_or_404_async(queryset, id=id)
         return await TimeTrackMutation.handle_update_mutation(data, info, None, instance)
+
+    @strawberry.mutation
+    async def bulk_time_track(
+        self,
+        info: Info,
+        items: list[TimeTrackBulkMutation.InputType] | None = [],  # type: ignore[reportInvalidTypeForm]
+        delete_ids: list[strawberry.ID] | None = [],
+    ) -> BulkMutationResponseType[TimeTrackType]:
+        queryset = TimeTrackType.get_queryset(None, None, info).filter(user=info.context.request.user)
+        return await TimeTrackBulkMutation.handle_bulk_mutation(
+            queryset,
+            items,
+            delete_ids,
+            info,
+            None,
+        )

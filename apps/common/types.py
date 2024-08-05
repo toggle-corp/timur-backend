@@ -12,6 +12,7 @@ from main.graphql.context import Info
 from .models import UserResource
 
 
+@strawberry.interface
 class UserResourceTypeMixin:
     created_at: datetime.datetime
     modified_at: datetime.datetime
@@ -25,7 +26,9 @@ class UserResourceTypeMixin:
         return await info.context.dl.user.load_user.load(root.modified_by_id)
 
 
+@strawberry.interface
 class ClientIdMixin:
+
     @strawberry_django.field
     def client_id(self, root: models.Model, info: Info) -> strawberry.ID:
         # NOTE: We should always provide non-null client_id
