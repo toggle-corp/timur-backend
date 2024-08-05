@@ -6,14 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('user', '0001_initial'),
+        ("user", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='department',
-            field=models.PositiveSmallIntegerField(choices=[(1000, 'Data Analyst'), (1100, 'Development'), (1200, 'Development'), (2000, "Management"), (3000, 'Project Manager'), (5000, 'QA')]),
+            model_name="user",
+            name="department",
+            field=models.PositiveSmallIntegerField(
+                choices=[
+                    (1000, "Data Analyst"),
+                    (1100, "Development"),
+                    (1200, "Development"),
+                    (2000, "Management"),
+                    (3000, "Project Manager"),
+                    (5000, "QA"),
+                ]
+            ),
             preserve_default=False,
         ),
     ]

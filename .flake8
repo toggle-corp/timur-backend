@@ -1,5 +1,5 @@
 [flake8]
-extend-ignore = C901, W504
+extend-ignore = C901, W504, E701, E203, W503
 max-line-length = 125
 # NOTE: Update in .pre-commit-config.yaml as well
 extend-exclude = .git,__pycache__,old,build,dist,*/migrations/*.py,legacy/,.venv

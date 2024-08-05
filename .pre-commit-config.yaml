@@ -7,7 +7,6 @@ exclude: |
       \.git|
       __pycache__|
       .*snap_test_.*\.py|
-      .+\/.+\/migrations\/.*|
       \.venv
     )
 
