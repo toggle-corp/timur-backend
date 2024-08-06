@@ -43,6 +43,7 @@ services:
       # # Redis config
       CELERY_REDIS_URL: ${CELERY_REDIS_URL:-redis://redis:6379/0}
       DJANGO_CACHE_REDIS_URL: ${DJANGO_CACHE_REDIS_URL:-redis://redis:6379/1}
+      TEST_DJANGO_CACHE_REDIS_URL: ${DJANGO_CACHE_REDIS_URL:-redis://redis:6379/11}
       # Email config
       # EMAIL_HOST: ${EMAIL_HOST:-mailpit}
       # EMAIL_PORT: ${EMAIL_PORT:-1025}

@@ -29,6 +29,7 @@ class UserAdmin(DjangoUserAdmin):
                     "first_name",
                     "last_name",
                     "department",
+                    "display_picture",
                 )
             },
         ),
