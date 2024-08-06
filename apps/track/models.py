@@ -42,15 +42,20 @@ class TimeEntry(models.Model):
         MEETING = 4000, _("Meeting")
         QUALITY_ASSURANCE = 5000, _("QA")
 
+    class Status(models.IntegerChoices):
+        DOING = 1, _("Doing")
+        DONE = 2, _("Done")
+        TODO = 3, _("TODO")
+
     user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="+")
     task = models.ForeignKey(Task, on_delete=models.PROTECT, related_name="+")
     date = models.DateField()
 
     type = models.PositiveSmallIntegerField(choices=Type.choices)
+    status = models.PositiveSmallIntegerField(choices=Status.choices)
 
     start_time = models.TimeField(null=True, blank=True)
     description = models.TextField(blank=True)
-    is_done = models.BooleanField(default=False)
 
     duration = models.DurationField(null=True, blank=True)
 

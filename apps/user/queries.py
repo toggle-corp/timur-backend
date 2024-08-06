@@ -13,6 +13,7 @@ class UserType:
     first_name: strawberry.auto
     last_name: strawberry.auto
     display_name: strawberry.auto
+    display_picture: strawberry.auto
 
 
 @strawberry_django.type(User)
@@ -22,6 +23,7 @@ class UserMeType(UserType):
     first_name: strawberry.auto
     last_name: strawberry.auto
     display_name: strawberry.auto
+    display_picture: strawberry.auto
 
 
 @strawberry.type

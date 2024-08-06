@@ -67,11 +67,10 @@ jobs:
             exit 1;
           }
 
-      # TODO: Run this for CI
-      # - name: 🤞 Run Test 🧪 & Publish coverage to code climate
-      #   env:
-      #     DOCKER_IMAGE_BACKEND: ${{ steps.prep.outputs.tagged_image }}
-      #   run: docker-compose -f gh-docker-compose.yml run --rm web /code/scripts/run_tests.sh
+      - name: 🤞 Run Test 🧪 & Publish coverage to code climate
+        env:
+          DOCKER_IMAGE_BACKEND: ${{ steps.prep.outputs.tagged_image }}
+        run: docker-compose -f gh-docker-compose.yml run --rm web /code/scripts/run_tests.sh
 
         # Temp fix
         # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#github-cache

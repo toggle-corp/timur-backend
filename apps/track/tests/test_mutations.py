@@ -15,7 +15,7 @@ class TestEntryBulkMutation(TestCase):
               date
               taskId
               type
-              isDone
+              status
               duration
               description
               startTime
@@ -79,7 +79,7 @@ class TestEntryBulkMutation(TestCase):
             date="2021-01-02",
             type=TimeEntry.Type.DEVELOPMENT,
             description="Norm description",
-            is_done=False,
+            status=TimeEntry.Status.DOING,
             duration="00:40",
             start_time="09:30:00",
         )
@@ -110,7 +110,7 @@ class TestEntryBulkMutation(TestCase):
                     date="2021-01-01",
                     type=self.genum(TimeEntry.Type.DEVELOPMENT),
                     description="Normal description",
-                    isDone=True,
+                    status=self.genum(TimeEntry.Status.DOING),
                     duration=30 * 60,
                     startTime="09:30:00",
                     clientId="client-id-01",
@@ -147,7 +147,7 @@ class TestEntryBulkMutation(TestCase):
                     date="2021-01-01",
                     type=self.genum(TimeEntry.Type.DESIGN),
                     description="Normal description - 0",
-                    isDone=True,
+                    status=self.genum(TimeEntry.Status.DOING),
                     duration=30 * 60,
                     startTime="09:31:00",
                     clientId="client-id-01",
@@ -158,6 +158,7 @@ class TestEntryBulkMutation(TestCase):
                     date="2021-01-02",
                     type=self.genum(TimeEntry.Type.DEV_OPS),
                     description="Normal description - 1",
+                    status=self.genum(TimeEntry.Status.DONE),
                     duration=30 * 60,
                     startTime="09:32:00",
                     clientId="client-id-02",
@@ -166,6 +167,7 @@ class TestEntryBulkMutation(TestCase):
                     id=self.gID(time_entries[2].pk),
                     task=self.gID(self.active_tasks[0].pk),
                     type=self.genum(TimeEntry.Type.DEV_OPS),
+                    status=self.genum(TimeEntry.Status.DONE),
                     date="2021-01-02",
                     description="Normal description - 2",
                     clientId="client-id-03",
@@ -175,7 +177,7 @@ class TestEntryBulkMutation(TestCase):
 
         default_time_entry_kwargs = {
             "date": self.common_time_entry_kwargs["date"],
-            "isDone": self.common_time_entry_kwargs["is_done"],
+            "status": self.common_time_entry_kwargs["status"],
             "startTime": self.common_time_entry_kwargs["start_time"],
             "duration": 40 * 60,  # self.common_time_entry_kwargs["duration"]
             "userId": self.gID(self.user.pk),
@@ -261,7 +263,7 @@ class TestEntryBulkMutation(TestCase):
                     date="2021-01-01",
                     type=self.genum(TimeEntry.Type.DEVELOPMENT),
                     description="Normal description - 0",
-                    isDone=True,
+                    status=self.genum(TimeEntry.Status.DOING),
                     duration=30 * 60,
                     startTime="09:30:00",
                     clientId="client-id-00",
@@ -273,7 +275,7 @@ class TestEntryBulkMutation(TestCase):
                     date="2021-01-01",
                     type=self.genum(TimeEntry.Type.DESIGN),
                     description="Normal description - 1",
-                    isDone=True,
+                    status=self.genum(TimeEntry.Status.DOING),
                     duration=30 * 60,
                     startTime="09:31:00",
                     clientId="client-id-01",
@@ -284,6 +286,7 @@ class TestEntryBulkMutation(TestCase):
                     date="2021-01-02",
                     type=self.genum(TimeEntry.Type.DEV_OPS),
                     description="Normal description - 2",
+                    status=self.genum(TimeEntry.Status.DOING),
                     duration=30 * 60,
                     startTime="09:32:00",
                     clientId="client-id-02",
@@ -295,6 +298,7 @@ class TestEntryBulkMutation(TestCase):
                     type=self.genum(TimeEntry.Type.DEV_OPS),
                     date="2021-01-02",
                     description="Normal description - 3",
+                    status=self.genum(TimeEntry.Status.DOING),
                     clientId="client-id-03",
                 ),
             ],
@@ -303,7 +307,7 @@ class TestEntryBulkMutation(TestCase):
         # From test_bulk_time_entry_update
         default_time_entry_kwargs = {
             "date": self.common_time_entry_kwargs["date"],
-            "isDone": self.common_time_entry_kwargs["is_done"],
+            "status": self.common_time_entry_kwargs["status"],
             "startTime": self.common_time_entry_kwargs["start_time"],
             "duration": 40 * 60,  # self.common_time_entry_kwargs["duration"]
             "userId": self.gID(self.user.pk),

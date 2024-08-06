@@ -19,5 +19,7 @@ class TaskFactory(DjangoModelFactory):
 
 
 class TimeEntryFactory(DjangoModelFactory):
+    status = TimeEntry.Status.TODO
+
     class Meta:  # type: ignore[reportIncompatibleVariab]
         model = TimeEntry

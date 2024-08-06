@@ -62,7 +62,7 @@ class TestEntryQuery(TestCase):
                     id
                     displayName
                   }
-                  isDone
+                  status
                   duration
                   description
                   startTime
@@ -235,7 +235,7 @@ class TestEntryQuery(TestCase):
                         id=self.gID(self.user.id),
                         displayName=self.gID(self.user.display_name),
                     ),
-                    isDone=False,
+                    status=self.genum(entry.status),
                     duration=30 * 60,
                     description=None,
                     startTime=None,

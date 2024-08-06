@@ -14,7 +14,7 @@ class TimeEntrySerializer(TempClientIdMixin, serializers.ModelSerializer):
             "date",
             "type",
             "description",
-            "is_done",
+            "status",
             "duration",
             "start_time",
             "client_id",

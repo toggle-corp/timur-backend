@@ -1,10 +1,16 @@
 type AppEnumCollection {
   TimeEntryType: [AppEnumCollectionTimeEntryType!]!
+  TimeEntryStatus: [AppEnumCollectionTimeEntryStatus!]!
   JournalLeaveType: [AppEnumCollectionJournalLeaveType!]!
 }
 
 type AppEnumCollectionJournalLeaveType {
   key: JournalLeaveTypeEnum!
+  label: String!
+}
+
+type AppEnumCollectionTimeEntryStatus {
+  key: TimeEntryStatusEnum!
   label: String!
 }
 
@@ -463,9 +469,9 @@ input TimeEntryBulkCreateInput {
   task: ID!
   date: Date!
   type: TimeEntryTypeEnum!
+  status: TimeEntryStatusEnum!
   id: ID
   description: String
-  isDone: Boolean
   duration: TimeDuration
   startTime: Time
   clientId: ID
@@ -475,8 +481,8 @@ input TimeEntryCreateInput {
   task: ID!
   date: Date!
   type: TimeEntryTypeEnum!
+  status: TimeEntryStatusEnum!
   description: String
-  isDone: Boolean
   duration: TimeDuration
   startTime: Time
   clientId: ID
@@ -501,15 +507,22 @@ input TimeEntryOrder {
   date: Ordering
 }
 
+enum TimeEntryStatusEnum {
+  DOING
+  DONE
+  TODO
+}
+
 type TimeEntryType implements ClientIdMixin {
   clientId: ID!
   id: ID!
   date: Date!
   userId: ID!
   taskId: ID!
-  isDone: Boolean!
   startTime: Time
   duration: TimeDuration
+  status: TimeEntryStatusEnum!
+  statusDisplay: String!
   type: TimeEntryTypeEnum!
   typeDisplay: String!
   description: String
@@ -551,7 +564,7 @@ input TimeEntryUpdateInput {
   date: Date
   type: TimeEntryTypeEnum
   description: String
-  isDone: Boolean
+  status: TimeEntryStatusEnum
   duration: TimeDuration
   startTime: Time
   clientId: ID
@@ -562,6 +575,7 @@ type UserMeType {
   firstName: String!
   lastName: String!
   displayName: String!
+  displayPicture: String
   email: String!
 }
 

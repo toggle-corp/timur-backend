@@ -62,7 +62,7 @@ class TimeEntryAdmin(admin.ModelAdmin):
     list_filter = (
         "date",
         "type",
-        "is_done",
+        "status",
         AutocompleteFilterFactory("Project", "task__contract__project"),
         AutocompleteFilterFactory("Contract", "task__contract"),
         AutocompleteFilterFactory("Task", "task"),
@@ -80,7 +80,7 @@ class TimeEntryAdmin(admin.ModelAdmin):
         "type",
         "date",
         "duration",
-        "is_done",
+        "status",
     )
 
     def get_queryset(self, request: HttpRequest) -> models.QuerySet[Contract]:

@@ -59,9 +59,11 @@ class TimeEntryType(ClientIdMixin):
     date: strawberry.auto
     user_id: strawberry.ID
     task_id: strawberry.ID
-    is_done: strawberry.auto
     start_time: strawberry.auto
     duration: TimeDuration | None
+
+    status = enum_field(TimeEntry.status)
+    status_display = enum_display_field(TimeEntry.status)
 
     type = enum_field(TimeEntry.type)
     type_display = enum_display_field(TimeEntry.type)

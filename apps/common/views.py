@@ -30,6 +30,7 @@ def google_oauth(request):
     Google calls this URL after the user has signed in with their Google account.
     """
     token = request.POST["credential"]
+    redirect_to = request.GET.get("redirect_to")
 
     try:
         user_data = id_token.verify_oauth2_token(token, requests.Request(), settings.GOOGLE_OAUTH_CLIENT_ID)
@@ -48,15 +49,19 @@ def google_oauth(request):
     if user := User.objects.filter(email=email).first():
         user.first_name = user_data["given_name"]
         user.last_name = user_data["family_name"]
-        # TODO: User picture?
-        user.save(update_fields=("first_name", "last_name", "display_name"))
+        user.display_picture = user_data["picture"]
+        user.save(update_fields=("first_name", "last_name", "display_name", "display_picture"))
         login(request, user)
     else:
         new_user = User.objects.create(
             email=email,
             first_name=user_data["given_name"],
             last_name=user_data["family_name"],
+            display_picture=user_data["picture"],
         )
         login(request, new_user)
+
+    if redirect_to:
+        return redirect(redirect_to)
 
     return redirect(settings.APP_FRONTEND_HOST)
