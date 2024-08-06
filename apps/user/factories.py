@@ -21,3 +21,4 @@ class UserFactory(DjangoModelFactory):
         password_text = password or fuzzy.FuzzyText(length=15).fuzz()
         obj.set_password(password_text)  # type: ignore[reportAttributeAccessIssue]
         obj.password_text = password_text
+        obj.save()  # type: ignore[reportAttributeAccessIssue]
