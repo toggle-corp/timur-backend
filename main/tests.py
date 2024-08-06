@@ -185,3 +185,13 @@ class TestCase(BaseTestCase):
         )
 
     def no_op(*args, **_): ...
+
+
+class FakeTest(TestCase):
+    """
+    This test is for running migrations only
+    docker compose exec web ./manage.py test --keepdb -v 2 main.tests.FakeTest
+    """
+
+    def test_fake(self):
+        pass
