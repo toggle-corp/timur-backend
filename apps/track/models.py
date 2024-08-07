@@ -53,6 +53,10 @@ class TimeEntry(models.Model):
 
     type = models.PositiveSmallIntegerField(choices=Type.choices)
     status = models.PositiveSmallIntegerField(choices=Status.choices)
+    # NOTE: client_id persisted as ULID, but no validation done on server-side
+    #  Uniqueness is required at per-user per-day level
+    #  Due to which uniqueness is not something we need to check at DB level
+    client_id = models.CharField(max_length=26, null=True, blank=True)
 
     start_time = models.TimeField(null=True, blank=True)
     description = models.TextField(blank=True)

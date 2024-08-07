@@ -376,3 +376,5 @@ class TestEntryBulkMutation(TestCase):
         assert set(self._get_ids(needs_to_be_preserved)).issubset(
             current_time_entry_ids
         ), "All other user's time_entry should't be deleted"
+
+    # TODO: Add mutation to check client_id preserve for TimeEntry
