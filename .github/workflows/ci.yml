@@ -69,6 +69,7 @@ jobs:
 
       - name: 🤞 Run Test 🧪 & Publish coverage to code climate
         env:
+          CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_ID }}
           DOCKER_IMAGE_BACKEND: ${{ steps.prep.outputs.tagged_image }}
         run: docker compose -f gh-docker-compose.yml run --rm web /code/scripts/run_tests.sh
 
