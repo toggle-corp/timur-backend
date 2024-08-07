@@ -148,7 +148,7 @@ class Command(BaseCommand):
     def get_or_create_project(self, creator: User, name: str, client: Client, contractor: Contractor) -> Project:
         project, created = Project.objects.get_or_create(
             name=name,
-            client=client,
+            project_client=client,
             contractor=contractor,
             defaults=self.get_user_resource_kwargs(creator),
         )

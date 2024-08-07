@@ -19,5 +19,5 @@ class ContractorFilter:
 @strawberry_django.filters.filter(Project, lookups=True)
 class ProjectFilter:
     id: strawberry.auto
-    client: strawberry.auto
+    project_client: strawberry.auto
     contractor: strawberry.auto

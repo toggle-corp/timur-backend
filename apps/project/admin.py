@@ -31,7 +31,7 @@ class ContractorAdmin(VersionAdmin, UserResourceAdmin):
 class ProjectAdmin(VersionAdmin, UserResourceAdmin):
     search_fields = ("name",)
     list_filter = (
-        AutocompleteFilterFactory("Client", "client"),
+        AutocompleteFilterFactory("Client", "project_client"),
         AutocompleteFilterFactory("Contractor", "contractor"),
     )
 

@@ -50,7 +50,7 @@ class TestEntryBulkMutation(TestCase):
         cls.contractor = ContractorFactory.create(**cls.ur_kwargs)
 
         cls.project = ProjectFactory.create(
-            client=cls.client,
+            project_client=cls.client,
             contractor=cls.contractor,
             **cls.ur_kwargs,
         )

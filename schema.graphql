@@ -324,7 +324,7 @@ type PrivateQuery {
 
 input ProjectFilter {
   id: IDBaseFilterLookup
-  client: DjangoModelFilterInput
+  projectClient: DjangoModelFilterInput
   contractor: DjangoModelFilterInput
   AND: ProjectFilter
   OR: ProjectFilter
@@ -343,11 +343,11 @@ type ProjectType implements UserResourceTypeMixin {
   createdBy: UserType!
   modifiedBy: UserType!
   id: ID!
-  clientId: ID!
+  projectClientId: ID!
   contractorId: ID!
   name: String!
   description: String
-  client: ClientType!
+  projectClient: ClientType!
   contractor: ContractorType!
 }
 

@@ -35,7 +35,7 @@ class ContractorType(UserResourceTypeMixin):
 @strawberry_django.type(Project)
 class ProjectType(UserResourceTypeMixin):
     id: strawberry.ID
-    client_id: strawberry.ID
+    project_client_id: strawberry.ID
     contractor_id: strawberry.ID
 
     name = string_field(Project.name)
@@ -46,8 +46,8 @@ class ProjectType(UserResourceTypeMixin):
         return get_queryset_for_model(Project, queryset)
 
     @strawberry_django.field
-    async def client(self, root: Project, info: Info) -> ClientType:
-        return await info.context.dl.project.load_client.load(root.client_id)
+    async def project_client(self, root: Project, info: Info) -> ClientType:
+        return await info.context.dl.project.load_client.load(root.project_client_id)
 
     @strawberry_django.field
     async def contractor(self, root: Project, info: Info) -> ContractorType:

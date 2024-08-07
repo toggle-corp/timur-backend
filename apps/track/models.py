@@ -61,3 +61,7 @@ class TimeEntry(models.Model):
 
     user_id: int
     task_id: int
+
+    class Meta:  # type: ignore[reportIncompatibleVariab]
+        verbose_name = _("time entry")
+        verbose_name_plural = _("time entries")
