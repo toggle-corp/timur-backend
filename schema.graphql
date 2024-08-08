@@ -520,6 +520,7 @@ type TimeEntryType implements ClientIdMixin {
   userId: ID!
   taskId: ID!
   startTime: Time
+  createdAt: DateTime!
   duration: TimeDuration
   status: TimeEntryStatusEnum!
   statusDisplay: String!

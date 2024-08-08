@@ -378,3 +378,4 @@ class TestEntryBulkMutation(TestCase):
         ), "All other user's time_entry should't be deleted"
 
     # TODO: Add mutation to check client_id preserve for TimeEntry
+    # TODO: Test createdAt field as well

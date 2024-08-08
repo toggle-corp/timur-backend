@@ -50,6 +50,7 @@ class TimeEntry(models.Model):
     user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="+")
     task = models.ForeignKey(Task, on_delete=models.PROTECT, related_name="+")
     date = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)  # To track TODO tasks
 
     type = models.PositiveSmallIntegerField(choices=Type.choices)
     status = models.PositiveSmallIntegerField(choices=Status.choices)
