@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 
 from apps.common.views import dev_sign_in, google_oauth
 from main.graphql.schema import CustomAsyncGraphQLView
@@ -9,6 +9,7 @@ from main.graphql.schema import schema as graphql_schema
 
 urlpatterns = [
     path("admin/", admin.site.urls, name="admin"),
+    path("health-check/", include("health_check.urls")),
     # path('health-check/', include('health_check.urls')),
     path(
         "graphql/",

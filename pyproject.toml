@@ -31,6 +31,8 @@ django-reversion = "*"
 uwsgi = "*"
 aws-sns-message-validator = "*"
 google-api-python-client = "*"
+django-health-check = "*"
+psutil = "*"  # Required by django-health-check
 
 [tool.poetry.dev-dependencies]
 dacite = "*"

@@ -128,6 +128,14 @@ INSTALLED_APPS = [
     "django_premailer",
     "storages",
     "corsheaders",
+    # - Health-check
+    "health_check",  # required
+    "health_check.db",  # stock Django health checkers
+    "health_check.cache",
+    "health_check.storage",
+    "health_check.contrib.migrations",
+    "health_check.contrib.psutil",  # disk and memory utilization; requires psutil
+    "health_check.contrib.redis",  # requires Redis broker
     # Internal apps
     "apps.common",  # Common
     "apps.standup",
@@ -437,3 +445,11 @@ GOOGLE_OAUTH_REDIRECT_URL = env("GOOGLE_OAUTH_REDIRECT_URL")
 # TODO: We need these lines below to allow the Google sign in popup to work.
 SECURE_REFERRER_POLICY = "no-referrer-when-downgrade"
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"
+
+# Health check
+REDIS_URL = DJANGO_CACHE_REDIS_URL
+HEALTHCHECK_CACHE_KEY = "alert_hub_healthcheck_key"
+HEALTH_CHECK = {
+    "DISK_USAGE_MAX": 80,  # percent
+    "MEMORY_MIN": 100,  # in MB
+}
