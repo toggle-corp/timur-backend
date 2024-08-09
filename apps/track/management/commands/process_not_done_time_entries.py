@@ -33,9 +33,14 @@ class Command(BaseCommand):
             if existing_qs.exists():
                 continue
             time_entry.pk = None  # Create a new copy
-            time_entry.status = TimeEntry.Status.TODO  # Use todo Status
             time_entry.date = today
+            time_entry.status = TimeEntry.Status.TODO  # Use todo Status
+            # Clear data
+            time_entry.start_time = None
+            time_entry.duration = None
+            # Save
             time_entry.save()
+            cloned_count += 1
         self.stdout.write(self.style.SUCCESS(f"{cloned_count} DOING cloned"))
 
     def handle(self, **_):
