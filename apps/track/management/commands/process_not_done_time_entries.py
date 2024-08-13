@@ -44,6 +44,9 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"{cloned_count} DOING cloned"))
 
     def handle(self, **_):
-        today = timezone.now().date()
+        # XXX: Use the system localtime to figure out the today's date
+        # NOTE: timezone.now() will provide datetime with UTC
+        # Which can give wrong date compare to local timezone
+        today = timezone.localtime(timezone.now()).date()
         self.move_todo_entries(today)
         self.clone_doing_entries(today)
