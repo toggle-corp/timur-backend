@@ -64,7 +64,11 @@ class TimeEntry(models.Model):
     start_time = models.TimeField(null=True, blank=True)
     description = models.TextField(blank=True)
 
-    duration = models.DurationField(null=True, blank=True)
+    duration = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        help_text=_("Minutes"),
+    )
 
     user_id: int
     task_id: int

@@ -31,6 +31,14 @@ class CustomCharField(serializers.CharField):
         return super().run_validation(data)
 
 
+class TimeDurationField(serializers.FloatField):
+    """
+    This field is created to override the graphene conversion of the floatfield -> TimeDurationField
+    """
+
+    pass
+
+
 serializers.ModelSerializer.serializer_field_mapping.update(
     {
         models.CharField: CustomCharField,

@@ -20,7 +20,7 @@ from strawberry_django.type import _process_type
 
 from . import types
 from .enums import get_enum_name_from_django_field
-from .serializers import IntegerIDField, StringIDField
+from .serializers import IntegerIDField, StringIDField, TimeDurationField
 
 """
 XXX:
@@ -68,7 +68,8 @@ def convert_serializer_field_to_generic_scalar(_):
     return types.GenericScalar
 
 
-@get_strawberry_type_from_serializer_field.register(serializers.DurationField)  # type: ignore[reportArgumentType]
+# XXX: Custom field
+@get_strawberry_type_from_serializer_field.register(TimeDurationField)  # type: ignore[reportArgumentType]
 def convert_serializer_field_to_duration(_):
     return types.TimeDuration
 

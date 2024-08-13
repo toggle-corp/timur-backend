@@ -195,7 +195,7 @@ class TestEntryQuery(TestCase):
             common_kwargs = dict(
                 user=self.user,
                 type=TimeEntry.Type.DEVELOPMENT,
-                duration="00:30",
+                duration=30,
                 task=task,
                 date=date,
             )
@@ -236,7 +236,7 @@ class TestEntryQuery(TestCase):
                         displayName=self.gID(self.user.display_name),
                     ),
                     status=self.genum(entry.status),
-                    duration=30 * 60,
+                    duration=30 / 60,
                     description=None,
                     startTime=None,
                 )

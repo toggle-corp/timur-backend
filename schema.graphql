@@ -463,6 +463,9 @@ type TaskTypeCountList {
 """Time (isoformat)"""
 scalar Time
 
+"""
+The `TimeDuration` scalar type represents Duration values in hours, The value is stored in minute in database
+"""
 scalar TimeDuration
 
 input TimeEntryBulkCreateInput {

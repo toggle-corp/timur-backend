@@ -1,4 +1,3 @@
-import datetime
 import json
 import typing
 
@@ -19,9 +18,13 @@ GenericScalar = strawberry.scalar(
 )
 
 TimeDuration = strawberry.scalar(
-    typing.NewType("TimeDuration", int),
-    serialize=lambda v: v.seconds,
-    parse_value=lambda v: datetime.timedelta(seconds=v),
+    typing.NewType("TimeDuration", float),
+    description=(
+        "The `TimeDuration` scalar type represents Duration values in hours," " The value is stored in minute in database"
+    ),
+    # NOTE: v is in minutes
+    serialize=lambda v: v / 60,  # From server
+    parse_value=lambda v: v * 60,  # From client
 )
 
 
