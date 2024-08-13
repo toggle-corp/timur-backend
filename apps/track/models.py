@@ -16,7 +16,8 @@ class Contract(UserResource):
     tasks: models.QuerySet["Task"]
 
     def __str__(self):
-        return f"{self.name} ({self.total_estimated_hours} hours)"
+        # NOTE: N+1
+        return f"{self.project.name} -> {self.name} ({self.total_estimated_hours} hours)"
 
 
 class Task(UserResource):
@@ -38,9 +39,10 @@ class TimeEntry(models.Model):
         DEVELOPMENT = 1100, _("Development")
         DEV_OPS = 1200, _("DevOps")
         DOCUMENTATION = 2000, _("Documentation")
-        INTERNAL_DISCUSSION = 3000, _("Documentation")
+        INTERNAL_DISCUSSION = 3000, _("Internal Discussion")
         MEETING = 4000, _("Meeting")
-        QUALITY_ASSURANCE = 5000, _("QA")
+        PROJECT_MANAGEMENT = 5000, _("Project Management")
+        QUALITY_ASSURANCE = 6000, _("QA")
 
     class Status(models.IntegerChoices):
         DOING = 1, _("Doing")

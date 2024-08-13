@@ -15,7 +15,10 @@ class ContractTaskInline(UserResourceTabularInline):
 
 @admin.register(Contract)
 class ContractAdmin(VersionAdmin, UserResourceAdmin):
-    search_fields = ("name",)
+    search_fields = (
+        "project__name",
+        "name",
+    )
     list_filter = (
         AutocompleteFilterFactory("Project", "project"),
         AutocompleteFilterFactory("Created By", "created_by"),
