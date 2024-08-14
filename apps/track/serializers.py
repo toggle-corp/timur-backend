@@ -7,6 +7,7 @@ from .models import TimeEntry
 
 
 class TimeEntrySerializer(TempClientIdMixin, serializers.ModelSerializer):
+    # Used just for adding description
     duration = TimeDurationField(required=False, allow_null=True)
 
     class Meta:  # type: ignore[reportIncompatibleVariab]

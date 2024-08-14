@@ -17,14 +17,10 @@ GenericScalar = strawberry.scalar(
     parse_value=lambda v: v,
 )
 
+# This is used to provide description only
 TimeDuration = strawberry.scalar(
-    typing.NewType("TimeDuration", float),
-    description=(
-        "The `TimeDuration` scalar type represents Duration values in hours," " The value is stored in minute in database"
-    ),
-    # NOTE: v is in minutes
-    serialize=lambda v: v / 60,  # From server
-    parse_value=lambda v: v * 60,  # From client
+    typing.NewType("TimeDuration", int),
+    description="The `TimeDuration` scalar type represents Duration values in minutes",
 )
 
 

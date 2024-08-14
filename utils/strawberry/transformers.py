@@ -68,12 +68,6 @@ def convert_serializer_field_to_generic_scalar(_):
     return types.GenericScalar
 
 
-# XXX: Custom field
-@get_strawberry_type_from_serializer_field.register(TimeDurationField)  # type: ignore[reportArgumentType]
-def convert_serializer_field_to_duration(_):
-    return types.TimeDuration
-
-
 @get_strawberry_type_from_serializer_field.register(serializers.Field)  # type: ignore[reportArgumentType]
 def convert_serializer_field_to_string(_):
     return str
@@ -131,6 +125,13 @@ def convert_serializer_field_to_enum(field):
     if custom_name is None:
         raise Exception(f"Enum name generation failed for {field=}")
     return ENUM_TO_STRAWBERRY_ENUM_MAP[custom_name]
+
+
+# --------- Custom field
+# This is used just for description
+@get_strawberry_type_from_serializer_field.register(TimeDurationField)  # type: ignore[reportArgumentType]
+def convert_serializer_field_to_duration(_):
+    return types.TimeDuration
 
 
 convert_serializer_to_type_cache = {}

@@ -31,9 +31,9 @@ class CustomCharField(serializers.CharField):
         return super().run_validation(data)
 
 
-class TimeDurationField(serializers.FloatField):
+class TimeDurationField(serializers.IntegerField):
     """
-    This field is created to override the graphene conversion of the floatfield -> TimeDurationField
+    This field is created to override the graphene conversion of the integerfield -> TimeDurationField
     """
 
     pass
