@@ -109,7 +109,7 @@ APP_HTTP_PROTOCOL = env("APP_HTTP_PROTOCOL")
 APP_DOMAIN = env("APP_DOMAIN")
 APP_FRONTEND_HOST = env("APP_FRONTEND_HOST")
 
-APP_ENVIRONMENT = env("APP_ENVIRONMENT")
+APP_ENVIRONMENT = env("APP_ENVIRONMENT").upper()
 APP_TYPE = env("APP_TYPE")
 
 # Application definition
@@ -171,6 +171,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "main.context_processors.app_contexts",
             ],
         },
     },
@@ -229,6 +230,11 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
+
+STATICFILES_DIRS = [
+    os.path.join("apps", "static"),
+]
+
 
 STATIC_URL = env("DJANGO_STATIC_URL")
 MEDIA_URL = env("DJANGO_MEDIA_URL")

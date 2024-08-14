@@ -8,6 +8,11 @@ class VersionAdmin(OgVersionAdmin):
     history_latest_first = True
 
 
+class PreventDeleteAdminMixin:
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 class UserResourceAdmin(admin.ModelAdmin):
     def get_readonly_fields(self, *args, **kwargs):
         readonly_fields = super().get_readonly_fields(*args, **kwargs)  # type: ignore[reportAttributeAccessIssue]

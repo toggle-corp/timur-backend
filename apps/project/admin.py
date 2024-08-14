@@ -3,13 +3,13 @@ from django.contrib import admin
 from django.db import models
 from django.http import HttpRequest
 
-from apps.common.admin import UserResourceAdmin, VersionAdmin
+from apps.common.admin import PreventDeleteAdminMixin, UserResourceAdmin, VersionAdmin
 
 from .models import Client, Contractor, Project
 
 
 @admin.register(Client)
-class ClientAdmin(VersionAdmin, UserResourceAdmin):
+class ClientAdmin(PreventDeleteAdminMixin, VersionAdmin, UserResourceAdmin):
     search_fields = ("name",)
     list_display = ("name", "created_by", "modified_by")
 
@@ -18,7 +18,7 @@ class ClientAdmin(VersionAdmin, UserResourceAdmin):
 
 
 @admin.register(Contractor)
-class ContractorAdmin(VersionAdmin, UserResourceAdmin):
+class ContractorAdmin(PreventDeleteAdminMixin, VersionAdmin, UserResourceAdmin):
     search_fields = ("name",)
 
     list_display = ("name", "created_by", "modified_by")
@@ -28,7 +28,7 @@ class ContractorAdmin(VersionAdmin, UserResourceAdmin):
 
 
 @admin.register(Project)
-class ProjectAdmin(VersionAdmin, UserResourceAdmin):
+class ProjectAdmin(PreventDeleteAdminMixin, VersionAdmin, UserResourceAdmin):
     search_fields = ("name",)
     list_filter = (
         AutocompleteFilterFactory("Client", "project_client"),

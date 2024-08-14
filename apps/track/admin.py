@@ -3,7 +3,12 @@ from django.contrib import admin
 from django.db import models
 from django.http import HttpRequest
 
-from apps.common.admin import UserResourceAdmin, UserResourceTabularInline, VersionAdmin
+from apps.common.admin import (
+    PreventDeleteAdminMixin,
+    UserResourceAdmin,
+    UserResourceTabularInline,
+    VersionAdmin,
+)
 
 from .models import Contract, Task, TimeEntry
 
@@ -11,10 +16,11 @@ from .models import Contract, Task, TimeEntry
 class ContractTaskInline(UserResourceTabularInline):
     model = Task
     ordering = ("pk",)
+    can_delete = False
 
 
 @admin.register(Contract)
-class ContractAdmin(VersionAdmin, UserResourceAdmin):
+class ContractAdmin(PreventDeleteAdminMixin, VersionAdmin, UserResourceAdmin):
     search_fields = (
         "project__name",
         "name",
@@ -37,7 +43,7 @@ class ContractAdmin(VersionAdmin, UserResourceAdmin):
 
 
 @admin.register(Task)
-class TaskAdmin(VersionAdmin, UserResourceAdmin):
+class TaskAdmin(PreventDeleteAdminMixin, VersionAdmin, UserResourceAdmin):
     search_fields = ("name",)
     list_filter = (
         AutocompleteFilterFactory("Project", "contract__project"),

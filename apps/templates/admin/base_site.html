@@ -1,0 +1,28 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+    {{block.super}}
+    <link rel="stylesheet" type="text/css" href="{% static "css/admin-custom.css" %}"/>
+    <style type="text/css">
+        body:before {
+            display: block;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            line-height: 25px;
+            text-align: center;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: white;
+            content: "{{ APP_ENVIRONMENT }}";
+            {% if APP_ENVIRONMENT == 'prod' %}
+                background-color: red;
+            {% elif APP_ENVIRONMENT == 'alpha' %}
+                background-color: orange;
+            {% else %}
+                background-color: grey;
+            {% endif %}
+        }
+    </style>
+{% endblock %}

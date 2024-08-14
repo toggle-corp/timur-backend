@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            background-color: #121212;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -50,22 +50,27 @@
             margin-top: 20px;
         }
     </style>
+
 </head>
 <body>
 
 <div class="container">
+
     {% if request.user.is_authenticated %}
     <div>
         <p>Hi {{ request.user.display_name }} 🙂</p>
         <p>Your email is {{ request.user.email }}</p>
+        </br> Go back to the application here: <a href='{{APP_FRONTEND_HOST}}'>{{APP_FRONTEND_HOST}}</a>
     </div>
     {% else %}
     <div>
         <p>Hi there 🙂 </p>
         <p>Click below to sign in with Google</p>
 
-        <p>Client ID: {{  GOOGLE_OAUTH_CLIENT_ID }}</p>
-        <p>Redirect URI: {{  GOOGLE_OAUTH_REDIRECT_URL }}</p>
+        {% if IS_DEBUG %}
+            <p>Client ID: {{  GOOGLE_OAUTH_CLIENT_ID }}</p>
+            <p>Redirect URI: {{  GOOGLE_OAUTH_REDIRECT_URL }}</p>
+        {% endif %}
 
         <div id="g_id_onload"
              data-client_id="{{ GOOGLE_OAUTH_CLIENT_ID }}"
@@ -83,6 +88,8 @@
              data-size="large"
              data-logo_alignment="left">
         </div>
+
+        <p>{{ APP_ENVIRONMENT }}</p>
 
     </div>
     {% endif %}

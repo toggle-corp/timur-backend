@@ -7,6 +7,11 @@ from apps.common.views import dev_sign_in, google_oauth
 from main.graphql.schema import CustomAsyncGraphQLView
 from main.graphql.schema import schema as graphql_schema
 
+admin.site.site_header = "Timur"
+admin.site.index_title = "Django Admin Panel"
+admin.site.site_title = "HTML title from adminsitration"
+
+
 urlpatterns = [
     path("admin/", admin.site.urls, name="admin"),
     path("health-check/", include("health_check.urls")),

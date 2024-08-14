@@ -29,19 +29,33 @@ def google_oauth(request):
     """
     Google calls this URL after the user has signed in with their Google account.
     """
-    token = request.POST["credential"]
-    redirect_to = request.GET.get("redirect_to")
+    error_postfix = (
+        f"</br> Go back to the application here: <a href='{settings.APP_FRONTEND_HOST}'>{settings.APP_FRONTEND_HOST}</a>"
+    )
+    if request.method.upper() == "GET":
+        return HttpResponse(
+            f"Not sure what you are trying to do here {error_postfix}",
+            status=405,
+        )
+
+    token = request.POST.get("credential")
+
+    if token is None:
+        return HttpResponse(
+            f"No credential provided {error_postfix}",
+            status=400,
+        )
 
     try:
         user_data = id_token.verify_oauth2_token(token, requests.Request(), settings.GOOGLE_OAUTH_CLIENT_ID)
         if user_data["email_verified"] is not True:
             return HttpResponse(
-                "Email is not verified",
+                "Email is not verified {error_postfix}",
                 status=400,
             )
     except ValueError:
         return HttpResponse(
-            "Failed to process",
+            f"Failed to process {error_postfix}",
             status=403,
         )
 
@@ -60,8 +74,5 @@ def google_oauth(request):
             display_picture=user_data["picture"],
         )
         login(request, new_user)
-
-    if redirect_to:
-        return redirect(redirect_to)
 
     return redirect(settings.APP_FRONTEND_HOST)
