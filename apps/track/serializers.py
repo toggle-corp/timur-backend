@@ -1,7 +1,11 @@
 from rest_framework import serializers
 
 from apps.common.serializers import TempClientIdMixin
-from utils.strawberry.serializers import IntegerIDField, TimeDurationField
+from utils.strawberry.serializers import (
+    CustomCharField,
+    IntegerIDField,
+    TimeDurationField,
+)
 
 from .models import TimeEntry
 
@@ -9,6 +13,7 @@ from .models import TimeEntry
 class TimeEntrySerializer(TempClientIdMixin, serializers.ModelSerializer):
     # Used just for adding description
     duration = TimeDurationField(required=False, allow_null=True)
+    description = CustomCharField(required=False, allow_blank=True, trim_whitespace=False)
 
     class Meta:  # type: ignore[reportIncompatibleVariab]
         model = TimeEntry

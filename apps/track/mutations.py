@@ -44,6 +44,7 @@ class PrivateMutation:
         delete_ids: list[strawberry.ID] | None = [],
     ) -> BulkMutationResponseType[TimeEntryType]:
         queryset = TimeEntryType.get_queryset(None, None, info).filter(user=info.context.request.user)
+
         return await TimeEntryBulkMutation.handle_bulk_mutation(
             queryset,
             items,
