@@ -35,6 +35,7 @@ class ContractorType(UserResourceTypeMixin):
 @strawberry_django.type(Project)
 class ProjectType(UserResourceTypeMixin):
     id: strawberry.ID
+    logo: strawberry.auto
     project_client_id: strawberry.ID
     contractor_id: strawberry.ID
 

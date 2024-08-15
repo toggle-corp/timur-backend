@@ -32,6 +32,7 @@ uwsgi = "*"
 aws-sns-message-validator = "*"
 google-api-python-client = "*"
 django-health-check = "*"
+Pillow = "*"  # Required by django ImageField
 psutil = "*"  # Required by django-health-check
 
 [tool.poetry.dev-dependencies]

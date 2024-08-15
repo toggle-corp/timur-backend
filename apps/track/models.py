@@ -8,6 +8,7 @@ from apps.user.models import User
 
 class Contract(UserResource):
     name = models.CharField(max_length=225)
+    description = models.TextField(blank=True)
     project = models.ForeignKey(Project, on_delete=models.PROTECT, related_name="contracts")
     total_estimated_hours = models.FloatField(null=True, blank=True)
     is_archived = models.BooleanField(default=False)

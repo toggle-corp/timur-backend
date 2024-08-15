@@ -21,6 +21,7 @@ class ContractType(UserResourceTypeMixin):
     is_archived: strawberry.auto
 
     name = string_field(Contract.name)
+    description = string_field(Contract.description)
 
     @staticmethod
     def get_queryset(_, queryset: models.QuerySet | None, info: Info):

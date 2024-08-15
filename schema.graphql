@@ -92,6 +92,7 @@ type ContractType implements UserResourceTypeMixin {
   totalEstimatedHours: Float
   isArchived: Boolean!
   name: String!
+  description: String
   project: ProjectType!
 
   """Sum of all task's estimated hours under this contract"""
@@ -184,6 +185,15 @@ input DateRangeLookup {
 
 """Date with time (isoformat)"""
 scalar DateTime
+
+type DjangoImageType {
+  name: String!
+  path: String!
+  size: Int!
+  url: String!
+  width: Int!
+  height: Int!
+}
 
 input DjangoModelFilterInput {
   pk: ID!
@@ -343,6 +353,7 @@ type ProjectType implements UserResourceTypeMixin {
   createdBy: UserType!
   modifiedBy: UserType!
   id: ID!
+  logo: DjangoImageType
   projectClientId: ID!
   contractorId: ID!
   name: String!

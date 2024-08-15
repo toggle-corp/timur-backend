@@ -20,6 +20,12 @@ class Contractor(UserResource):
 class Project(UserResource):
     name = models.CharField(max_length=225)
     description = models.TextField(blank=True)
+    logo = models.ImageField(
+        upload_to="project/logo/",
+        max_length=255,
+        blank=True,
+        null=True,
+    )
 
     # NOTE: We use `client_id` for storing client context information temporary.
     # This may collide in future. So, using `project_client` instead of just `client`
