@@ -20,6 +20,7 @@ class Migration(migrations.Migration):
                     (1200, "DevOps"),
                     (2000, "Documentation"),
                     (3000, "Internal Discussion"),
+                    (3100, "External Discussion"),
                     (4000, "Meeting"),
                     (5000, "Project Management"),
                     (6000, "QA"),

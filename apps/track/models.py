@@ -41,6 +41,7 @@ class TimeEntry(models.Model):
         DEV_OPS = 1200, _("DevOps")
         DOCUMENTATION = 2000, _("Documentation")
         INTERNAL_DISCUSSION = 3000, _("Internal Discussion")
+        EXTERNAL_DISCUSSION = 3100, _("External Discussion")
         MEETING = 4000, _("Meeting")
         PROJECT_MANAGEMENT = 5000, _("Project Management")
         QUALITY_ASSURANCE = 6000, _("QA")
