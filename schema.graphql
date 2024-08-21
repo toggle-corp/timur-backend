@@ -188,7 +188,6 @@ scalar DateTime
 
 type DjangoImageType {
   name: String!
-  path: String!
   size: Int!
   url: String!
   width: Int!

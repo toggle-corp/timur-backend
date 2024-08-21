@@ -3,8 +3,13 @@ import typing
 
 import strawberry
 from django.contrib.gis.geos import GEOSGeometry
+from django.core.files.storage import FileSystemStorage, default_storage
 from django.db import models
 from django.db.models.fields import Field as DjangoBaseField
+from django.db.models.fields import files
+from strawberry_django.fields.types import field_type_map
+
+from main.graphql.context import Info
 
 if typing.TYPE_CHECKING:
     from django.db.models.fields import _FieldDescriptor
@@ -81,3 +86,32 @@ def string_field(
     if _field.null or _field.blank:  # type: ignore[reportGeneralTypeIssues] FIXME
         return nullable_string_
     return string_
+
+
+@strawberry.type
+class DjangoFileType:
+    name: str
+    size: int
+
+    @strawberry.field
+    @staticmethod
+    def url(root: files.FieldFile, info: Info) -> str:
+        # TODO: Use cache if using S3 with signatured URL
+        if isinstance(default_storage, FileSystemStorage):
+            return info.context.request.build_absolute_uri(root.url)
+        return root.url
+
+
+@strawberry.type
+class DjangoImageType(DjangoFileType):
+    width: int
+    height: int
+
+
+# Update the strawberry django field type mapping
+field_type_map.update(
+    {
+        files.FileField: DjangoFileType,
+        files.ImageField: DjangoImageType,
+    }
+)
