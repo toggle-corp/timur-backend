@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -11,10 +12,32 @@ class Journal(models.Model):
         FIRST_HALF = 2, _("First Half")
         SECOND_HALF = 3, _("Second Half")
 
+    class WorkFromHomeType(models.IntegerChoices):
+        FULL = 1, _("Full")
+        FIRST_HALF = 2, _("First Half")
+        SECOND_HALF = 3, _("Second Half")
+
+    VALID_LEAVE_WFH_COMBINATION = set(
+        [
+            # -- FULL
+            (LeaveType.FULL, None),
+            (None, WorkFromHomeType.FULL),
+            # -- FH
+            (LeaveType.FIRST_HALF, None),
+            (LeaveType.FIRST_HALF, WorkFromHomeType.SECOND_HALF),
+            (None, WorkFromHomeType.FIRST_HALF),
+            # -- SH
+            (LeaveType.SECOND_HALF, None),
+            (LeaveType.SECOND_HALF, WorkFromHomeType.FIRST_HALF),
+            (None, WorkFromHomeType.SECOND_HALF),
+        ]
+    )
+
     user = models.ForeignKey(User, related_name="+", on_delete=models.CASCADE)
     date = models.DateField()
 
     leave_type = models.PositiveSmallIntegerField(null=True, blank=True, choices=LeaveType.choices)
+    wfh_type = models.PositiveSmallIntegerField(null=True, blank=True, choices=WorkFromHomeType.choices)
 
     journal_text = models.TextField(blank=True)
 
@@ -28,3 +51,11 @@ class Journal(models.Model):
 
     def __str__(self):
         return f"{self.user_id}#{self.date}"
+
+    def clean(self):
+        super().clean()
+
+        # Make sure leave_type and wfh_type don't conflict with each other
+        if self.leave_type is not None and self.wfh_type is not None:
+            if (self.leave_type, self.wfh_type) not in self.VALID_LEAVE_WFH_COMBINATION:
+                raise ValidationError(_("Provided Leave and Work from home combination is invalid"))

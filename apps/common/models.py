@@ -26,3 +26,14 @@ class UserResource(models.Model):
     class Meta:  # type: ignore[reportIncompatibleVariableOverride]
         abstract = True
         ordering = ["-id"]
+
+
+class Event(models.Model):
+    class Type(models.IntegerChoices):
+        HOLIDAY = 1, "Holiday"
+        RETREAT = 2, "Retreat"
+        MISC = 3, "Misc"
+
+    name = models.CharField(max_length=225)
+    date = models.DateField()
+    type = models.PositiveSmallIntegerField(choices=Type.choices, default=Type.HOLIDAY)

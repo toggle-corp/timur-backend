@@ -96,7 +96,7 @@ class DjangoFileType:
     @strawberry.field
     @staticmethod
     def url(root: files.FieldFile, info: Info) -> str:
-        # TODO: Use cache if using S3 with signatured URL
+        # TODO: Use cache if using S3 URL with signature
         if isinstance(default_storage, FileSystemStorage):
             return info.context.request.build_absolute_uri(root.url)
         return root.url

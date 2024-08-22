@@ -6,6 +6,7 @@ import utils.strawberry.transformers  # pyright: ignore[reportUnusedImport] # ty
 from apps.journal import mutations as journal_mutations
 from apps.journal import queries as journal_queries
 from apps.project import queries as project_queries
+from apps.standup import queries as standup_queries
 from apps.track import mutations as track_mutations
 from apps.track import queries as track_queries
 from apps.user import mutations as user_mutations
@@ -36,6 +37,7 @@ class PublicQuery(
 @strawberry.type
 class PrivateQuery(
     user_queries.PrivateQuery,
+    standup_queries.PrivateQuery,
     project_queries.PrivateQuery,
     track_queries.PrivateQuery,
     journal_queries.PrivateQuery,

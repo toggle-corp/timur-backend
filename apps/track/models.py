@@ -7,6 +7,7 @@ from apps.project.models import Project
 from apps.user.models import User
 
 
+# TODO: Move this to project?
 class Contract(UserResource):
     name = models.CharField(max_length=225)
     description = models.TextField(blank=True)
@@ -22,6 +23,7 @@ class Contract(UserResource):
         return f"{self.project.name} -> {self.name} ({self.total_estimated_hours} hours)"
 
 
+# TODO: Move this to project?
 class Task(UserResource):
     name = models.CharField(max_length=225)
     contract = models.ForeignKey(Contract, on_delete=models.PROTECT, related_name="tasks")

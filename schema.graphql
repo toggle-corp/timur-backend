@@ -2,10 +2,16 @@ type AppEnumCollection {
   TimeEntryType: [AppEnumCollectionTimeEntryType!]!
   TimeEntryStatus: [AppEnumCollectionTimeEntryStatus!]!
   JournalLeaveType: [AppEnumCollectionJournalLeaveType!]!
+  JournalWfhType: [AppEnumCollectionJournalWfhType!]!
 }
 
 type AppEnumCollectionJournalLeaveType {
   key: JournalLeaveTypeEnum!
+  label: String!
+}
+
+type AppEnumCollectionJournalWfhType {
+  key: JournalWorkFromHomeTypeEnum!
   label: String!
 }
 
@@ -139,6 +145,24 @@ type ContractorTypeCountList {
 """A generic type to return error messages"""
 scalar CustomErrorType
 
+type DailyStandUpProjectStatType {
+  project: ProjectType!
+  users: [DailyStandUpProjectStatUserType!]!
+}
+
+type DailyStandUpProjectStatUserType {
+  id: ID!
+  displayPicture: String
+  displayName: String!
+  leave: JournalLeaveTypeEnum
+  workFromHome: JournalWorkFromHomeTypeEnum
+}
+
+type DailyStandUpType {
+  quote: QuoteType
+  projectStat(pk: ID!): DailyStandUpProjectStatType
+}
+
 """Date (isoformat)"""
 scalar Date
 
@@ -185,6 +209,22 @@ input DateRangeLookup {
 
 """Date with time (isoformat)"""
 scalar DateTime
+
+type DeadlineType implements UserResourceTypeMixin {
+  createdAt: DateTime!
+  modifiedAt: DateTime!
+  createdBy: UserType!
+  modifiedBy: UserType!
+  id: ID!
+  startDate: Date!
+  endDate: Date!
+  projectId: ID!
+  contractId: ID
+  name: String!
+  totalDays: Int!
+  usedDays: Int!
+  remainingDays: Int!
+}
 
 type DjangoImageType {
   name: String!
@@ -256,6 +296,8 @@ type JournalType {
   date: Date!
   leaveType: JournalLeaveTypeEnum
   leaveTypeDisplay: String
+  wfhType: JournalWorkFromHomeTypeEnum
+  wfhTypeDisplay: String
   journalText: String
   user: UserType!
 }
@@ -268,7 +310,14 @@ type JournalTypeMutationResponseType {
 
 input JournalUpdateInput {
   leaveType: JournalLeaveTypeEnum
+  wfhType: JournalWorkFromHomeTypeEnum
   journalText: String
+}
+
+enum JournalWorkFromHomeTypeEnum {
+  FULL
+  FIRST_HALF
+  SECOND_HALF
 }
 
 input LoginInput {
@@ -309,9 +358,12 @@ type PrivateMutation {
 }
 
 type PrivateQuery {
+  dailyStandup(date: Date!): DailyStandUpType!
   clients(filters: ClientFilter, order: ClientOrder, pagination: OffsetPaginationInput): ClientTypeCountList!
   contractors(filters: ContractorFilter, order: ContractorOrder, pagination: OffsetPaginationInput): ContractorTypeCountList!
   projects(filters: ProjectFilter, order: ProjectOrder, pagination: OffsetPaginationInput): ProjectTypeCountList!
+  allProjects: [ProjectType!]!
+  allDeadlines: [DeadlineType!]!
   client(pk: ID!): ClientType
   contractor(pk: ID!): ContractorType
   project(pk: ID!): ProjectType
@@ -359,6 +411,7 @@ type ProjectType implements UserResourceTypeMixin {
   description: String
   projectClient: ClientType!
   contractor: ContractorType!
+  deadlines: [DeadlineType!]!
 }
 
 type ProjectTypeCountList {
@@ -383,6 +436,16 @@ type Query {
   public: PublicQuery!
   private: PrivateQuery!
   enums: AppEnumCollection!
+}
+
+type QuoteType implements UserResourceTypeMixin {
+  createdAt: DateTime!
+  modifiedAt: DateTime!
+  createdBy: UserType!
+  modifiedBy: UserType!
+  id: ID!
+  text: String!
+  author: String!
 }
 
 input StrFilterLookup {

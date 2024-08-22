@@ -8,6 +8,7 @@ class JournalSerializer(serializers.ModelSerializer):
         model = Journal
         fields = (
             "leave_type",
+            "wfh_type",
             "journal_text",  # TODO: Create custom serializer field to convert null -> empty string for black=True
         )
 
