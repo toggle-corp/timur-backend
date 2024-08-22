@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -71,6 +72,13 @@ class TimeEntry(models.Model):
         blank=True,
         help_text=_("Minutes"),
     )
+    duration_adjustment = models.SmallIntegerField(
+        null=True,
+        blank=True,
+        help_text=_(
+            "Minutes. Used to keep track of reported minutes. This will be used as duration (+- duration_adjustment)"
+        ),
+    )
 
     user_id: int
     task_id: int
@@ -78,3 +86,15 @@ class TimeEntry(models.Model):
     class Meta:  # type: ignore[reportIncompatibleVariab]
         verbose_name = _("time entry")
         verbose_name_plural = _("time entries")
+
+    def clean(self):
+        super().clean()
+
+        # Make sure duration is defined before having duration_adjustment
+        if self.duration_adjustment is not None and self.duration is None:
+            raise ValidationError(_("Duration needs to be defined before using Duration (Adjustment)"))
+
+        # Make sure duration + duration_adjustment doesn't have negative value
+        if self.duration is not None and self.duration_adjustment is not None:
+            if self.duration_adjustment + self.duration < 0:
+                raise ValidationError(_("Duration adjustment shouldn't generate negative duration"))

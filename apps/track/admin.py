@@ -89,6 +89,7 @@ class TimeEntryAdmin(admin.ModelAdmin):
         "type",
         "date",
         "duration",
+        "duration_adjustment",
         "status",
     )
 
