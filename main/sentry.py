@@ -4,11 +4,8 @@ from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.logging import ignore_logger
 from sentry_sdk.integrations.redis import RedisIntegration
 from sentry_sdk.integrations.strawberry import StrawberryIntegration
-from strawberry.permission import BasePermission
 
-IGNORED_ERRORS = [
-    BasePermission,
-]
+IGNORED_ERRORS = []
 IGNORED_LOGGERS = [
     "graphql.execution.utils",
     "strawberry.http.exceptions.HTTPException",
