@@ -59,7 +59,7 @@ class TimeEntry(models.Model):
     date = models.DateField()
     created_at = models.DateTimeField(auto_now_add=True)  # To track TODO tasks
 
-    type = models.PositiveSmallIntegerField(choices=Type.choices)
+    type = models.PositiveSmallIntegerField(choices=Type.choices, null=True, blank=True)
     status = models.PositiveSmallIntegerField(choices=Status.choices)
     # NOTE: client_id persisted as ULID, but no validation done on server-side
     #  Uniqueness is required at per-user per-day level
@@ -74,6 +74,8 @@ class TimeEntry(models.Model):
         blank=True,
         help_text=_("Minutes"),
     )
+
+    # Operational metadata
     duration_adjustment = models.SmallIntegerField(
         null=True,
         blank=True,
@@ -81,6 +83,7 @@ class TimeEntry(models.Model):
             "Minutes. Used to keep track of reported minutes. This will be used as duration (+- duration_adjustment)"
         ),
     )
+    is_billable = models.BooleanField(default=True)
 
     user_id: int
     task_id: int

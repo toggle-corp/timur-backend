@@ -2,9 +2,10 @@ import datetime
 
 import strawberry
 import strawberry_django
+from asgiref.sync import sync_to_async
 from django.db import models
-from django.utils import timezone
 
+from apps.common.models import Event
 from apps.common.types import UserResourceTypeMixin
 from apps.journal.enums import JournalLeaveTypeEnum, JournalWorkFromHomeTypeEnum
 from apps.project.models import Project
@@ -60,17 +61,29 @@ class DailyStandUpProjectStatType:
     project_obj: strawberry.Private[Project]
     date: strawberry.Private[datetime.date]
 
+    async def _check_activity_from_date(self) -> datetime.date:
+        return await sync_to_async(Event.get_last_working_date)(now_date=self.date, offset_count=3)
+
+    @strawberry.field
+    async def last_working_date(self) -> datetime.date:
+        return await sync_to_async(Event.get_last_working_date)(now_date=self.date)
+
+    # XXX: For debugging only
+    @strawberry.field
+    async def activity_from_date(self) -> datetime.date:
+        return await self._check_activity_from_date()
+
     @strawberry.field
     def project(self) -> ProjectType:
         return self.project_obj  # type: ignore[reportReturnType]
 
     @strawberry.field
     async def users(self) -> list[DailyStandUpProjectStatUserType]:
-        threshold = timezone.now() - datetime.timedelta(days=3)
+        last_working_date = await self._check_activity_from_date()
         time_entries_qs = (
             TimeEntry.objects.filter(
                 task__contract__project=self.project_obj,
-                date__gte=threshold,
+                date__gte=last_working_date,
             )
             .values("user")
             .distinct()

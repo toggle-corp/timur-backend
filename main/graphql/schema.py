@@ -3,6 +3,7 @@ from strawberry.django.views import AsyncGraphQLView
 
 # Imported to make sure strawberry custom modules are loadded first
 import utils.strawberry.transformers  # pyright: ignore[reportUnusedImport] # type: ignore # noqa F401
+from apps.common import queries as common_queries
 from apps.journal import mutations as journal_mutations
 from apps.journal import queries as journal_queries
 from apps.project import queries as project_queries
@@ -41,6 +42,7 @@ class PrivateQuery(
     project_queries.PrivateQuery,
     track_queries.PrivateQuery,
     journal_queries.PrivateQuery,
+    common_queries.PrivateQuery,
 ):
     id: strawberry.ID = strawberry.ID("private")
 

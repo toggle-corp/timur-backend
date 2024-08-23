@@ -1,8 +1,14 @@
 type AppEnumCollection {
+  EventType: [AppEnumCollectionEventType!]!
   TimeEntryType: [AppEnumCollectionTimeEntryType!]!
   TimeEntryStatus: [AppEnumCollectionTimeEntryStatus!]!
   JournalLeaveType: [AppEnumCollectionJournalLeaveType!]!
   JournalWfhType: [AppEnumCollectionJournalWfhType!]!
+}
+
+type AppEnumCollectionEventType {
+  key: EventTypeEnum!
+  label: String!
 }
 
 type AppEnumCollectionJournalLeaveType {
@@ -146,6 +152,8 @@ type ContractorTypeCountList {
 scalar CustomErrorType
 
 type DailyStandUpProjectStatType {
+  lastWorkingDate: Date!
+  activityFromDate: Date!
   project: ProjectType!
   users: [DailyStandUpProjectStatUserType!]!
 }
@@ -236,6 +244,51 @@ type DjangoImageType {
 
 input DjangoModelFilterInput {
   pk: ID!
+}
+
+input EventFilter {
+  id: IDBaseFilterLookup
+  startDate: DateDateFilterLookup
+  endDate: DateDateFilterLookup
+  types: [EventTypeEnum!]!
+  AND: EventFilter
+  OR: EventFilter
+  NOT: EventFilter
+  DISTINCT: Boolean
+}
+
+input EventOrder {
+  id: Ordering
+  name: Ordering
+  startDate: Ordering
+  endDate: Ordering
+}
+
+type EventType implements UserResourceTypeMixin {
+  createdAt: DateTime!
+  modifiedAt: DateTime!
+  createdBy: UserType!
+  modifiedBy: UserType!
+  id: ID!
+  startDate: Date!
+  endDate: Date!
+  name: String!
+  type: EventTypeEnum!
+  typeDisplay: String!
+  dates: [Date!]!
+}
+
+type EventTypeCountList {
+  limit: Int!
+  offset: Int!
+  count: Int!
+  items: [EventType!]!
+}
+
+enum EventTypeEnum {
+  HOLIDAY
+  RETREAT
+  MISC
 }
 
 input IDBaseFilterLookup {
@@ -380,6 +433,8 @@ type PrivateQuery {
   contract(pk: ID!): ContractType
   task(pk: ID!): TaskType
   journal(date: Date!): JournalType
+  events(filters: EventFilter, order: EventOrder, pagination: OffsetPaginationInput): EventTypeCountList!
+  relativeEvents: [EventType!]!
   id: ID!
 }
 
@@ -542,9 +597,9 @@ scalar TimeDuration
 input TimeEntryBulkCreateInput {
   task: ID!
   date: Date!
-  type: TimeEntryTypeEnum!
   status: TimeEntryStatusEnum!
   id: ID
+  type: TimeEntryTypeEnum
   description: String
   duration: TimeDuration
   startTime: Time
@@ -554,8 +609,8 @@ input TimeEntryBulkCreateInput {
 input TimeEntryCreateInput {
   task: ID!
   date: Date!
-  type: TimeEntryTypeEnum!
   status: TimeEntryStatusEnum!
+  type: TimeEntryTypeEnum
   description: String
   duration: TimeDuration
   startTime: Time
@@ -598,8 +653,8 @@ type TimeEntryType implements ClientIdMixin {
   duration: TimeDuration
   status: TimeEntryStatusEnum!
   statusDisplay: String!
-  type: TimeEntryTypeEnum!
-  typeDisplay: String!
+  type: TimeEntryTypeEnum
+  typeDisplay: String
   description: String
   user: UserType!
   task: TaskType!

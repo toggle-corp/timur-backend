@@ -1,9 +1,16 @@
+import typing
+
 from django.contrib import admin
+from django.db import models
+from django.http import HttpRequest
 from reversion.admin import VersionAdmin as OgVersionAdmin
 
-from .models import UserResource
+from .models import Event, UserResource
+
+DjangoModel = typing.TypeVar("DjangoModel", bound=models.Model)
 
 
+# -- Abstracts
 class VersionAdmin(OgVersionAdmin):
     history_latest_first = True
 
@@ -14,6 +21,16 @@ class PreventDeleteAdminMixin:
 
 
 class UserResourceAdmin(admin.ModelAdmin):
+    def get_list_display(self, request):
+        list_display = super().get_list_display(request)
+        for field in ["created_by", "modified_by"]:
+            if field not in list_display:
+                list_display = [
+                    *list_display,
+                    field,
+                ]
+        return list_display
+
     def get_readonly_fields(self, *args, **kwargs):
         readonly_fields = super().get_readonly_fields(*args, **kwargs)  # type: ignore[reportAttributeAccessIssue]
         return [
@@ -49,6 +66,9 @@ class UserResourceAdmin(admin.ModelAdmin):
             instance.modified_by = request.user
             instance.save()
 
+    def get_queryset(self, request: HttpRequest) -> models.QuerySet[DjangoModel]:
+        return super().get_queryset(request).select_related("created_by", "modified_by")
+
 
 class UserResourceTabularInline(admin.TabularInline):
     def get_readonly_fields(self, *args, **kwargs):
@@ -65,3 +85,11 @@ class UserResourceTabularInline(admin.TabularInline):
                 ]
             )
         ]
+
+
+# -- Common Models
+@admin.register(Event)
+class ClientAdmin(VersionAdmin, UserResourceAdmin):
+    search_fields = ("name",)
+    list_display = ("name", "type", "start_date", "end_date")
+    list_filter = ("type",)

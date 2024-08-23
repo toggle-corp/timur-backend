@@ -52,10 +52,13 @@ class Journal(models.Model):
     def __str__(self):
         return f"{self.user_id}#{self.date}"
 
-    def clean(self):
-        super().clean()
-
+    def leave_wfh_check(self):
         # Make sure leave_type and wfh_type don't conflict with each other
         if self.leave_type is not None and self.wfh_type is not None:
             if (self.leave_type, self.wfh_type) not in self.VALID_LEAVE_WFH_COMBINATION:
                 raise ValidationError(_("Provided Leave and Work from home combination is invalid"))
+        pass
+
+    def clean(self):
+        super().clean()
+        self.leave_wfh_check()

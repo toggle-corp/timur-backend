@@ -1,7 +1,8 @@
 from admin_auto_filters.filters import AutocompleteFilterFactory
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.db import models
 from django.http import HttpRequest
+from django.utils.translation import ngettext
 
 from apps.common.admin import (
     PreventDeleteAdminMixin,
@@ -66,12 +67,44 @@ class TaskAdmin(PreventDeleteAdminMixin, VersionAdmin, UserResourceAdmin):
         return obj.contract.name
 
 
+# Time Entry ----------------------------------------------------
+@admin.action(description="Mark time entries as non-billable")
+def flag_as_non_billable(modeladmin, request, queryset):
+    updated = queryset.update(is_billable=False)
+    modeladmin.message_user(
+        request,
+        ngettext(
+            "%d time entry was successfully marked as non-billable.",
+            "%d time entries were successfully marked as non-billable.",
+            updated,
+        )
+        % updated,
+        messages.SUCCESS,
+    )
+
+
+@admin.action(description="Mark time entries as billable")
+def flag_as_billable(modeladmin, request, queryset):
+    updated = queryset.update(is_billable=True)
+    modeladmin.message_user(
+        request,
+        ngettext(
+            "%d time entry was successfully marked as billable.",
+            "%d time entries were successfully marked as billable.",
+            updated,
+        )
+        % updated,
+        messages.SUCCESS,
+    )
+
+
 @admin.register(TimeEntry)
 class TimeEntryAdmin(admin.ModelAdmin):
     list_filter = (
         "date",
         "type",
         "status",
+        "is_billable",
         AutocompleteFilterFactory("Project", "task__contract__project"),
         AutocompleteFilterFactory("Contract", "task__contract"),
         AutocompleteFilterFactory("Task", "task"),
@@ -90,8 +123,10 @@ class TimeEntryAdmin(admin.ModelAdmin):
         "date",
         "duration",
         "duration_adjustment",
+        "is_billable",
         "status",
     )
+    actions = [flag_as_non_billable, flag_as_billable]
 
     def get_queryset(self, request: HttpRequest) -> models.QuerySet[Contract]:
         return super().get_queryset(request).select_related("user", "task", "task__contract", "task__contract__project")

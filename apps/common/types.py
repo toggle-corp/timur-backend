@@ -8,10 +8,13 @@ from apps.common.serializers import TempClientIdMixin
 from apps.user.types import UserType
 from main.caches import local_cache
 from main.graphql.context import Info
+from utils.strawberry.enums import enum_display_field, enum_field
+from utils.strawberry.types import string_field
 
-from .models import UserResource
+from .models import Event, UserResource
 
 
+# -- Interfaces
 @strawberry.interface
 class UserResourceTypeMixin:
     created_at: datetime.datetime
@@ -37,3 +40,19 @@ class ClientIdMixin:
             or local_cache.get(TempClientIdMixin.get_cache_key(self, info.context.request))
             or str(root.pk)
         )
+
+
+# -- Common models type
+@strawberry_django.type(Event)
+class EventType(UserResourceTypeMixin):
+    id: strawberry.ID
+    start_date: strawberry.auto
+    end_date: strawberry.auto
+    name = string_field(Event.name)
+
+    type = enum_field(Event.type)
+    type_display = enum_display_field(Event.type)
+
+    @strawberry_django.field
+    def dates(self, event: strawberry.Parent[Event]) -> list[datetime.date]:
+        return event.get_dates()

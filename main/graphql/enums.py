@@ -2,11 +2,13 @@ import dataclasses
 
 import strawberry
 
+from apps.common.enums import enum_map as common_enum_map
 from apps.journal.enums import enum_map as journal_enum_map
 from apps.track.enums import enum_map as track_enum_map
 from apps.user.enums import enum_map as user_enum_map
 
 ENUM_TO_STRAWBERRY_ENUM_MAP: dict[str, type] = {
+    **common_enum_map,
     **user_enum_map,
     **track_enum_map,
     **journal_enum_map,
