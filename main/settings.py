@@ -54,7 +54,8 @@ env = environ.Env(
     AWS_S3_ENDPOINT_URL=(str, None),  # Optional
     # Sentry
     SENTRY_DSN=(str, None),
-    SENTRY_SAMPLE_RATE=(float, 0.2),
+    SENTRY_TRACES_SAMPLE_RATE=(float, 0.2),
+    SENTRY_PROFILE_SAMPLE_RATE=(float, 0.2),
     # App Domain
     APP_DOMAIN=str,  # api.example.com
     APP_HTTP_PROTOCOL=str,  # http|https
@@ -319,7 +320,6 @@ CORS_ALLOW_HEADERS = (
 
 # Sentry Config
 SENTRY_DSN = env("SENTRY_DSN")
-SENTRY_SAMPLE_RATE = env("SENTRY_SAMPLE_RATE")
 SENTRY_ENABLED = False
 
 SENTRY_CONFIG = {
@@ -328,6 +328,8 @@ SENTRY_CONFIG = {
     "send_default_pii": True,
     "release": env("RELEASE"),
     "environment": APP_ENVIRONMENT,
+    "traces_sample_rate": env("SENTRY_TRACES_SAMPLE_RATE"),
+    "profiles_sample_rate": env("SENTRY_PROFILE_SAMPLE_RATE"),
     "debug": DEBUG,
     "tags": {
         "site": ",".join(set(ALLOWED_HOSTS)),
