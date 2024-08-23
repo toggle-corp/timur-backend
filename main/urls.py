@@ -22,6 +22,7 @@ urlpatterns = [
             schema=graphql_schema,
             graphql_ide=False,
         ),
+        name="graphql",
     ),
     path("o/google", google_oauth, name="google_oauth"),
 ]
