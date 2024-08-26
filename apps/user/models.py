@@ -23,12 +23,15 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     invalid_email = models.BooleanField(default=False, help_text=_("Is Bounced email?"))
     display_name = models.CharField(
-        verbose_name=_("system generated user display name"),
         blank=True,
         max_length=255,
     )
     display_picture = models.URLField(null=True, blank=True)
     department = models.PositiveSmallIntegerField(choices=Department.choices, null=True, blank=True)
+
+    # TODO: This is a hacky way to exclude useres from standup slides, for better integration implement
+    # support for custom teams with members & projects
+    exclude_from_slides = models.BooleanField(default=False)
 
     objects: CustomUserManager = CustomUserManager()  # type: ignore[reportAssignmentType]
 

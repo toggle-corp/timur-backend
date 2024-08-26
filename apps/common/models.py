@@ -1,6 +1,7 @@
 import datetime
 import functools
 
+from asgiref.sync import sync_to_async
 from django.db import models
 from django.utils import timezone
 
@@ -68,19 +69,32 @@ class Event(UserResource):
     def get_last_working_date(
         cls,
         now_date: datetime.date,
+        skip_dates: list[datetime.date] | None = None,
         offset_count: int | None = None,
     ) -> datetime.date:  # type: ignore[reportReturnType]
         # TODO: Add test
-        event_dates = set(cls.get_relative_event_dates())
+        dates_to_skip = set(cls.get_relative_event_dates())
+        if skip_dates:
+            dates_to_skip.update(skip_dates)
         found_count = 0
         for x in range(30):  # Create a 1 month window, Should be enough
             date = now_date - datetime.timedelta(days=x)
-            if cls.is_weekend(date) or date in event_dates:
+            if cls.is_weekend(date) or date in dates_to_skip:
                 continue
             if offset_count is not None and found_count < offset_count:
                 found_count += 1
                 continue
             return date
+
+    @classmethod
+    @sync_to_async
+    def aget_last_working_date(
+        cls,
+        now_date: datetime.date,
+        skip_dates: list[datetime.date] | None = None,
+        offset_count: int | None = None,
+    ) -> datetime.date:  # type: ignore[reportReturnType]
+        return cls.get_last_working_date(now_date, skip_dates=skip_dates, offset_count=offset_count)
 
     @classmethod
     def get_relative_events(cls) -> models.QuerySet["Event"]:
@@ -94,7 +108,7 @@ class Event(UserResource):
         return cls.objects.filter(start_date__gte=start_threshold, end_date__lte=end_threshold)
 
     @classmethod
-    @functools.cache
+    @functools.cache  # TODO: URGENT! Clear this cache on events CUD
     def get_relative_event_dates(cls) -> list[datetime.date]:
         """
         Return list of dates with holiday relative to current date

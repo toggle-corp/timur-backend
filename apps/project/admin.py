@@ -38,4 +38,4 @@ class ProjectAdmin(PreventDeleteAdminMixin, VersionAdmin, UserResourceAdmin):
         AutocompleteFilterFactory("Contractor", "contractor"),
     )
 
-    list_display = ("name",)
+    list_display = ("name", "slide_order")

@@ -1,29 +1,9 @@
 import strawberry
-import strawberry_django
 from asgiref.sync import sync_to_async
 
 from main.graphql.context import Info
 
-from .models import User
-
-
-@strawberry_django.type(User)
-class UserType:
-    id: strawberry.ID
-    first_name: strawberry.auto
-    last_name: strawberry.auto
-    display_name: strawberry.auto
-    display_picture: strawberry.auto
-
-
-@strawberry_django.type(User)
-class UserMeType(UserType):
-    id: strawberry.ID
-    email: strawberry.auto
-    first_name: strawberry.auto
-    last_name: strawberry.auto
-    display_name: strawberry.auto
-    display_picture: strawberry.auto
+from .types import UserMeType
 
 
 @strawberry.type

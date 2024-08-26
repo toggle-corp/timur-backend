@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 from apps.common.models import UserResource
 
@@ -20,8 +21,17 @@ class Contractor(UserResource):
 class Project(UserResource):
     name = models.CharField(max_length=225)
     description = models.TextField(blank=True)
+    # TODO: Validate image size for optimal performance
     logo = models.ImageField(
         upload_to="project/logo/",
+        help_text="Low quality logo.",
+        max_length=255,
+        blank=True,
+        null=True,
+    )
+    logo_hd = models.ImageField(
+        upload_to="project/logo-hd/",
+        help_text="Hight quality logo",
         max_length=255,
         blank=True,
         null=True,
@@ -32,6 +42,10 @@ class Project(UserResource):
     project_client = models.ForeignKey(Client, on_delete=models.PROTECT, related_name="projects")
     contractor = models.ForeignKey(Contractor, on_delete=models.PROTECT, related_name="projects")
     is_archived = models.BooleanField(default=False)
+    slide_order = models.PositiveSmallIntegerField(
+        default=0,
+        help_text=_("Used to order projects in daily stand-up slides"),
+    )
 
     project_client_id: int
     contractor_id: int

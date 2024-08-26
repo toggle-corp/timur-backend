@@ -1,5 +1,6 @@
 type AppEnumCollection {
   EventType: [AppEnumCollectionEventType!]!
+  UserDepartment: [AppEnumCollectionUserDepartment!]!
   TimeEntryType: [AppEnumCollectionTimeEntryType!]!
   TimeEntryStatus: [AppEnumCollectionTimeEntryStatus!]!
   JournalLeaveType: [AppEnumCollectionJournalLeaveType!]!
@@ -28,6 +29,11 @@ type AppEnumCollectionTimeEntryStatus {
 
 type AppEnumCollectionTimeEntryType {
   key: TimeEntryTypeEnum!
+  label: String!
+}
+
+type AppEnumCollectionUserDepartment {
+  key: UserDepartmentTypeEnum!
   label: String!
 }
 
@@ -160,8 +166,10 @@ type DailyStandUpProjectStatType {
 
 type DailyStandUpProjectStatUserType {
   id: ID!
-  displayPicture: String
-  displayName: String!
+  lastActiveDate: Date!
+  displayPicture: String @deprecated(reason: "Use user.display_picture instead")
+  displayName: String! @deprecated(reason: "Use user.display_name instead")
+  user: UserType!
   leave: JournalLeaveTypeEnum
   workFromHome: JournalWorkFromHomeTypeEnum
 }
@@ -430,6 +438,7 @@ type PrivateQuery {
   """Return all UnArchived tasks"""
   allActiveTasks: [TaskType!]!
   myTimeEntries(date: Date!): [TimeEntryType!]!
+  allTimeEntries(filters: TimeEntryFilter!): [TimeEntryType!]!
   contract(pk: ID!): ContractType
   task(pk: ID!): TaskType
   journal(date: Date!): JournalType
@@ -460,6 +469,8 @@ type ProjectType implements UserResourceTypeMixin {
   modifiedBy: UserType!
   id: ID!
   logo: DjangoImageType
+  logoHd: DjangoImageType
+  slideOrder: Int!
   projectClientId: ID!
   contractorId: ID!
   name: String!
@@ -622,11 +633,11 @@ input TimeEntryFilter {
   user: DjangoModelFilterInput
   task: DjangoModelFilterInput
   date: DateDateFilterLookup
-  types: [TimeEntryTypeEnum!]!
   AND: TimeEntryFilter
   OR: TimeEntryFilter
   NOT: TimeEntryFilter
   DISTINCT: Boolean
+  types: [TimeEntryTypeEnum!]
   project: ID
   contract: ID
 }
@@ -702,13 +713,41 @@ input TimeEntryUpdateInput {
   clientId: ID
 }
 
-type UserMeType {
+interface UserBaseType {
   id: ID!
-  firstName: String!
-  lastName: String!
-  displayName: String!
+  firstName: String
+  lastName: String
+  displayName: String
   displayPicture: String
+  department: UserDepartmentTypeEnum
+  departmentDisplay: String
+  leaveToday: JournalLeaveTypeEnum
+  workFromHomeToday: JournalWorkFromHomeTypeEnum
+}
+
+enum UserDepartmentTypeEnum {
+  DATA_ANALYST
+  DESIGN
+  DEVELOPMENT
+  MANAGEMENT
+  PROJECT_MANAGER
+  QUALITY_ASSURANCE
+}
+
+type UserMeType implements UserBaseType {
+  id: ID!
+  firstName: String
+  lastName: String
+  displayName: String
+  displayPicture: String
+  department: UserDepartmentTypeEnum
+  departmentDisplay: String
+  leaveToday: JournalLeaveTypeEnum
+  workFromHomeToday: JournalWorkFromHomeTypeEnum
   email: String!
+  isStaff: Boolean!
+  isSuperuser: Boolean!
+  myLastWorkingDate: Date!
 }
 
 type UserMeTypeMutationResponseType {
@@ -724,9 +763,14 @@ interface UserResourceTypeMixin {
   modifiedBy: UserType!
 }
 
-type UserType {
+type UserType implements UserBaseType {
   id: ID!
-  firstName: String!
-  lastName: String!
-  displayName: String!
+  firstName: String
+  lastName: String
+  displayName: String
+  displayPicture: String
+  department: UserDepartmentTypeEnum
+  departmentDisplay: String
+  leaveToday: JournalLeaveTypeEnum
+  workFromHomeToday: JournalWorkFromHomeTypeEnum
 }

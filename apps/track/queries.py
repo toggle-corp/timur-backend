@@ -2,6 +2,7 @@ import datetime
 
 import strawberry
 import strawberry_django
+from strawberry_django.filters import apply as apply_filters
 
 from main.graphql.context import Info
 from utils.strawberry.paginations import CountList, pagination_field
@@ -54,6 +55,19 @@ class PrivateQuery:
             .order_by("-id")
         )
         return [time_entry async for time_entry in qs]
+
+    @strawberry_django.field
+    async def all_time_entries(
+        self,
+        info: Info,
+        filters: TimeEntryFilter,
+    ) -> list[TimeEntryType]:
+        queryset = TimeEntryType.get_queryset(None, None, info)
+        queryset = apply_filters(filters, queryset, info, None)
+        count = await queryset.acount()
+        if count > 3000:  # TODO: Is this fine?
+            raise Exception(f"Try using filters. To much data to return (Row count: {count})")
+        return [time_entry async for time_entry in queryset]
 
     # Single ----------------------------
     @strawberry_django.field

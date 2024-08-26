@@ -33,7 +33,7 @@ class PrivateQuery:
     # Unbound ----------------------------
     @strawberry_django.field
     async def all_projects(self, info: Info) -> list[ProjectType]:
-        qs = ProjectType.get_queryset(None, None, info).filter(is_archived=False).all()
+        qs = ProjectType.get_queryset(None, None, info).filter(is_archived=False).order_by("slide_order").all()
         return [project async for project in qs]
 
     @strawberry_django.field

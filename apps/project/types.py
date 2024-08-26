@@ -67,6 +67,8 @@ class DeadlineType(UserResourceTypeMixin):
 class ProjectType(UserResourceTypeMixin):
     id: strawberry.ID
     logo: strawberry.auto
+    logo_hd: strawberry.auto
+    slide_order: strawberry.auto
     project_client_id: strawberry.ID
     contractor_id: strawberry.ID
 

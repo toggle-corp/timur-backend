@@ -36,7 +36,14 @@ class TimeEntryFilter:
     task: strawberry.auto
     date: strawberry.auto
 
-    types: list[TimeEntryTypeEnum]  # type: ignore[reportInvalidTypeForm]
+    @strawberry_django.filter_field
+    def types(
+        self,
+        queryset: models.QuerySet,
+        value: list[TimeEntryTypeEnum],  # type: ignore[reportInvalidTypeForm]
+        prefix: str,
+    ) -> tuple[models.QuerySet, models.Q]:
+        return queryset, models.Q(**{f"{prefix}type__in": value})
 
     @strawberry_django.filter_field
     def project(

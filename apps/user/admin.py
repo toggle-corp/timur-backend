@@ -30,6 +30,7 @@ class UserAdmin(DjangoUserAdmin):
                     "last_name",
                     "department",
                     "display_picture",
+                    "exclude_from_slides",
                 )
             },
         ),

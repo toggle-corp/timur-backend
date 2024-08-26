@@ -1,5 +1,8 @@
+import datetime
+
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from apps.user.models import User
@@ -48,6 +51,21 @@ class Journal(models.Model):
         indexes = [
             models.Index(fields=["date"]),
         ]
+
+    @classmethod
+    def as_leave_qs(cls, recent_only=False) -> models.QuerySet["Journal"]:
+        """
+        Return a Journal queryset with pre-applied leave filters
+        """
+        qs = Journal.objects.filter(
+            leave_type__in=[
+                Journal.LeaveType.FULL,
+                Journal.LeaveType.FIRST_HALF,
+            ],
+        )
+        if recent_only:
+            return qs.filter(date__gte=timezone.now() - datetime.timedelta(days=30))
+        return qs
 
     def __str__(self):
         return f"{self.user_id}#{self.date}"

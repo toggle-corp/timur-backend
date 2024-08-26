@@ -2,7 +2,6 @@ import datetime
 
 import strawberry
 import strawberry_django
-from asgiref.sync import sync_to_async
 from django.db import models
 
 from apps.common.models import Event
@@ -13,6 +12,7 @@ from apps.project.types import ProjectType
 from apps.standup.models import Quote
 from apps.track.models import TimeEntry
 from apps.user.models import User
+from apps.user.types import UserType
 from main.graphql.context import Info
 from utils.common import get_queryset_for_model
 from utils.strawberry.types import string_field
@@ -35,17 +35,20 @@ class DailyStandUpProjectStatUserType:
     user_obj: strawberry.Private[User]
     date: strawberry.Private[datetime.date]
 
-    @strawberry.field
-    def id(self) -> strawberry.ID:
-        return strawberry.ID(str(self.user_obj.pk))
+    id: strawberry.ID
+    last_active_date: datetime.date
 
-    @strawberry.field
+    @strawberry.field(deprecation_reason="Use user.display_picture instead")
     def display_picture(self) -> str | None:
         return self.user_obj.display_picture
 
-    @strawberry.field
+    @strawberry.field(deprecation_reason="Use user.display_name instead")
     def display_name(self) -> str:
         return self.user_obj.display_name
+
+    @strawberry.field
+    def user(self) -> UserType:
+        return self.user_obj  # type: ignore[reportReturnType]
 
     @strawberry.field
     async def leave(self, info: Info) -> JournalLeaveTypeEnum | None:  # type: ignore[reportInvalidTypeForm]
@@ -62,11 +65,11 @@ class DailyStandUpProjectStatType:
     date: strawberry.Private[datetime.date]
 
     async def _check_activity_from_date(self) -> datetime.date:
-        return await sync_to_async(Event.get_last_working_date)(now_date=self.date, offset_count=3)
+        return await Event.aget_last_working_date(now_date=self.date, offset_count=3)
 
     @strawberry.field
     async def last_working_date(self) -> datetime.date:
-        return await sync_to_async(Event.get_last_working_date)(now_date=self.date)
+        return await Event.aget_last_working_date(now_date=self.date)
 
     # XXX: For debugging only
     @strawberry.field
@@ -79,18 +82,42 @@ class DailyStandUpProjectStatType:
 
     @strawberry.field
     async def users(self) -> list[DailyStandUpProjectStatUserType]:
-        last_working_date = await self._check_activity_from_date()
+        activity_from_date = await self._check_activity_from_date()
         time_entries_qs = (
             TimeEntry.objects.filter(
+                (
+                    models.Q(
+                        date__gte=activity_from_date,
+                        date__lt=self.date,
+                        status__in=[TimeEntry.Status.DOING, TimeEntry.Status.DONE],
+                    )
+                    | models.Q(date=self.date)
+                ),
                 task__contract__project=self.project_obj,
-                date__gte=last_working_date,
             )
+            .order_by()
             .values("user")
-            .distinct()
+            .annotate(
+                active_date=models.Max("date"),
+            )
+            .values_list("user", "active_date")
         )
+
+        time_entries_user_active_date_map = {user_id: active_date async for user_id, active_date in time_entries_qs}
+
+        users_qs = User.objects.filter(
+            id__in=time_entries_user_active_date_map.keys(),
+            exclude_from_slides=False,
+        ).order_by("display_name")
+
         return [
-            DailyStandUpProjectStatUserType(user_obj=user, date=self.date)
-            async for user in User.objects.filter(id__in=time_entries_qs).all()
+            DailyStandUpProjectStatUserType(
+                user_obj=user,
+                date=self.date,
+                last_active_date=time_entries_user_active_date_map[user.pk],
+                id=strawberry.ID(f"{user.pk}-{self.project_obj.pk}"),
+            )
+            async for user in users_qs.all()
         ]
 
 
