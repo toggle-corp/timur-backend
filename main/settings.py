@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 import environ
+from corsheaders.defaults import default_headers
 
 from main import sentry
 
@@ -306,16 +307,14 @@ CORS_ALLOW_METHODS = (
 )
 
 CORS_ALLOW_HEADERS = (
-    "accept",
+    *default_headers,
+    # Misc
     "accept-encoding",
-    "authorization",
     "content-type",
-    "dnt",
     "origin",
-    "user-agent",
-    "x-csrftoken",
-    "x-requested-with",
+    # Sentry
     "sentry-trace",
+    "baggage",
 )
 
 # Sentry Config
