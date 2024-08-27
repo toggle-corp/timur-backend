@@ -158,6 +158,7 @@ type ContractorTypeCountList {
 scalar CustomErrorType
 
 type DailyStandUpProjectStatType {
+  id: ID!
   lastWorkingDate: Date!
   activityFromDate: Date!
   project: ProjectType!

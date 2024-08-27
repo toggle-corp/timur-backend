@@ -35,7 +35,7 @@ class DailyStandUpProjectStatUserType:
     user_obj: strawberry.Private[User]
     date: strawberry.Private[datetime.date]
 
-    id: strawberry.ID
+    id: strawberry.ID  # TODO: Use key for auto computed IDs
     last_active_date: datetime.date
 
     @strawberry.field(deprecation_reason="Use user.display_picture instead")
@@ -61,6 +61,7 @@ class DailyStandUpProjectStatUserType:
 
 @strawberry.type
 class DailyStandUpProjectStatType:
+    id: strawberry.ID
     project_obj: strawberry.Private[Project]
     date: strawberry.Private[datetime.date]
 
@@ -139,4 +140,8 @@ class DailyStandUpType:
     async def project_stat(self, info: Info, pk: strawberry.ID) -> DailyStandUpProjectStatType | None:
         project = await ProjectType.get_queryset(None, None, info).filter(pk=pk).afirst()
         if project:
-            return DailyStandUpProjectStatType(project_obj=project, date=self.date)
+            return DailyStandUpProjectStatType(
+                id=strawberry.ID(f"{project.pk}-{self.date.isoformat()}"),
+                project_obj=project,
+                date=self.date,
+            )
