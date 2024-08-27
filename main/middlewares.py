@@ -1,31 +1,33 @@
-import json
-
+from asgiref.sync import iscoroutinefunction
 from django.urls import reverse
-from sentry_sdk import Scope
+from django.utils.decorators import sync_and_async_middleware
+
+from main.sentry import SentryTransactionMiddlewareHelper
 
 
-class SentryTransactionMiddleware:
-    graphql_url = reverse("graphql")
+@sync_and_async_middleware
+def sentry_middleware(get_response):
+    from django.conf import settings
 
-    def __init__(self, get_response):
-        self.get_response = get_response
+    # One-time configuration and initialization goes here.
+    graphql_urls = set([reverse("graphql")])
+    if settings.DEBUG:
+        graphql_urls.add(reverse("graphiql"))
 
-    def __call__(self, request):
-        if request.path == self.graphql_url:
-            operation_type = "Query"
-            operation_name = "Unknown"
-            try:
-                body = request.body.decode("utf-8")
-                if body:
-                    # XXX: This will be repeated by Strawberry as well.
-                    data = json.loads(body)
-                    operation_name = data.get("operationName", operation_name)
-                    if data.get("query", "").startswith("mutation"):
-                        operation_type = "Mutation"
-            except Exception:
-                ...
+    if iscoroutinefunction(get_response):
 
-            scope = Scope.get_current_scope()
-            scope.set_transaction_name(f"GraphQL/{operation_type}/{operation_name}")
+        async def amiddleware(request):
+            if settings.SENTRY_ENABLED:
+                await SentryTransactionMiddlewareHelper.atrack_transaction(graphql_urls, request)
+            response = await get_response(request)
+            return response
 
-        return self.get_response(request)
+        return amiddleware
+
+    def middleware(request):
+        if settings.SENTRY_ENABLED:
+            SentryTransactionMiddlewareHelper.track_transaction(graphql_urls, request)
+        response = get_response(request)
+        return response
+
+    return middleware

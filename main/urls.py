@@ -31,7 +31,7 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns.extend(
         [
-            path("graphiql/", CustomAsyncGraphQLView.as_view(schema=graphql_schema)),
+            path("graphiql/", CustomAsyncGraphQLView.as_view(schema=graphql_schema), name="graphiql"),
             path("dev/sign_in/", dev_sign_in, name="dev-sign-in"),
         ]
     )
