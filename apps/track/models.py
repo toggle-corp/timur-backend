@@ -38,16 +38,28 @@ class Task(UserResource):
 
 class TimeEntry(models.Model):
     class Type(models.IntegerChoices):
-        # Using 4 digit for future ordering support
-        DESIGN = 1000, _("Design")
-        DEVELOPMENT = 1100, _("Development")
-        DEV_OPS = 1200, _("DevOps")
-        DOCUMENTATION = 2000, _("Documentation")
-        INTERNAL_DISCUSSION = 3000, _("Internal Discussion")
-        EXTERNAL_DISCUSSION = 3100, _("External Discussion")
-        MEETING = 4000, _("Meeting")
-        PROJECT_MANAGEMENT = 5000, _("Project Management")
-        QUALITY_ASSURANCE = 6000, _("QA")
+        # XXX: Custom integer value is used to support sort by label
+
+        # For MISC, user will leave it empty
+        # Generic
+        DOCUMENTATION = 6, _("Documentation")
+        RESEARCH = 11, _("Research")
+        DESIGN = 1, _("Design")
+        OPERATION = 9, _("Operation")
+        PROJECT_MANAGEMENT = 10, _("Project Management")
+        TESTING = 12, _("Testing")
+
+        # Development
+        DEVELOPMENT = 3, _("Development")
+        DEV_OPS = 2, _("DevOps")
+
+        # Communication
+        # - Discussion
+        EXTERNAL_DISCUSSION = 4, _("Discussion (External)")
+        INTERNAL_DISCUSSION = 5, _("Discussion (Internal)")
+        # - Meeting
+        EXTERNAL_MEETING = 7, _("Meeting (External)")
+        INTERNAL_MEETING = 8, _("Meeting (Internal)")
 
     class Status(models.IntegerChoices):
         DOING = 1, _("Doing")
