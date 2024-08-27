@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="timeentry",
             name="status",
-            field=models.PositiveSmallIntegerField(choices=[(1, "Doing"), (2, "Done"), (3, "TODO")], default=2),
+            field=models.PositiveSmallIntegerField(choices=[(1, "DOING"), (2, "DONE"), (3, "TODO")], default=2),
             preserve_default=False,
         ),
     ]

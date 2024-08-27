@@ -55,15 +55,15 @@ class TimeEntry(models.Model):
 
         # Communication
         # - Discussion
-        EXTERNAL_DISCUSSION = 4, _("Discussion (External)")
-        INTERNAL_DISCUSSION = 5, _("Discussion (Internal)")
+        EXTERNAL_DISCUSSION = 4, _("Discussion External")
+        INTERNAL_DISCUSSION = 5, _("Discussion Internal")
         # - Meeting
-        EXTERNAL_MEETING = 7, _("Meeting (External)")
-        INTERNAL_MEETING = 8, _("Meeting (Internal)")
+        EXTERNAL_MEETING = 7, _("Meeting External")
+        INTERNAL_MEETING = 8, _("Meeting Internal")
 
     class Status(models.IntegerChoices):
-        DOING = 1, _("Doing")
-        DONE = 2, _("Done")
+        DOING = 1, _("DOING")
+        DONE = 2, _("DONE")
         TODO = 3, _("TODO")
 
     user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="+")
