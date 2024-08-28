@@ -240,7 +240,7 @@ type DeadlineType implements UserResourceTypeMixin {
   name: String!
   totalDays: Int!
   usedDays: Int!
-  remainingDays: Int!
+  remainingDays: Int! @deprecated(reason: "Use total_days - used_days instead")
 }
 
 type DjangoImageType {

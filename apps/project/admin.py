@@ -15,7 +15,6 @@ class ClientAdmin(VersionAdmin, UserResourceAdmin):
 @admin.register(Contractor)
 class ContractorAdmin(VersionAdmin, UserResourceAdmin):
     search_fields = ("name",)
-
     list_display = ("name",)
 
 
@@ -25,6 +24,7 @@ class DeadlineAdmin(VersionAdmin, UserResourceAdmin):
 
     list_display = ("name",)
     list_filter = (
+        "is_archived",
         AutocompleteFilterFactory("Project", "project"),
         AutocompleteFilterFactory("Contract", "contract"),
     )
@@ -34,6 +34,7 @@ class DeadlineAdmin(VersionAdmin, UserResourceAdmin):
 class ProjectAdmin(VersionAdmin, UserResourceAdmin):
     search_fields = ("name",)
     list_filter = (
+        "is_archived",
         AutocompleteFilterFactory("Client", "project_client"),
         AutocompleteFilterFactory("Contractor", "contractor"),
     )

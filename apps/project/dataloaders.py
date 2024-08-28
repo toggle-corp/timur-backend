@@ -26,7 +26,7 @@ def load_project(keys: list[int]) -> list["ProjectType"]:
 
 
 def load_deadlines(keys: list[int]) -> list[list["DeadlineType"]]:
-    qs = Deadline.objects.filter(project__in=keys)
+    qs = Deadline.objects.filter(project__in=keys, is_archived=False)
     _map = defaultdict(list)
     for obj in qs:
         _map[obj.project_id].append(obj)

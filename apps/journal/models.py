@@ -75,7 +75,6 @@ class Journal(models.Model):
         if self.leave_type is not None and self.wfh_type is not None:
             if (self.leave_type, self.wfh_type) not in self.VALID_LEAVE_WFH_COMBINATION:
                 raise ValidationError(_("Provided Leave and Work from home combination is invalid"))
-        pass
 
     def clean(self):
         super().clean()

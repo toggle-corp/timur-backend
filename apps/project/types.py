@@ -56,9 +56,11 @@ class DeadlineType(UserResourceTypeMixin):
     async def used_days(self, root: strawberry.Parent[Deadline]) -> int:
         return await Event.aget_working_days_count(root.start_date, timezone.now().date())
 
-    @strawberry_django.field
+    @strawberry_django.field(deprecation_reason="Use total_days - used_days instead")
     async def remaining_days(self, root: strawberry.Parent[Deadline]) -> int:
-        return await Event.aget_working_days_count(timezone.now().date(), root.end_date)
+        total_days = await Event.aget_working_days_count(root.start_date, root.end_date)
+        used_days = await Event.aget_working_days_count(root.start_date, timezone.now().date())
+        return total_days - used_days
 
 
 @strawberry_django.type(Project)

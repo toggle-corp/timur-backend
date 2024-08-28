@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -68,8 +69,19 @@ class Deadline(UserResource):
         blank=True,
     )
 
-    is_archived = models.BooleanField(default=False)  # XXX: Is this useful?
+    is_archived = models.BooleanField(default=False)
     start_date = models.DateField()
     end_date = models.DateField()
 
     project_id: int
+
+    class Meta:  # type: ignore [reportIncompatibleVariableOverride]
+        indexes = [NotArchivedFilterIndex]
+
+    def dates_check(self):
+        if self.start_date > self.end_date:
+            raise ValidationError(_("Start date can't be greater then End date"))
+
+    def clean(self):
+        super().clean()
+        self.dates_check()
