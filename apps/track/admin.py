@@ -4,12 +4,7 @@ from django.db import models
 from django.http import HttpRequest
 from django.utils.translation import ngettext
 
-from apps.common.admin import (
-    PreventDeleteAdminMixin,
-    UserResourceAdmin,
-    UserResourceTabularInline,
-    VersionAdmin,
-)
+from apps.common.admin import UserResourceAdmin, UserResourceTabularInline, VersionAdmin
 
 from .models import Contract, Task, TimeEntry
 
@@ -21,7 +16,7 @@ class ContractTaskInline(UserResourceTabularInline):
 
 
 @admin.register(Contract)
-class ContractAdmin(PreventDeleteAdminMixin, VersionAdmin, UserResourceAdmin):
+class ContractAdmin(VersionAdmin, UserResourceAdmin):
     search_fields = (
         "project__name",
         "name",
@@ -44,7 +39,7 @@ class ContractAdmin(PreventDeleteAdminMixin, VersionAdmin, UserResourceAdmin):
 
 
 @admin.register(Task)
-class TaskAdmin(PreventDeleteAdminMixin, VersionAdmin, UserResourceAdmin):
+class TaskAdmin(VersionAdmin, UserResourceAdmin):
     search_fields = ("name",)
     list_filter = (
         AutocompleteFilterFactory("Project", "contract__project"),

@@ -36,7 +36,7 @@ class Journal(models.Model):
         ]
     )
 
-    user = models.ForeignKey(User, related_name="+", on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name="+", on_delete=models.PROTECT)
     date = models.DateField()
 
     leave_type = models.PositiveSmallIntegerField(null=True, blank=True, choices=LeaveType.choices)
