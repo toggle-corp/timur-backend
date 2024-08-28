@@ -3,6 +3,7 @@ import strawberry_django
 from django.db import models
 from django.utils import timezone
 
+from apps.common.models import Event
 from apps.common.types import UserResourceTypeMixin
 from main.graphql.context import Info
 from utils.common import get_queryset_for_model
@@ -49,18 +50,15 @@ class DeadlineType(UserResourceTypeMixin):
 
     @strawberry_django.field
     async def total_days(self, root: strawberry.Parent[Deadline]) -> int:
-        # TODO: Return only working days
-        return (root.end_date - root.start_date).days
+        return await Event.aget_working_days_count(root.start_date, root.end_date)
 
     @strawberry_django.field
     async def used_days(self, root: strawberry.Parent[Deadline]) -> int:
-        # TODO: Return only working days
-        return (timezone.now().date() - root.start_date).days
+        return await Event.aget_working_days_count(root.start_date, timezone.now().date())
 
     @strawberry_django.field
     async def remaining_days(self, root: strawberry.Parent[Deadline]) -> int:
-        # TODO: Return only working days
-        return (root.end_date - timezone.now().date()).days
+        return await Event.aget_working_days_count(timezone.now().date(), root.end_date)
 
 
 @strawberry_django.type(Project)

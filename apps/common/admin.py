@@ -89,7 +89,7 @@ class UserResourceTabularInline(admin.TabularInline):
 
 # -- Common Models
 @admin.register(Event)
-class ClientAdmin(VersionAdmin, UserResourceAdmin):
+class EventAdmin(VersionAdmin, UserResourceAdmin):
     search_fields = ("name",)
     list_display = ("name", "type", "start_date", "end_date")
     list_filter = ("type",)
