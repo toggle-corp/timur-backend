@@ -66,7 +66,7 @@ class DailyStandUpProjectStatType:
     date: strawberry.Private[datetime.date]
 
     async def _check_activity_from_date(self) -> datetime.date:
-        return await Event.aget_last_working_date(now_date=self.date, offset_count=3)
+        return await Event.aget_last_working_date(now_date=self.date, offset_count=1)
 
     @strawberry.field
     async def last_working_date(self) -> datetime.date:
