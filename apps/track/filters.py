@@ -2,7 +2,7 @@ import strawberry
 import strawberry_django
 from django.db import models
 
-from .enums import TimeEntryTypeEnum
+from .enums import TimeEntryStatusEnum, TimeEntryTypeEnum
 from .models import Contract, Task, TimeEntry
 
 
@@ -32,9 +32,17 @@ class TaskFilter:
 @strawberry_django.filters.filter(TimeEntry, lookups=True)
 class TimeEntryFilter:
     id: strawberry.auto
-    user: strawberry.auto
     task: strawberry.auto
     date: strawberry.auto
+
+    @strawberry_django.filter_field
+    def users(
+        self,
+        queryset: models.QuerySet,
+        value: list[strawberry.ID],  # type: ignore[reportInvalidTypeForm]
+        prefix: str,
+    ) -> tuple[models.QuerySet, models.Q]:
+        return queryset, models.Q(**{f"{prefix}user__in": value})
 
     @strawberry_django.filter_field
     def types(
@@ -44,6 +52,15 @@ class TimeEntryFilter:
         prefix: str,
     ) -> tuple[models.QuerySet, models.Q]:
         return queryset, models.Q(**{f"{prefix}type__in": value})
+
+    @strawberry_django.filter_field
+    def statuses(
+        self,
+        queryset: models.QuerySet,
+        value: list[TimeEntryStatusEnum],  # type: ignore[reportInvalidTypeForm]
+        prefix: str,
+    ) -> tuple[models.QuerySet, models.Q]:
+        return queryset, models.Q(**{f"{prefix}status__in": value})
 
     @strawberry_django.filter_field
     def project(

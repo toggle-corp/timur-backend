@@ -2,8 +2,11 @@ import strawberry
 from asgiref.sync import sync_to_async
 
 from main.graphql.context import Info
+from utils.strawberry.paginations import CountList, pagination_field
 
-from .types import UserMeType
+from .filters import UserFilter
+from .orders import UserOrder
+from .types import UserMeType, UserType
 
 
 @strawberry.type
@@ -17,4 +20,10 @@ class PublicQuery:
 
 
 @strawberry.type
-class PrivateQuery: ...
+class PrivateQuery:
+    # Paginated ----------------------------
+    users: CountList[UserType] = pagination_field(
+        pagination=True,
+        filters=UserFilter,
+        order=UserOrder,
+    )

@@ -420,6 +420,7 @@ type PrivateMutation {
 }
 
 type PrivateQuery {
+  users(filters: UserFilter, order: UserOrder, pagination: OffsetPaginationInput): UserTypeCountList!
   dailyStandup(date: Date!): DailyStandUpType!
   clients(filters: ClientFilter, order: ClientOrder, pagination: OffsetPaginationInput): ClientTypeCountList!
   contractors(filters: ContractorFilter, order: ContractorOrder, pagination: OffsetPaginationInput): ContractorTypeCountList!
@@ -631,14 +632,15 @@ input TimeEntryCreateInput {
 
 input TimeEntryFilter {
   id: IDBaseFilterLookup
-  user: DjangoModelFilterInput
   task: DjangoModelFilterInput
   date: DateDateFilterLookup
   AND: TimeEntryFilter
   OR: TimeEntryFilter
   NOT: TimeEntryFilter
   DISTINCT: Boolean
+  users: [ID!]
   types: [TimeEntryTypeEnum!]
+  statuses: [TimeEntryStatusEnum!]
   project: ID
   contract: ID
 }
@@ -738,6 +740,16 @@ enum UserDepartmentTypeEnum {
   QUALITY_ASSURANCE
 }
 
+input UserFilter {
+  id: IDBaseFilterLookup
+  displayName: StrFilterLookup
+  AND: UserFilter
+  OR: UserFilter
+  NOT: UserFilter
+  DISTINCT: Boolean
+  departments: [UserDepartmentTypeEnum!]
+}
+
 type UserMeType implements UserBaseType {
   id: ID!
   firstName: String
@@ -760,6 +772,12 @@ type UserMeTypeMutationResponseType {
   result: UserMeType
 }
 
+input UserOrder {
+  id: Ordering
+  displayName: Ordering
+  department: Ordering
+}
+
 interface UserResourceTypeMixin {
   createdAt: DateTime!
   modifiedAt: DateTime!
@@ -777,4 +795,11 @@ type UserType implements UserBaseType {
   departmentDisplay: String
   leaveToday: JournalLeaveTypeEnum
   workFromHomeToday: JournalWorkFromHomeTypeEnum
+}
+
+type UserTypeCountList {
+  limit: Int!
+  offset: Int!
+  count: Int!
+  items: [UserType!]!
 }
