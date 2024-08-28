@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from apps.common.models import UserResource
+from apps.common.models import NotArchivedFilterIndex, UserResource
 
 
 class Client(UserResource):
@@ -50,6 +50,9 @@ class Project(UserResource):
     project_client_id: int
     contractor_id: int
 
+    class Meta:  # type: ignore [reportIncompatibleVariableOverride]
+        indexes = [NotArchivedFilterIndex]
+
     def __str__(self):
         return self.name
 
@@ -65,7 +68,7 @@ class Deadline(UserResource):
         blank=True,
     )
 
-    is_archived = models.BooleanField(default=False)
+    is_archived = models.BooleanField(default=False)  # XXX: Is this useful?
     start_date = models.DateField()
     end_date = models.DateField()
 

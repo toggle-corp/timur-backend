@@ -34,6 +34,13 @@ class UserResource(models.Model):
         ordering = ["-id"]
 
 
+NotArchivedFilterIndex = models.Index(
+    fields=["is_archived"],
+    name="%(app_label)s_%(class)s_active_idx",
+    condition=models.Q(is_archived=False),
+)
+
+
 # -- Common models
 class Event(UserResource):
     class Type(models.IntegerChoices):

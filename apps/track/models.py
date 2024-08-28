@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from apps.common.models import UserResource
+from apps.common.models import NotArchivedFilterIndex, UserResource
 from apps.project.models import Project
 from apps.user.models import User
 
@@ -18,6 +18,9 @@ class Contract(UserResource):
     project_id: int
     tasks: models.QuerySet["Task"]
 
+    class Meta:  # type: ignore [reportIncompatibleVariableOverride]
+        indexes = [NotArchivedFilterIndex]
+
     def __str__(self):
         # NOTE: N+1
         return f"{self.project.name} -> {self.name} ({self.total_estimated_hours} hours)"
@@ -31,6 +34,9 @@ class Task(UserResource):
     is_archived = models.BooleanField(default=False)
 
     contract_id: int
+
+    class Meta:  # type: ignore [reportIncompatibleVariableOverride]
+        indexes = [NotArchivedFilterIndex]
 
     def __str__(self):
         return self.name
