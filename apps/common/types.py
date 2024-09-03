@@ -3,6 +3,7 @@ import datetime
 import strawberry
 import strawberry_django
 from django.db import models
+from django.utils import timezone
 
 from apps.common.serializers import TempClientIdMixin
 from apps.user.types import UserType
@@ -55,4 +56,38 @@ class EventType(UserResourceTypeMixin):
 
     @strawberry_django.field
     def dates(self, event: strawberry.Parent[Event]) -> list[datetime.date]:
-        return event.get_dates()
+        # NOTE: include_holidays=True, Don't care about other holidays (itself included)
+        if event.type in Event.Type.__NON_WORKING__:
+            return event.get_dates(include_holidays=True)
+        return event.get_dates(include_holidays=False)
+
+    @strawberry_django.field
+    def is_active(self, event: strawberry.Parent[Event]) -> bool:
+        now = timezone.now().date()
+        return event.start_date <= now <= event.end_date
+
+    @strawberry_django.field
+    async def remaining_days_to_start(self, event: strawberry.Parent[Event]) -> int:
+        # XXX: This doesn't work if two non-working events collide
+        now = timezone.now().date()
+        if now >= event.start_date:
+            return 0
+        if event.type in Event.Type.__NON_WORKING__:
+            return await Event.aget_working_days_count(
+                now,
+                event.start_date - datetime.timedelta(days=1),
+                include_holidays=True,
+            )
+        return await Event.aget_working_days_count(
+            now,
+            event.start_date - datetime.timedelta(days=1),
+            include_holidays=False,
+        )
+
+    @strawberry_django.field
+    async def remaining_days_to_end(self, event: strawberry.Parent[Event]) -> int:
+        # XXX: This doesn't work if two non-working events collide
+        now = timezone.now().date()
+        if event.type in Event.Type.__NON_WORKING__:
+            return await Event.aget_working_days_count(now, event.end_date, include_holidays=True)
+        return await Event.aget_working_days_count(now, event.end_date, include_holidays=False)

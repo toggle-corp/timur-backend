@@ -32,7 +32,10 @@ def generate_app_enum_collection_data(name):
     return type(
         name,
         (),
-        {field_name: [AppEnumData(e) for e in enum] for field_name, enum in ENUM_TO_STRAWBERRY_ENUM_MAP.items()},
+        {
+            field_name: [AppEnumData(e) for e in enum]  # type: ignore[reportGeneralTypeIssues]
+            for field_name, enum in ENUM_TO_STRAWBERRY_ENUM_MAP.items()
+        },
     )
 
 

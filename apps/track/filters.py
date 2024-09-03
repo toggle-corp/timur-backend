@@ -2,7 +2,7 @@ import strawberry
 import strawberry_django
 from django.db import models
 
-from .enums import TimeEntryStatusEnum, TimeEntryTypeEnum
+from .enums import TimeEntryDateFilterEnum, TimeEntryStatusEnum, TimeEntryTypeEnum
 from .models import Contract, Task, TimeEntry
 
 
@@ -34,6 +34,26 @@ class TimeEntryFilter:
     id: strawberry.auto
     task: strawberry.auto
     date: strawberry.auto
+
+    @strawberry_django.filter_field
+    def date_gte(
+        self,
+        queryset: models.QuerySet,
+        value: TimeEntryDateFilterEnum,  # type: ignore[reportInvalidTypeForm]
+        prefix: str,
+    ) -> tuple[models.QuerySet, models.Q]:
+        _value = TimeEntryDateFilterEnum.resolve_value(value)
+        return queryset, models.Q(**{f"{prefix}date__gte": _value})
+
+    @strawberry_django.filter_field
+    def date_lte(
+        self,
+        queryset: models.QuerySet,
+        value: TimeEntryDateFilterEnum,  # type: ignore[reportInvalidTypeForm]
+        prefix: str,
+    ) -> tuple[models.QuerySet, models.Q]:
+        _value = TimeEntryDateFilterEnum.resolve_value(value)
+        return queryset, models.Q(**{f"{prefix}date__lte": _value})
 
     @strawberry_django.filter_field
     def users(

@@ -285,6 +285,9 @@ type EventType implements UserResourceTypeMixin {
   type: EventTypeEnum!
   typeDisplay: String!
   dates: [Date!]!
+  isActive: Boolean!
+  remainingDaysToStart: Int!
+  remainingDaysToEnd: Int!
 }
 
 type EventTypeCountList {
@@ -630,6 +633,11 @@ input TimeEntryCreateInput {
   clientId: ID
 }
 
+enum TimeEntryDateFilterEnum {
+  LAST_WORKING_DAY
+  TODAY
+}
+
 input TimeEntryFilter {
   id: IDBaseFilterLookup
   task: DjangoModelFilterInput
@@ -638,6 +646,8 @@ input TimeEntryFilter {
   OR: TimeEntryFilter
   NOT: TimeEntryFilter
   DISTINCT: Boolean
+  dateGte: TimeEntryDateFilterEnum
+  dateLte: TimeEntryDateFilterEnum
   users: [ID!]
   types: [TimeEntryTypeEnum!]
   statuses: [TimeEntryStatusEnum!]

@@ -2,8 +2,10 @@ import datetime
 
 from asgiref.sync import sync_to_async
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from apps.user.models import User
 from main.caches import CacheKey
@@ -60,9 +62,31 @@ class Event(UserResource):
     start_date = models.DateField()
     end_date = models.DateField()
 
-    def save(self, *args, **kwargs):
+    def __str__(self):
+        return self.name
+
+    @classmethod
+    def reload_cache(cls):
+        # Delete
         cache.delete(CacheKey.TIMUR_EVENT_DATES)
+        # Generate cache
+        cls.get_relative_event_dates()
+
+    def dates_check(self):
+        if self.start_date > self.end_date:
+            raise ValidationError(_("Start date can't be greater then End date"))
+
+    def clean(self):
+        super().clean()
+        self.dates_check()
+
+    def save(self, *args, **kwargs):
+        self.reload_cache()
         return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        self.reload_cache()
+        return super().delete(*args, **kwargs)
 
     @staticmethod
     def is_weekend(date: datetime.date):
@@ -82,7 +106,7 @@ class Event(UserResource):
             return [start_date]
 
         dates = []
-        for x in range((end_date - start_date).days):
+        for x in range((end_date - start_date).days + 1):
             date = start_date + datetime.timedelta(days=x)
             if not include_weekends and cls.is_weekend(date):
                 continue
@@ -91,12 +115,12 @@ class Event(UserResource):
             dates.append(date)
         return sorted(set(dates))
 
-    def get_dates(self, include_weekends=False) -> list[datetime.date]:
+    def get_dates(self, include_weekends=False, include_holidays=True) -> list[datetime.date]:
         return self.generate_dates(
             self.start_date,
             self.end_date,
             include_weekends=include_weekends,
-            include_holidays=True,  # Don't care about other holidays (itself included)
+            include_holidays=include_holidays,
         )
 
     @classmethod
@@ -131,7 +155,7 @@ class Event(UserResource):
         return cls.get_last_working_date(now_date, skip_dates=skip_dates, offset_count=offset_count)
 
     @classmethod
-    def get_relative_events(cls) -> models.QuerySet["Event"]:
+    def get_relative_non_working_events(cls) -> models.QuerySet["Event"]:
         """
         Return list of dates with holiday relative to current date
         """
@@ -154,7 +178,7 @@ class Event(UserResource):
             return cached_value
 
         dates = []
-        qs = cls.get_relative_events()
+        qs = cls.get_relative_non_working_events()
         for start_date, end_date in qs.values_list("start_date", "end_date"):
             if start_date == end_date:
                 dates.append(start_date)
@@ -168,16 +192,48 @@ class Event(UserResource):
         return sorted_dates
 
     @classmethod
-    def get_working_days_count(cls, start_date: datetime.date, end_date: datetime.date) -> int:
+    @sync_to_async
+    def aget_relative_event_dates(cls) -> list[datetime.date]:
+        """
+        Return list of dates with holiday relative to current date
+        """
+        return cls.get_relative_event_dates()
+
+    @classmethod
+    def get_working_days_count(
+        cls,
+        start_date: datetime.date,
+        end_date: datetime.date,
+        include_weekends: bool = False,
+        include_holidays: bool = False,
+    ) -> int:
         """
         Return number of working days excluding weekends and holidays
         """
-        return len(cls.generate_dates(start_date, end_date))
+        return len(
+            cls.generate_dates(
+                start_date,
+                end_date,
+                include_weekends=include_weekends,
+                include_holidays=include_holidays,
+            )
+        )
 
     @classmethod
     @sync_to_async
-    def aget_working_days_count(cls, start_date: datetime.date, end_date: datetime.date) -> int:
+    def aget_working_days_count(
+        cls,
+        start_date: datetime.date,
+        end_date: datetime.date,
+        include_weekends: bool = False,
+        include_holidays: bool = False,
+    ) -> int:
         """
         Return number of working days excluding weekends and holidays
         """
-        return cls.get_working_days_count(start_date, end_date)
+        return cls.get_working_days_count(
+            start_date,
+            end_date,
+            include_weekends=include_weekends,
+            include_holidays=include_holidays,
+        )

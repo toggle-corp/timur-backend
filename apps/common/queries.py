@@ -1,7 +1,9 @@
+import datetime
+
 import strawberry
 import strawberry_django
+from django.utils import timezone
 
-from main.graphql.context import Info
 from utils.strawberry.paginations import CountList, pagination_field
 
 from .filters import EventFilter
@@ -21,5 +23,12 @@ class PrivateQuery:
 
     # Unbound ----------------------------
     @strawberry_django.field
-    async def relative_events(self, info: Info) -> list[EventType]:
-        return [event async for event in Event.get_relative_events()]  # type: ignore[reportReturnType]
+    async def relative_events(self) -> list[EventType]:
+        now = timezone.now().date()
+        start_threshold = now - datetime.timedelta(days=30)
+        end_threshold = now + datetime.timedelta(days=30)
+        qs = Event.objects.filter(
+            start_date__gte=start_threshold,
+            end_date__lte=end_threshold,
+        )
+        return [event async for event in qs]  # type: ignore[reportReturnType]

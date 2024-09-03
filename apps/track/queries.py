@@ -7,9 +7,28 @@ from strawberry_django.filters import apply as apply_filters
 from main.graphql.context import Info
 from utils.strawberry.paginations import CountList, pagination_field
 
+# from .models import TimeEntry
+# from .enums import TimeEntryDateFilterEnum
 from .filters import ContractFilter, TaskFilter, TimeEntryFilter
 from .orders import ContractOrder, TaskOrder, TimeEntryOrder
 from .types import ContractType, TaskType, TimeEntryType
+
+# from django.db import models
+
+
+# TODO: Remove
+# async def custom_time_entries_filters_apply(
+#     queryset: models.QuerySet[TimeEntry],
+#     date_gte: TimeEntryDateFilterEnum | None,
+#     date_lte: TimeEntryDateFilterEnum | None,
+# ) -> models.QuerySet:
+#     if date_gte:
+#         date_gte_value = await TimeEntryDateFilterEnum.resolve_value(date_gte)
+#         queryset = queryset.filter(date__gte=date_gte_value)
+#     if date_lte:
+#         date_lte_value = await TimeEntryDateFilterEnum.resolve_value(date_lte)
+#         queryset = queryset.filter(date__lte=date_lte_value)
+#     return queryset
 
 
 @strawberry.type
@@ -61,9 +80,12 @@ class PrivateQuery:
         self,
         info: Info,
         filters: TimeEntryFilter,
+        # date_gte: TimeEntryDateFilterEnum | None = None,  # type: ignore[reportInvalidTypeForm]
+        # date_lte: TimeEntryDateFilterEnum | None = None,  # type: ignore[reportInvalidTypeForm]
     ) -> list[TimeEntryType]:
         queryset = TimeEntryType.get_queryset(None, None, info)
         queryset = apply_filters(filters, queryset, info, None)
+        # queryset = await custom_time_entries_filters_apply(queryset, date_gte, date_lte)
         count = await queryset.acount()
         if count > 3000:  # TODO: Is this fine?
             raise Exception(f"Try using filters. To much data to return (Row count: {count})")
