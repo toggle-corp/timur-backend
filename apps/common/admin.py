@@ -93,3 +93,4 @@ class EventAdmin(VersionAdmin, UserResourceAdmin):
     search_fields = ("name",)
     list_display = ("name", "type", "start_date", "end_date")
     list_filter = ("type",)
+    ordering = ("start_date",)
