@@ -50,7 +50,7 @@ class UserResourceAdmin(admin.ModelAdmin):
         if not change:
             obj.created_by = request.user
         obj.modified_by = request.user
-        return super().save_model(request, obj, form, change)  # type: ignore[reportAttributeAccessIssue]
+        super().save_model(request, obj, form, change)  # type: ignore[reportAttributeAccessIssue]
 
     def save_formset(self, request, form, formset, change):
         if not issubclass(formset.model, UserResource):

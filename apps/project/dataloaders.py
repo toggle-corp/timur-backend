@@ -2,6 +2,7 @@ import typing
 from collections import defaultdict
 
 from asgiref.sync import sync_to_async
+from django.utils import timezone
 from django.utils.functional import cached_property
 from strawberry.dataloader import DataLoader
 
@@ -26,7 +27,12 @@ def load_project(keys: list[int]) -> list["ProjectType"]:
 
 
 def load_deadlines(keys: list[int]) -> list[list["DeadlineType"]]:
-    qs = Deadline.objects.filter(project__in=keys, is_archived=False)
+    qs = Deadline.objects.filter(
+        project__in=keys,
+        is_archived=False,
+        # Hide not started deadlines
+        start_date__lte=timezone.now().date(),
+    )
     _map = defaultdict(list)
     for obj in qs:
         _map[obj.project_id].append(obj)

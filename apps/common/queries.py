@@ -25,10 +25,11 @@ class PrivateQuery:
     @strawberry_django.field
     async def relative_events(self) -> list[EventType]:
         now = timezone.now().date()
-        start_threshold = now - datetime.timedelta(days=30)
-        end_threshold = now + datetime.timedelta(days=30)
+        threshold = now + datetime.timedelta(days=30)
         qs = Event.objects.filter(
-            start_date__gte=start_threshold,
-            end_date__lte=end_threshold,
+            # Upcoming events using threshold
+            start_date__lte=threshold,
+            # Hide past events
+            end_date__gte=now,
         )
         return [event async for event in qs]  # type: ignore[reportReturnType]

@@ -70,8 +70,8 @@ class Deadline(UserResource):
     )
 
     is_archived = models.BooleanField(default=False)
-    start_date = models.DateField()
-    end_date = models.DateField()
+    start_date = models.DateField(help_text=_("This will be the date from which we need to start working."))
+    end_date = models.DateField(help_text=_("This will be the date on which we need to deliver the work."))
 
     project_id: int
 
