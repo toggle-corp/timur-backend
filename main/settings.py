@@ -63,6 +63,7 @@ env = environ.Env(
     APP_FRONTEND_HOST=str,  # http://frontend.example.com
     DJANGO_ALLOWED_HOST=(list, ["*"]),
     SESSION_COOKIE_DOMAIN=str,
+    SESSION_COOKIE_AGE=(int, 1209600),  # seconds (Default: 2 weeks)
     CSRF_COOKIE_DOMAIN=str,
     # Misc
     RELEASE=(str, "develop"),
@@ -382,6 +383,7 @@ if APP_HTTP_PROTOCOL == "https":
 
 # https://docs.djangoproject.com/en/3.2/ref/settings/#std:setting-SESSION_COOKIE_DOMAIN
 SESSION_COOKIE_DOMAIN = env("SESSION_COOKIE_DOMAIN")
+SESSION_COOKIE_AGE = env("SESSION_COOKIE_AGE")
 # https://docs.djangoproject.com/en/3.2/ref/settings/#csrf-cookie-domain
 CSRF_COOKIE_DOMAIN = env("CSRF_COOKIE_DOMAIN")
 
