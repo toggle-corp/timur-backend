@@ -131,6 +131,7 @@ INSTALLED_APPS = [
     "django_premailer",
     "storages",
     "corsheaders",
+    "rangefilter",  # Django admin date range filter
     # - Health-check
     "health_check",  # required
     "health_check.db",  # stock Django health checkers

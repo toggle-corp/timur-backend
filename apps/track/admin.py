@@ -3,6 +3,7 @@ from django.contrib import admin, messages
 from django.db import models
 from django.http import HttpRequest
 from django.utils.translation import ngettext
+from rangefilter.filters import DateRangeQuickSelectListFilterBuilder
 
 from apps.common.admin import UserResourceAdmin, UserResourceTabularInline, VersionAdmin
 
@@ -96,7 +97,7 @@ def flag_as_billable(modeladmin, request, queryset):
 @admin.register(TimeEntry)
 class TimeEntryAdmin(admin.ModelAdmin):
     list_filter = (
-        "date",
+        ("date", DateRangeQuickSelectListFilterBuilder()),
         "type",
         "status",
         "is_billable",
@@ -116,6 +117,7 @@ class TimeEntryAdmin(admin.ModelAdmin):
         "get_user",
         "type",
         "date",
+        "get_description_preview",
         "duration",
         "duration_adjustment",
         "is_billable",
@@ -141,3 +143,10 @@ class TimeEntryAdmin(admin.ModelAdmin):
     @admin.display(ordering="user__name", description="User")
     def get_user(self, obj):
         return obj.user
+
+    @admin.display(ordering="description_preview", description="Description")
+    def get_description_preview(self, obj):
+        text = obj.description
+        if text is None or len(text) < 100:
+            return text
+        return text[:100] + "..."

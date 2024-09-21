@@ -34,6 +34,7 @@ google-api-python-client = "*"
 django-health-check = "*"
 Pillow = "*"  # Required by django ImageField
 psutil = "*"  # Required by django-health-check
+django-admin-rangefilter = "*"
 
 [tool.poetry.dev-dependencies]
 dacite = "*"
