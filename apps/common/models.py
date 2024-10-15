@@ -184,7 +184,7 @@ class Event(UserResource):
                 dates.append(start_date)
                 continue
 
-            for x in range((end_date - start_date).days):
+            for x in range((end_date - start_date).days + 1):
                 dates.append(start_date + datetime.timedelta(days=x))
 
         sorted_dates = sorted(set(dates))
