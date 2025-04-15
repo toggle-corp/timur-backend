@@ -22,7 +22,7 @@ class StringIDField(serializers.CharField):
 
 class CustomCharField(serializers.CharField):
     """
-    This is match  utils/strawberry/types.py::string_field logic
+    This is match utils/strawberry/types.py::string_field logic
     """
 
     def run_validation(self, data=serializers.empty):

@@ -16,3 +16,4 @@ from apps.common.models import UserResource
 class Quote(UserResource):
     text = models.TextField()
     author = models.CharField(max_length=225)
+    last_viewed = models.DateTimeField(null=True, blank=True)

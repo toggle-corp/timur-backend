@@ -1,8 +1,10 @@
 import datetime
+import typing
 
 import strawberry
 import strawberry_django
 from django.db import models
+from django.db.models.functions import Now
 
 from apps.common.models import Event
 from apps.common.types import UserResourceTypeMixin
@@ -134,7 +136,12 @@ class DailyStandUpType:
 
     @strawberry.field
     async def quote(self, info: Info) -> QuoteType | None:
-        return await QuoteType.get_queryset(None, None, info).order_by("?").afirst()
+        quote = (
+            await QuoteType.get_queryset(None, None, info).order_by(models.F("last_viewed").asc(nulls_first=True)).afirst()
+        )
+        if quote:
+            await Quote.objects.filter(pk=quote.pk).aupdate(last_viewed=Now())
+            return typing.cast(QuoteType, quote)
 
     @strawberry.field
     async def project_stat(self, info: Info, pk: strawberry.ID) -> DailyStandUpProjectStatType | None:

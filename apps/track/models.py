@@ -51,7 +51,7 @@ class TimeEntry(models.Model):
         DOCUMENTATION = 6, _("Documentation")
         RESEARCH = 11, _("Research")
         DESIGN = 1, _("Design")
-        OPERATION = 9, _("Operation")
+        OPERATION = 9, _("Operations")
         PROJECT_MANAGEMENT = 10, _("Project Management")
         TESTING = 12, _("Testing")
 

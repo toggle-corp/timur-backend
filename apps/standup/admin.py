@@ -8,4 +8,4 @@ from .models import Quote
 @admin.register(Quote)
 class QuoteAdmin(VersionAdmin, UserResourceAdmin):
     search_fields = ("author",)
-    list_display = ("author",)
+    list_display = ("author", "last_viewed")
