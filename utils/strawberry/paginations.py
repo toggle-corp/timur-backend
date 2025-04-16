@@ -1,13 +1,13 @@
 from __future__ import annotations
 
+import typing
+from collections.abc import Callable  # noqa: TC003
 from functools import cached_property
-from typing import Any, Callable, Generic, Type, TypeVar
+from typing import Any, Generic, TypeVar
 
-import strawberry
 from asgiref.sync import sync_to_async
 from django.conf import settings
-from django.db import models
-from strawberry.types import Info
+from django.db import models  # noqa: TC002
 from strawberry_django.fields.field import StrawberryDjangoField
 from strawberry_django.filters import apply as apply_filters
 from strawberry_django.ordering import apply as apply_orders
@@ -17,6 +17,11 @@ from strawberry_django.pagination import (
 )
 from strawberry_django.resolvers import django_resolver
 from strawberry_django.utils.typing import unwrap_type
+
+import strawberry
+
+if typing.TYPE_CHECKING:
+    from strawberry.types import Info
 
 
 def process_pagination(pagination: OffsetPaginationInput):
@@ -93,7 +98,7 @@ class StrawberryDjangoCountList(StrawberryDjangoField):
 
     @cached_property
     def django_model(self) -> type[models.Model] | None:
-        super().django_model
+        super().django_model  # noqa: B018  # TODO: Remove this?
         # Hack to get the nested type of `CountList` to register
         # as the type of this field
         items_type = [
@@ -124,8 +129,8 @@ class StrawberryDjangoCountList(StrawberryDjangoField):
         kwargs: dict[str, Any],
     ) -> Any:
         pk: int = kwargs.get("pk", strawberry.UNSET)
-        filters: Type = kwargs.get("filters", strawberry.UNSET)
-        order: Type = kwargs.get("order", strawberry.UNSET)
+        filters: type = kwargs.get("filters", strawberry.UNSET)
+        order: type = kwargs.get("order", strawberry.UNSET)
         pagination: OffsetPaginationInput = kwargs.get("pagination", strawberry.UNSET)
 
         if self.django_model is None or self._base_type is None:

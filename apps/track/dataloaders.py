@@ -38,7 +38,6 @@ def load_total_tasks_estimated_hours_by_contract(keys: list[int]) -> list[float]
 
 
 class TrackDataLoader:
-
     @cached_property
     def load_task(self):
         return DataLoader(load_fn=sync_to_async(load_task))

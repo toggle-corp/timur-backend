@@ -10,7 +10,7 @@ class User(AbstractUser):
     class Department(models.IntegerChoices):
         # Using 4 digit for future ordering support
         DATA_ANALYST = 1000, _("Data Analyst")
-        DESIGN = 1100, _("Development")
+        DESIGN = 1100, _("Design")
         DEVELOPMENT = 1200, _("Development")
         MANAGEMENT = 2000, _("Management")
         PROJECT_MANAGER = 3000, _("Project Manager")
@@ -23,11 +23,15 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     invalid_email = models.BooleanField(default=False, help_text=_("Is Bounced email?"))
     display_name = models.CharField(
-        verbose_name=_("system generated user display name"),
         blank=True,
         max_length=255,
     )
-    department = models.PositiveSmallIntegerField(choices=Department.choices, null=True)
+    display_picture = models.URLField(null=True, blank=True)
+    department = models.PositiveSmallIntegerField(choices=Department.choices, null=True, blank=True)
+
+    # TODO: This is a hacky way to exclude useres from standup slides, for better integration implement
+    # support for custom teams with members & projects
+    exclude_from_slides = models.BooleanField(default=False)
 
     objects: CustomUserManager = CustomUserManager()  # type: ignore[reportAssignmentType]
 
@@ -38,5 +42,7 @@ class User(AbstractUser):
         self.email = self.email.lower()
         if self.pk is None:
             super().save(*args, **kwargs)
+            # Remove force_insert since we have already inserted
+            kwargs.pop("force_insert", None)
         self.display_name = self.get_full_name() or f"User#{self.pk}"
         return super().save(*args, **kwargs)

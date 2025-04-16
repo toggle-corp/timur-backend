@@ -22,7 +22,7 @@ class StringIDField(serializers.CharField):
 
 class CustomCharField(serializers.CharField):
     """
-    This is match  utils/strawberry/types.py::string_field logic
+    This is match utils/strawberry/types.py::string_field logic
     """
 
     def run_validation(self, data=serializers.empty):
@@ -31,9 +31,17 @@ class CustomCharField(serializers.CharField):
         return super().run_validation(data)
 
 
+class TimeDurationField(serializers.IntegerField):
+    """
+    This field is created to override the graphene conversion of the integerfield -> TimeDurationField
+    """
+
+    pass
+
+
 serializers.ModelSerializer.serializer_field_mapping.update(
     {
         models.CharField: CustomCharField,
         models.TextField: CustomCharField,
-    }
+    },
 )

@@ -5,8 +5,6 @@ import logging
 import re
 
 # import time
-import typing
-
 from asgiref.sync import sync_to_async
 
 # from django.conf import settings
@@ -36,7 +34,7 @@ def to_snake_case(name):
 
 
 def get_queryset_for_model(
-    model: typing.Type[models.Model],
+    model: type[models.Model],
     queryset: models.QuerySet | None = None,
 ) -> models.QuerySet:
     if queryset is not None:
@@ -75,7 +73,7 @@ def get_object_or_404_async(queryset, **kwargs):
 
 class RuntimeProfile:
     label: str
-    start: typing.Optional[datetime.datetime]
+    start: datetime.datetime | None
 
     def __init__(self, label: str = "N/A"):
         self.label = label
@@ -97,4 +95,4 @@ class RuntimeProfile:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         assert self.start is not None
         time_delta = datetime.datetime.now() - self.start
-        logger.info(f"Runtime with <{self.label}>: {time_delta}")
+        logger.info("Runtime with <%s>: %s", self.label, str(time_delta))

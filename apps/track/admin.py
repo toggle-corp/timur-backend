@@ -1,21 +1,27 @@
 from admin_auto_filters.filters import AutocompleteFilterFactory
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.db import models
 from django.http import HttpRequest
+from django.utils.translation import ngettext
+from rangefilter.filters import DateRangeQuickSelectListFilterBuilder
 
 from apps.common.admin import UserResourceAdmin, UserResourceTabularInline, VersionAdmin
 
-from .models import Contract, Task, TimeTrack
+from .models import Contract, Task, TimeEntry
 
 
 class ContractTaskInline(UserResourceTabularInline):
     model = Task
     ordering = ("pk",)
+    can_delete = False
 
 
 @admin.register(Contract)
 class ContractAdmin(VersionAdmin, UserResourceAdmin):
-    search_fields = ("name",)
+    search_fields = (
+        "project__name",
+        "name",
+    )
     list_filter = (
         AutocompleteFilterFactory("Project", "project"),
         AutocompleteFilterFactory("Created By", "created_by"),
@@ -57,12 +63,44 @@ class TaskAdmin(VersionAdmin, UserResourceAdmin):
         return obj.contract.name
 
 
-@admin.register(TimeTrack)
-class TimeTrackAdmin(admin.ModelAdmin):
+# Time Entry ----------------------------------------------------
+@admin.action(description="Mark time entries as non-billable")
+def flag_as_non_billable(modeladmin, request, queryset):
+    updated = queryset.update(is_billable=False)
+    modeladmin.message_user(
+        request,
+        ngettext(
+            "%d time entry was successfully marked as non-billable.",
+            "%d time entries were successfully marked as non-billable.",
+            updated,
+        )
+        % updated,
+        messages.SUCCESS,
+    )
+
+
+@admin.action(description="Mark time entries as billable")
+def flag_as_billable(modeladmin, request, queryset):
+    updated = queryset.update(is_billable=True)
+    modeladmin.message_user(
+        request,
+        ngettext(
+            "%d time entry was successfully marked as billable.",
+            "%d time entries were successfully marked as billable.",
+            updated,
+        )
+        % updated,
+        messages.SUCCESS,
+    )
+
+
+@admin.register(TimeEntry)
+class TimeEntryAdmin(admin.ModelAdmin):
     list_filter = (
-        "date",
-        "task_type",
-        "is_done",
+        ("date", DateRangeQuickSelectListFilterBuilder()),
+        "type",
+        "status",
+        "is_billable",
         AutocompleteFilterFactory("Project", "task__contract__project"),
         AutocompleteFilterFactory("Contract", "task__contract"),
         AutocompleteFilterFactory("Task", "task"),
@@ -77,11 +115,15 @@ class TimeTrackAdmin(admin.ModelAdmin):
         "get_project",
         "get_task",
         "get_user",
-        "task_type",
+        "type",
         "date",
+        "get_description_preview",
         "duration",
-        "is_done",
+        "duration_adjustment",
+        "is_billable",
+        "status",
     )
+    actions = [flag_as_non_billable, flag_as_billable]
 
     def get_queryset(self, request: HttpRequest) -> models.QuerySet[Contract]:
         return super().get_queryset(request).select_related("user", "task", "task__contract", "task__contract__project")
@@ -101,3 +143,10 @@ class TimeTrackAdmin(admin.ModelAdmin):
     @admin.display(ordering="user__name", description="User")
     def get_user(self, obj):
         return obj.user
+
+    @admin.display(ordering="description_preview", description="Description")
+    def get_description_preview(self, obj):
+        text = obj.description
+        if text is None or len(text) < 100:
+            return text
+        return text[:100] + "..."

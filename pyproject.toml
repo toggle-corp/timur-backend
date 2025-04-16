@@ -1,68 +1,58 @@
-[tool.poetry]
+[project]
 name = "timur-backend"
 version = "0.1.0"
 description = ""
-authors = ["tc-dev <dev@togglecorp.com>"]
-license = "GNU Affero General Public License v3.0"
+authors = [{ name = "tc-dev", email = "dev@togglecorp.com" }]
+requires-python = "~=3.13.2"
 readme = "README.md"
-package-mode = false
+license = "GNU Affero General Public License v3.0"
+dependencies = [
+    "requests",
+    "django-environ",
+    "Django>=4.2,<4.3",
+    "drf-writable-nested",
+    "djangorestframework",
+    "psycopg2-binary>=2.9,<3",
+    "django-cors-headers",
+    "django-premailer",
+    "django-storages",
+    "django-admin-autocomplete-filter",
+    "strawberry-graphql-django==0.47.1",
+    "sentry-sdk",
+    "ipython",
+    "factory-boy",
+    "user-agents",
+    "django-ses>=3,<4",
+    "celery[redis]>=5.3.4,<6",
+    "django-redis>=5.3.0,<6",
+    "django-reversion",
+    "uwsgi",
+    "aws-sns-message-validator",
+    "google-api-python-client",
+    "django-health-check",
+    "Pillow",
+    "psutil",
+    "django-admin-rangefilter",
+]
 
-[tool.poetry.dependencies]
-python = "^3.12"
-requests = "*"
-django-environ = "*"
-Django = ">=4.2,<4.3"
-drf-writable-nested = "*"
-djangorestframework = "*"
-psycopg2-binary = "==2.9.9"
-django-cors-headers = "*"
-django-premailer = "*"
-django-storages = "*"
-django-admin-autocomplete-filter = "*"
-strawberry-graphql-django = {extras = ["strawberry-graphql"], version = "0.47.1"}
-sentry-sdk = "*"
-ipython = "*"
-factory-boy = "*"
-user-agents = "*"
-django-ses = "3"
-celery = {extras = ["redis"], version = "^5.3.4"}
-django-redis = "^5.3.0"
-django-reversion = "*"
-uwsgi = "*"
-aws-sns-message-validator = "*"
+[dependency-groups]
+dev = [
+    "dacite",
+    "pytest",
+    "pytest-profiling",
+    "pytest-ordering",
+    "pytest-django",
+    "django-stubs==4.2.6",
+    "djangorestframework-stubs",
+    "celery-types",
+]
 
-[tool.poetry.dev-dependencies]
-dacite = "*"
-pytest = "*"
-pytest-profiling = "*"
-pytest-ordering = "*"
-pytest-django = "*"
-django-stubs = "==4.2.6"  # NOTE: 4.2.7 is messing with TextChoices/IntergerChoices
-djangorestframework-stubs = { version = "*", allow-prereleases = true }
-celery-types = "*"
+[tool.uv]
+package = false
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "main.settings"
 log_cli = true
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.black]
-line-length = 125
-# NOTE: Update in .pre-commit-config.yaml as well
-extend-exclude = "(__pycache__|.*snap_test_.*\\.py|.+\\/.+\\/migrations\\/.*)"
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-skip = [
-    "**/__pycache__",
-    "**/snap_test_*.py",
-    ".venv/",
-    "**/migrations/*.py",
-]
 
 [tool.pyright]
 exclude = [
@@ -75,3 +65,34 @@ reportMissingImports = true
 reportMissingTypeStubs = false
 venvPath = "."
 venv = ".venv"
+
+[tool.ruff]
+line-length = 125
+extend-exclude = [
+    ".git",
+    ".pytest_cache",
+    ".venv",
+    "venv",
+    "**/migrations/*",
+    "__pycache__",
+]
+
+[tool.ruff.lint]
+flake8-builtins.builtins-strict-checking = false
+ignore = [
+    "C901",
+    "E701",
+    "E203",
+    "DJ001",
+    "G201",
+]
+extend-select = ["I", "E", "F", "B", "A", "W", "DJ", "AIR", "COM", "INT", "ISC", "ICN", "LOG", "G", "T20", "TID", "PT", "Q", "RET", "SIM", "TC", "PTH", "UP"]
+# TODO: Use this instead `select = ["ALL"]` and add rules to ignore
+#   ruff check --statistics ./
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["E402"]
+"**/**/mutations.py" = ["B006"]
+"utils/strawberry/*.py" = ["UP"]
+"/**/tests/*_mock_data.py" = ["E501"]
+"**/snap_test_*.py" = ["E501"]

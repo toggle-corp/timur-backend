@@ -2,11 +2,13 @@ import dataclasses
 
 import strawberry
 
+from apps.common.enums import enum_map as common_enum_map
 from apps.journal.enums import enum_map as journal_enum_map
 from apps.track.enums import enum_map as track_enum_map
 from apps.user.enums import enum_map as user_enum_map
 
 ENUM_TO_STRAWBERRY_ENUM_MAP: dict[str, type] = {
+    **common_enum_map,
     **user_enum_map,
     **track_enum_map,
     **journal_enum_map,
@@ -30,7 +32,10 @@ def generate_app_enum_collection_data(name):
     return type(
         name,
         (),
-        {field_name: [AppEnumData(e) for e in enum] for field_name, enum in ENUM_TO_STRAWBERRY_ENUM_MAP.items()},
+        {
+            field_name: [AppEnumData(e) for e in enum]  # type: ignore[reportGeneralTypeIssues]
+            for field_name, enum in ENUM_TO_STRAWBERRY_ENUM_MAP.items()
+        },
     )
 
 
@@ -45,7 +50,7 @@ def generate_type_for_enum(name, Enum):
                 ("key", Enum),
                 ("label", str),
             ],
-        )
+        ),
     )
 
 
@@ -77,7 +82,7 @@ def generate_type_for_enums():
         dataclasses.make_dataclass(
             "AppEnumCollection",
             enum_fields,
-        )
+        ),
     )
 
 

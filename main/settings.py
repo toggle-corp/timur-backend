@@ -8,11 +8,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
-import os
 import sys
 from pathlib import Path
 
 import environ
+from corsheaders.defaults import default_headers
 
 from main import sentry
 
@@ -39,8 +39,8 @@ env = environ.Env(
     DJANGO_STATIC_URL=(str, "/static/"),
     DJANGO_MEDIA_URL=(str, "/media/"),
     # -- File System
-    DJANGO_STATIC_ROOT=(str, os.path.join(BASE_DIR, "assets/static")),  # Where to store
-    DJANGO_MEDIA_ROOT=(str, os.path.join(BASE_DIR, "assets/media")),  # Where to store
+    DJANGO_STATIC_ROOT=(str, BASE_DIR / "assets/static"),  # Where to store
+    DJANGO_MEDIA_ROOT=(str, BASE_DIR / "assets/media"),  # Where to store
     # -- S3
     DJANGO_USE_S3=(bool, False),
     MEDIA_FILE_CACHE_URL_TTL=(int, 86400),  # 1 day default
@@ -54,13 +54,15 @@ env = environ.Env(
     AWS_S3_ENDPOINT_URL=(str, None),  # Optional
     # Sentry
     SENTRY_DSN=(str, None),
-    SENTRY_SAMPLE_RATE=(float, 0.2),
+    SENTRY_TRACES_SAMPLE_RATE=(float, 0.2),
+    SENTRY_PROFILE_SAMPLE_RATE=(float, 0.2),
     # App Domain
     APP_DOMAIN=str,  # api.example.com
     APP_HTTP_PROTOCOL=str,  # http|https
     APP_FRONTEND_HOST=str,  # http://frontend.example.com
     DJANGO_ALLOWED_HOST=(list, ["*"]),
     SESSION_COOKIE_DOMAIN=str,
+    SESSION_COOKIE_AGE=(int, 1209600),  # seconds (Default: 2 weeks)
     CSRF_COOKIE_DOMAIN=str,
     # Misc
     RELEASE=(str, "develop"),
@@ -74,7 +76,6 @@ env = environ.Env(
     PYTEST_XDIST_WORKER=(str, None),
     # EMAIL
     EMAIL_FROM=str,
-    DJANGO_ADMINS=(list, ["Admin <admin@thedeep.io>"]),
     EMAIL_BACKEND=(str, ""),  # SES|SMTP -> CONSOLE is used by default
     # -- SES Credentials - Role is preferred
     AWS_SES_AWS_ACCESS_KEY_ID=(str, None),
@@ -84,6 +85,11 @@ env = environ.Env(
     SMTP_EMAIL_PORT=int,
     SMTP_EMAIL_USERNAME=str,
     SMTP_EMAIL_PASSWORD=str,
+    # Google SSO
+    USE_GOOGLE_OAUTH=(bool, False),
+    GOOGLE_OAUTH_CLIENT_ID=(str, None),
+    GOOGLE_OAUTH_SECRET=(str, None),
+    GOOGLE_OAUTH_REDIRECT_URL=(str, None),
     # MISC
     ALLOW_DUMMY_DATA_SCRIPT=(bool, False),  # WARNING
 )
@@ -98,14 +104,14 @@ SECRET_KEY = env("DJANGO_SECRET_KEY")
 DEBUG = env("DJANGO_DEBUG")
 ALLOW_DUMMY_DATA_SCRIPT = env("ALLOW_DUMMY_DATA_SCRIPT")
 
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOST")
+ALLOWED_HOSTS: list[str] = env.list("DJANGO_ALLOWED_HOST")  # type: ignore[assignment]
 
-APP_SITE_NAME = "Questionnaire Builder"
+APP_SITE_NAME = "Timur"
 APP_HTTP_PROTOCOL = env("APP_HTTP_PROTOCOL")
 APP_DOMAIN = env("APP_DOMAIN")
 APP_FRONTEND_HOST = env("APP_FRONTEND_HOST")
 
-APP_ENVIRONMENT = env("APP_ENVIRONMENT")
+APP_ENVIRONMENT: str = env("APP_ENVIRONMENT").upper()  # type: ignore[assignment]
 APP_TYPE = env("APP_TYPE")
 
 # Application definition
@@ -124,8 +130,18 @@ INSTALLED_APPS = [
     "django_premailer",
     "storages",
     "corsheaders",
+    "rangefilter",  # Django admin date range filter
+    # - Health-check
+    "health_check",  # required
+    "health_check.db",  # stock Django health checkers
+    "health_check.cache",
+    "health_check.storage",
+    "health_check.contrib.migrations",
+    "health_check.contrib.psutil",  # disk and memory utilization; requires psutil
+    "health_check.contrib.redis",  # requires Redis broker
     # Internal apps
     "apps.common",  # Common
+    "apps.standup",
     "apps.user",
     "apps.project",
     "apps.track",
@@ -141,6 +157,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "main.middlewares.sentry_middleware",
 ]
 
 ROOT_URLCONF = "main.urls"
@@ -158,6 +175,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "main.context_processors.app_contexts",
             ],
         },
     },
@@ -216,6 +234,11 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
+
+STATICFILES_DIRS = [
+    Path("apps") / "static",
+]
+
 
 STATIC_URL = env("DJANGO_STATIC_URL")
 MEDIA_URL = env("DJANGO_MEDIA_URL")
@@ -285,21 +308,18 @@ CORS_ALLOW_METHODS = (
 )
 
 CORS_ALLOW_HEADERS = (
-    "accept",
+    *default_headers,
+    # Misc
     "accept-encoding",
-    "authorization",
     "content-type",
-    "dnt",
     "origin",
-    "user-agent",
-    "x-csrftoken",
-    "x-requested-with",
+    # Sentry
     "sentry-trace",
+    "baggage",
 )
 
 # Sentry Config
 SENTRY_DSN = env("SENTRY_DSN")
-SENTRY_SAMPLE_RATE = env("SENTRY_SAMPLE_RATE")
 SENTRY_ENABLED = False
 
 SENTRY_CONFIG = {
@@ -308,6 +328,8 @@ SENTRY_CONFIG = {
     "send_default_pii": True,
     "release": env("RELEASE"),
     "environment": APP_ENVIRONMENT,
+    "traces_sample_rate": env("SENTRY_TRACES_SAMPLE_RATE"),
+    "profiles_sample_rate": env("SENTRY_PROFILE_SAMPLE_RATE"),
     "debug": DEBUG,
     "tags": {
         "site": ",".join(set(ALLOWED_HOSTS)),
@@ -332,15 +354,15 @@ TESTING = (
                 "/usr/local/lib/python3.6/dist-packages/py/test.py",
             ]
             # Provided by pytest-xdist
-        ]
+        ],
     )
     or env("PYTEST_XDIST_WORKER") is not None
 )
 
 
 # Security Header configuration
-SESSION_COOKIE_NAME = f"questionnaire-builder-{APP_ENVIRONMENT}-sessionid"
-CSRF_COOKIE_NAME = f"questionnaire-builder-{APP_ENVIRONMENT}-csrftoken"
+SESSION_COOKIE_NAME = f"timur-{APP_ENVIRONMENT}-sessionid"
+CSRF_COOKIE_NAME = f"timur-{APP_ENVIRONMENT}-csrftoken"
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
@@ -361,6 +383,7 @@ if APP_HTTP_PROTOCOL == "https":
 
 # https://docs.djangoproject.com/en/3.2/ref/settings/#std:setting-SESSION_COOKIE_DOMAIN
 SESSION_COOKIE_DOMAIN = env("SESSION_COOKIE_DOMAIN")
+SESSION_COOKIE_AGE = env("SESSION_COOKIE_AGE")
 # https://docs.djangoproject.com/en/3.2/ref/settings/#csrf-cookie-domain
 CSRF_COOKIE_DOMAIN = env("CSRF_COOKIE_DOMAIN")
 
@@ -370,8 +393,7 @@ HCAPTCHA_SECRET = env("HCAPTCHA_SECRET")
 TOKEN_DEFAULT_RESET_TIMEOUT_DAYS = 7
 
 # EMAIL
-SPECIFED_EMAIL_BACKEND = env("EMAIL_BACKEND").upper()
-ADMINS = env("DJANGO_ADMINS")
+SPECIFED_EMAIL_BACKEND: str = env("EMAIL_BACKEND").upper()  # type: ignore[assignment]
 EMAIL_FROM = env("EMAIL_FROM")
 
 if not TESTING and SPECIFED_EMAIL_BACKEND == "SES":
@@ -424,3 +446,20 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_EVENT_QUEUE_PREFIX = "timur-celery-"
 CELERY_ACKS_LATE = True
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+# Google SSO
+USE_GOOGLE_OAUTH = env("USE_GOOGLE_OAUTH")
+GOOGLE_OAUTH_CLIENT_ID = env("GOOGLE_OAUTH_CLIENT_ID")
+GOOGLE_OAUTH_SECRET = env("GOOGLE_OAUTH_SECRET")
+GOOGLE_OAUTH_REDIRECT_URL = env("GOOGLE_OAUTH_REDIRECT_URL")
+# TODO: We need these lines below to allow the Google sign in popup to work.
+SECURE_REFERRER_POLICY = "no-referrer-when-downgrade"
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"
+
+# Health check
+REDIS_URL = DJANGO_CACHE_REDIS_URL
+HEALTHCHECK_CACHE_KEY = "alert_hub_healthcheck_key"
+HEALTH_CHECK = {
+    "DISK_USAGE_MAX": 80,  # percent
+    "MEMORY_MIN": 100,  # in MB
+}

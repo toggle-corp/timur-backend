@@ -74,7 +74,7 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.ERROR(
                     "Enable DJANGO_DEBUG and ALLOW_DUMMY_DATA_SCRIPT using environment variable to run this",
-                )
+                ),
             )
             return
 
@@ -84,7 +84,7 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.ERROR(
                     f"Invalid JSON file: {e}",
-                )
+                ),
             )
             return
 
@@ -106,8 +106,8 @@ class Command(BaseCommand):
             return user
         self.stdout.write(
             self.style.SUCCESS(
-                f"Creating user with email: {email=} {insecure_password=} as {"Admin" if is_admin else "Normal"} User",
-            )
+                f"Creating user with email: {email=} {insecure_password=} as {'Admin' if is_admin else 'Normal'} User",
+            ),
         )
         if is_admin:
             return User.objects.create_superuser(
@@ -121,8 +121,7 @@ class Command(BaseCommand):
 
     @cache_with_args(1)
     def get_user(self, email: str) -> User | None:
-        if user := User.objects.filter(email=email).first():
-            return user
+        return User.objects.filter(email=email).first()
 
     @cache_with_args(2)
     def get_or_create_client(self, creator: User, name: str) -> Client:
@@ -148,7 +147,7 @@ class Command(BaseCommand):
     def get_or_create_project(self, creator: User, name: str, client: Client, contractor: Contractor) -> Project:
         project, created = Project.objects.get_or_create(
             name=name,
-            client=client,
+            project_client=client,
             contractor=contractor,
             defaults=self.get_user_resource_kwargs(creator),
         )
@@ -219,6 +218,6 @@ class Command(BaseCommand):
 
         self.stdout.write("---- Grant missing admin access to new PM")
         for user in pm_not_admin_users:
-            print(f"- {user.email}")
+            self.stdout.write(f"- {user.email}")
             user.is_superuser = True
             user.save(update_fields=("is_superuser",))

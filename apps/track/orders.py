@@ -1,7 +1,7 @@
 import strawberry
 import strawberry_django
 
-from .models import Contract, Task, TimeTrack
+from .models import Contract, Task, TimeEntry
 
 
 @strawberry_django.ordering.order(Contract)
@@ -18,7 +18,7 @@ class TaskOrder:
     created_at: strawberry.auto
 
 
-@strawberry_django.ordering.order(TimeTrack)
-class TimeTrackOrder:
+@strawberry_django.ordering.order(TimeEntry)
+class TimeEntryOrder:
     id: strawberry.auto
     date: strawberry.auto

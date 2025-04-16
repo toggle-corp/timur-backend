@@ -12,7 +12,7 @@ if [ "$CI" == "true" ]; then
 
     set -e
     # To show migration logs
-    ./manage.py test --keepdb -v 2 main.tests.test_fake
+    ./manage.py test --keepdb -v 2 main.tests.FakeTest
 
     # Run all tests now
     echo 'import coverage; coverage.process_startup()' > /code/sitecustomize.py

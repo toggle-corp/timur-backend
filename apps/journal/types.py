@@ -19,6 +19,8 @@ class JournalType:
 
     leave_type = enum_field(Journal.leave_type)
     leave_type_display = enum_display_field(Journal.leave_type)
+    wfh_type = enum_field(Journal.wfh_type)
+    wfh_type_display = enum_display_field(Journal.wfh_type)
     journal_text = string_field(Journal.journal_text)
 
     @staticmethod

@@ -7,17 +7,21 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Journal',
+            name="Journal",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('date', models.DateField()),
-                ('leave_type', models.PositiveSmallIntegerField(blank=True, choices=[(1, 'Full'), (2, 'First Half'), (3, 'Second Half')], null=True)),
-                ('journal_text', models.TextField(blank=True)),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("date", models.DateField()),
+                (
+                    "leave_type",
+                    models.PositiveSmallIntegerField(
+                        blank=True, choices=[(1, "Full"), (2, "First Half"), (3, "Second Half")], null=True
+                    ),
+                ),
+                ("journal_text", models.TextField(blank=True)),
             ],
         ),
     ]

@@ -1,13 +1,15 @@
 import strawberry
 import strawberry_django
 from django.db import models
+from django.utils import timezone
 
+from apps.common.models import Event
 from apps.common.types import UserResourceTypeMixin
 from main.graphql.context import Info
 from utils.common import get_queryset_for_model
 from utils.strawberry.types import string_field
 
-from .models import Client, Contractor, Project
+from .models import Client, Contractor, Deadline, Project
 
 
 @strawberry_django.type(Client)
@@ -32,10 +34,42 @@ class ContractorType(UserResourceTypeMixin):
         return get_queryset_for_model(Contractor, queryset)
 
 
+@strawberry_django.type(Deadline)
+class DeadlineType(UserResourceTypeMixin):
+    id: strawberry.ID
+    start_date: strawberry.auto
+    end_date: strawberry.auto
+
+    name = string_field(Deadline.name)
+    project_id: strawberry.ID
+    contract_id: strawberry.ID | None
+
+    @staticmethod
+    def get_queryset(_, queryset: models.QuerySet | None, info: Info):
+        return get_queryset_for_model(Deadline, queryset)
+
+    @strawberry_django.field
+    async def total_days(self, root: strawberry.Parent[Deadline]) -> int:
+        return await Event.aget_working_days_count(root.start_date, root.end_date)
+
+    @strawberry_django.field
+    async def used_days(self, root: strawberry.Parent[Deadline]) -> int:
+        return await Event.aget_working_days_count(root.start_date, timezone.now().date())
+
+    @strawberry_django.field(deprecation_reason="Use total_days - used_days instead")
+    async def remaining_days(self, root: strawberry.Parent[Deadline]) -> int:
+        total_days = await Event.aget_working_days_count(root.start_date, root.end_date)
+        used_days = await Event.aget_working_days_count(root.start_date, timezone.now().date())
+        return total_days - used_days
+
+
 @strawberry_django.type(Project)
 class ProjectType(UserResourceTypeMixin):
     id: strawberry.ID
-    client_id: strawberry.ID
+    logo: strawberry.auto
+    logo_hd: strawberry.auto
+    slide_order: strawberry.auto
+    project_client_id: strawberry.ID
     contractor_id: strawberry.ID
 
     name = string_field(Project.name)
@@ -46,9 +80,13 @@ class ProjectType(UserResourceTypeMixin):
         return get_queryset_for_model(Project, queryset)
 
     @strawberry_django.field
-    async def client(self, root: Project, info: Info) -> ClientType:
-        return await info.context.dl.project.load_client.load(root.client_id)
+    async def project_client(self, root: strawberry.Parent[Project], info: Info) -> ClientType:
+        return await info.context.dl.project.load_client.load(root.project_client_id)
 
     @strawberry_django.field
-    async def contractor(self, root: Project, info: Info) -> ContractorType:
+    async def contractor(self, root: strawberry.Parent[Project], info: Info) -> ContractorType:
         return await info.context.dl.project.load_contractor.load(root.contractor_id)
+
+    @strawberry_django.field
+    async def deadlines(self, root: strawberry.Parent[Project], info: Info) -> list[DeadlineType]:
+        return await info.context.dl.project.load_deadlines.load(root.id)

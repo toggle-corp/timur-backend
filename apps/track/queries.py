@@ -2,13 +2,33 @@ import datetime
 
 import strawberry
 import strawberry_django
+from strawberry_django.filters import apply as apply_filters
 
 from main.graphql.context import Info
 from utils.strawberry.paginations import CountList, pagination_field
 
-from .filters import ContractFilter, TaskFilter, TimeTrackFilter
-from .orders import ContractOrder, TaskOrder, TimeTrackOrder
-from .types import ContractType, TaskType, TimeTrackType
+# from .models import TimeEntry
+# from .enums import TimeEntryDateFilterEnum
+from .filters import ContractFilter, TaskFilter, TimeEntryFilter
+from .orders import ContractOrder, TaskOrder, TimeEntryOrder
+from .types import ContractType, TaskType, TimeEntryType
+
+# from django.db import models
+
+
+# TODO: Remove
+# async def custom_time_entries_filters_apply(
+#     queryset: models.QuerySet[TimeEntry],
+#     date_gte: TimeEntryDateFilterEnum | None,
+#     date_lte: TimeEntryDateFilterEnum | None,
+# ) -> models.QuerySet:
+#     if date_gte:
+#         date_gte_value = await TimeEntryDateFilterEnum.resolve_value(date_gte)
+#         queryset = queryset.filter(date__gte=date_gte_value)
+#     if date_lte:
+#         date_lte_value = await TimeEntryDateFilterEnum.resolve_value(date_lte)
+#         queryset = queryset.filter(date__lte=date_lte_value)
+#     return queryset
 
 
 @strawberry.type
@@ -26,33 +46,50 @@ class PrivateQuery:
         order=TaskOrder,
     )
 
-    time_tracks: CountList[TimeTrackType] = pagination_field(
+    time_entries: CountList[TimeEntryType] = pagination_field(
         pagination=True,
-        filters=TimeTrackFilter,
-        order=TimeTrackOrder,
+        filters=TimeEntryFilter,
+        order=TimeEntryOrder,
     )
 
     # Unbounded ----------------------------
     @strawberry_django.field(description="Return all UnArchived contracts")
-    async def all_contracts(self, info: Info) -> list[ContractType]:
-        return [contract async for contract in ContractType.get_queryset(None, None, info).filter(is_archived=False)]
+    async def all_active_contracts(self, info: Info) -> list[ContractType]:
+        qs = ContractType.get_queryset(None, None, info).filter(is_archived=False).order_by("-id")
+        return [contract async for contract in qs]
 
     @strawberry_django.field(description="Return all UnArchived tasks")
-    async def all_tasks(self, info: Info) -> list[TaskType]:
-        qs = TaskType.get_queryset(None, None, info).filter(is_archived=False, contract__is_archived=False)
+    async def all_active_tasks(self, info: Info) -> list[TaskType]:
+        qs = TaskType.get_queryset(None, None, info).filter(is_archived=False, contract__is_archived=False).order_by("-id")
         return [task async for task in qs]
 
     @strawberry_django.field
-    async def my_time_tracks(self, info: Info, date: datetime.date) -> list[TimeTrackType]:
+    async def my_time_entries(self, info: Info, date: datetime.date) -> list[TimeEntryType]:
         qs = (
-            TimeTrackType.get_queryset(None, None, info)
+            TimeEntryType.get_queryset(None, None, info)
             .filter(
                 date=date,
                 user=info.context.request.user,
             )
-            .all()
+            .order_by("-id")
         )
-        return [time_track async for time_track in qs]
+        return [time_entry async for time_entry in qs]
+
+    @strawberry_django.field
+    async def all_time_entries(
+        self,
+        info: Info,
+        filters: TimeEntryFilter,
+        # date_gte: TimeEntryDateFilterEnum | None = None,  # type: ignore[reportInvalidTypeForm]
+        # date_lte: TimeEntryDateFilterEnum | None = None,  # type: ignore[reportInvalidTypeForm]
+    ) -> list[TimeEntryType]:
+        queryset = TimeEntryType.get_queryset(None, None, info)
+        queryset = apply_filters(filters, queryset, info, None)
+        # queryset = await custom_time_entries_filters_apply(queryset, date_gte, date_lte)
+        count = await queryset.acount()
+        if count > 3000:  # TODO: Is this fine?
+            raise Exception(f"Try using filters. To much data to return (Row count: {count})")
+        return [time_entry async for time_entry in queryset]
 
     # Single ----------------------------
     @strawberry_django.field

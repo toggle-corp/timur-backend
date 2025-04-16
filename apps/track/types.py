@@ -10,7 +10,7 @@ from utils.common import get_queryset_for_model
 from utils.strawberry.enums import enum_display_field, enum_field
 from utils.strawberry.types import TimeDuration, string_field
 
-from .models import Contract, Task, TimeTrack
+from .models import Contract, Task, TimeEntry
 
 
 @strawberry_django.type(Contract)
@@ -21,6 +21,7 @@ class ContractType(UserResourceTypeMixin):
     is_archived: strawberry.auto
 
     name = string_field(Contract.name)
+    description = string_field(Contract.description)
 
     @staticmethod
     def get_queryset(_, queryset: models.QuerySet | None, info: Info):
@@ -53,27 +54,31 @@ class TaskType(UserResourceTypeMixin):
         return await info.context.dl.track.load_contract.load(root.contract_id)
 
 
-@strawberry_django.type(TimeTrack)
-class TimeTrackType(ClientIdMixin):
+@strawberry_django.type(TimeEntry)
+class TimeEntryType(ClientIdMixin):
     id: strawberry.ID
     date: strawberry.auto
     user_id: strawberry.ID
     task_id: strawberry.ID
-    is_done: strawberry.auto
+    start_time: strawberry.auto
+    created_at: strawberry.auto
     duration: TimeDuration | None
 
-    task_type = enum_field(TimeTrack.task_type)
-    task_type_display = enum_display_field(TimeTrack.task_type)
-    description = string_field(TimeTrack.description)
+    status = enum_field(TimeEntry.status)
+    status_display = enum_display_field(TimeEntry.status)
+
+    type = enum_field(TimeEntry.type)
+    type_display = enum_display_field(TimeEntry.type)
+    description = string_field(TimeEntry.description)
 
     @staticmethod
     def get_queryset(_, queryset: models.QuerySet | None, info: Info):
-        return get_queryset_for_model(TimeTrack, queryset)
+        return get_queryset_for_model(TimeEntry, queryset)
 
     @strawberry_django.field
-    async def user(self, root: TimeTrack, info: Info) -> UserType:
+    async def user(self, root: TimeEntry, info: Info) -> UserType:
         return await info.context.dl.user.load_user.load(root.user_id)
 
     @strawberry_django.field
-    async def task(self, root: TimeTrack, info: Info) -> TaskType:
+    async def task(self, root: TimeEntry, info: Info) -> TaskType:
         return await info.context.dl.track.load_task.load(root.task_id)

@@ -8,8 +8,14 @@ class JournalSerializer(serializers.ModelSerializer):
         model = Journal
         fields = (
             "leave_type",
+            "wfh_type",
             "journal_text",  # TODO: Create custom serializer field to convert null -> empty string for black=True
         )
+
+    def validate(self, attrs):
+        super().validate(attrs)
+        Journal(**attrs).leave_wfh_check()  # Check leave validation
+        return attrs
 
     def create(self, validated_data):
         validated_data["user"] = self.context["request"].user

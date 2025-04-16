@@ -13,7 +13,6 @@ JournalMutation = ModelMutation("Journal", JournalSerializer)
 
 @strawberry.type
 class PrivateMutation:
-
     @strawberry.mutation
     async def update_journal(
         self,
