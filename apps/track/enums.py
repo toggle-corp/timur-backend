@@ -27,8 +27,9 @@ class TimeEntryDateFilterEnum(Enum):
         now_date = timezone.now().date()
         if value == TimeEntryDateFilterEnum.TODAY:
             return now_date
-        elif value == TimeEntryDateFilterEnum.LAST_WORKING_DAY:
+        if value == TimeEntryDateFilterEnum.LAST_WORKING_DAY:
             return Event.get_last_working_date(now_date=now_date, offset_count=1)
+        return None
 
 
 enum_map = {

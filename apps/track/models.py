@@ -98,7 +98,7 @@ class TimeEntry(models.Model):
         null=True,
         blank=True,
         help_text=_(
-            "Minutes. Used to keep track of reported minutes. This will be used as duration (+- duration_adjustment)"
+            "Minutes. Used to keep track of reported minutes. This will be used as duration (+- duration_adjustment)",
         ),
     )
     is_billable = models.BooleanField(default=True)
@@ -110,6 +110,9 @@ class TimeEntry(models.Model):
         verbose_name = _("time entry")
         verbose_name_plural = _("time entries")
 
+    def __str__(self):
+        return f"{self.pk} {self.task_id=} {self.type=} {self.status}"
+
     def clean(self):
         super().clean()
 
@@ -118,6 +121,9 @@ class TimeEntry(models.Model):
             raise ValidationError(_("Duration needs to be defined before using Duration (Adjustment)"))
 
         # Make sure duration + duration_adjustment doesn't have negative value
-        if self.duration is not None and self.duration_adjustment is not None:
-            if self.duration_adjustment + self.duration < 0:
-                raise ValidationError(_("Duration adjustment shouldn't generate negative duration"))
+        if (
+            self.duration is not None
+            and self.duration_adjustment is not None
+            and self.duration_adjustment + self.duration < 0
+        ):
+            raise ValidationError(_("Duration adjustment shouldn't generate negative duration"))

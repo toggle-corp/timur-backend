@@ -19,7 +19,6 @@ LoginInput = convert_serializer_to_type(LoginSerializer, name="LoginInput")
 
 @strawberry.type
 class PublicMutation:
-
     @strawberry.mutation
     @sync_to_async
     def login(

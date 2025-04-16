@@ -1,3 +1,5 @@
+import typing
+
 import strawberry
 from asgiref.sync import sync_to_async
 
@@ -16,7 +18,8 @@ class PublicQuery:
     def me(self, info: Info) -> UserMeType | None:
         user = info.context.request.user
         if user.is_authenticated:
-            return user  # type: ignore[reportGeneralTypeIssues]
+            return typing.cast("UserMeType", user)
+        return None
 
 
 @strawberry.type

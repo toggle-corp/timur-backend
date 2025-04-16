@@ -1,3 +1,4 @@
+# pyright: reportPrivateImportUsage=false
 import factory
 from factory import fuzzy
 from factory.django import DjangoModelFactory
@@ -10,7 +11,7 @@ class UserFactory(DjangoModelFactory):
     last_name = factory.Faker("last_name")
     email = factory.Sequence(lambda n: f"{n}@xyz.com")
 
-    class Meta:  # type: ignore[reportIncompatibleVariab]
+    class Meta:  # type: ignore[override]
         model = User
         skip_postgeneration_save = True
 

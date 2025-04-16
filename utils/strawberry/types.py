@@ -1,7 +1,6 @@
 import json
 import typing
 
-import strawberry
 from django.contrib.gis.geos import GEOSGeometry
 from django.core.files.storage import FileSystemStorage, default_storage
 from django.db import models
@@ -9,6 +8,7 @@ from django.db.models.fields import Field as DjangoBaseField
 from django.db.models.fields import files
 from strawberry_django.fields.types import field_type_map
 
+import strawberry
 from main.graphql.context import Info
 
 if typing.TYPE_CHECKING:
@@ -53,7 +53,7 @@ def string_field(
         DjangoBaseField,
         models.query_utils.DeferredAttribute,
         "_FieldDescriptor",
-    ]
+    ],
 ):
     """
     Behaviour:
@@ -77,10 +77,10 @@ def string_field(
         return _get_value(root)  # type: ignore[reportGeneralTypeIssues] FIXME
 
     @strawberry.field
-    def nullable_string_(root) -> typing.Optional[str]:
+    def nullable_string_(root) -> str | None:
         _value = _get_value(root)
         if _value == "":
-            return
+            return None
         return _value
 
     if _field.null or _field.blank:  # type: ignore[reportGeneralTypeIssues] FIXME
@@ -113,5 +113,5 @@ field_type_map.update(
     {
         files.FileField: DjangoFileType,
         files.ImageField: DjangoImageType,
-    }
+    },
 )

@@ -32,14 +32,13 @@ class UserResourceTypeMixin:
 
 @strawberry.interface
 class ClientIdMixin:
-
     @strawberry_django.field
     def client_id(self, root: models.Model, info: Info) -> strawberry.ID:
         # NOTE: We should always provide non-null client_id
         return strawberry.ID(
             getattr(self, "client_id", None)
             or local_cache.get(TempClientIdMixin.get_cache_key(self, info.context.request))
-            or str(root.pk)
+            or str(root.pk),
         )
 
 
