@@ -141,7 +141,8 @@ class DailyStandUpType:
         )
         if quote:
             await Quote.objects.filter(pk=quote.pk).aupdate(last_viewed=Now())
-            return typing.cast(QuoteType, quote)
+            return typing.cast("QuoteType", quote)
+        return None
 
     @strawberry.field
     async def project_stat(self, info: Info, pk: strawberry.ID) -> DailyStandUpProjectStatType | None:
@@ -152,3 +153,4 @@ class DailyStandUpType:
                 project_obj=project,
                 date=self.date,
             )
+        return None

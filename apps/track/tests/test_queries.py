@@ -125,30 +125,27 @@ class TestEntryQuery(TestCase):
         # With authentication -----
         self.force_login(self.user)
         content = self.query_check(self.Query.ALL_ACTIVE_CONTRACTS)
-        self.assertEqual(
-            content["data"]["private"]["allActiveContracts"],
-            [
-                dict(
-                    id=self.gID(contract.pk),
-                    isArchived=contract.is_archived,
-                    name=contract.name,
-                    projectId=self.gID(contract.project_id),
-                    totalEstimatedHours=contract.total_estimated_hours,
-                    totalTasksEstimatedHours=sum(
-                        [
-                            task.estimated_hours
-                            for task in contract.tasks.all()
-                            # if not task.is_archived
-                        ]
-                    ),
-                    project=dict(
-                        id=self.gID(contract.project.id),
-                        name=contract.project.name,
-                    ),
-                )
-                for contract in self.active_contracts[::-1]
-            ],
-        )
+        assert content["data"]["private"]["allActiveContracts"] == [
+            dict(
+                id=self.gID(contract.pk),
+                isArchived=contract.is_archived,
+                name=contract.name,
+                projectId=self.gID(contract.project_id),
+                totalEstimatedHours=contract.total_estimated_hours,
+                totalTasksEstimatedHours=sum(
+                    [
+                        task.estimated_hours
+                        for task in contract.tasks.all()
+                        # if not task.is_archived
+                    ],
+                ),
+                project=dict(
+                    id=self.gID(contract.project.id),
+                    name=contract.project.name,
+                ),
+            )
+            for contract in self.active_contracts[::-1]
+        ]
 
     def test_active_tasks(self):
         # Without authentication -----
@@ -161,24 +158,20 @@ class TestEntryQuery(TestCase):
         # With authentication -----
         self.force_login(self.user)
         content = self.query_check(self.Query.ALL_ACTIVE_TASKS)
-        self.assertEqual(
-            content["data"]["private"]["allActiveTasks"],
-            [
-                dict(
-                    id=self.gID(task.pk),
-                    isArchived=task.is_archived,
-                    name=task.name,
-                    contractId=self.gID(task.contract_id),
-                    estimatedHours=task.estimated_hours,
-                    contract=dict(
-                        id=self.gID(task.contract.id),
-                        name=task.contract.name,
-                    ),
-                )
-                for task in self.active_tasks[::-1]
-            ],
-            None,
-        )
+        assert content["data"]["private"]["allActiveTasks"] == [
+            dict(
+                id=self.gID(task.pk),
+                isArchived=task.is_archived,
+                name=task.name,
+                contractId=self.gID(task.contract_id),
+                estimatedHours=task.estimated_hours,
+                contract=dict(
+                    id=self.gID(task.contract.id),
+                    name=task.contract.name,
+                ),
+            )
+            for task in self.active_tasks[::-1]
+        ]
 
     def test_my_time_entries(self):
         # Dataset
@@ -217,33 +210,30 @@ class TestEntryQuery(TestCase):
         self.force_login(self.user)
         content = self.query_check(self.Query.MY_TIME_ENTRIES, variables={"date": date})
         self.maxDiff = None
-        self.assertEqual(
-            content["data"]["private"]["myTimeEntries"],
-            [
-                dict(
-                    id=self.gID(entry.pk),
-                    date=date,
-                    taskId=self.gID(entry.task_id),
-                    task=dict(
-                        id=self.gID(entry.task.id),
-                        name=self.gID(entry.task.name),
-                    ),
-                    type=self.genum(entry.type),
-                    typeDisplay=entry.type.label,
-                    userId=self.gID(self.user.id),
-                    user=dict(
-                        id=self.gID(self.user.id),
-                        displayName=self.gID(self.user.display_name),
-                    ),
-                    status=self.genum(entry.status),
-                    duration=45,
-                    description=None,
-                    startTime=None,
-                )
-                for entry in time_entries[::-1]
-            ],
-            None,
-        )
+
+        assert content["data"]["private"]["myTimeEntries"] == [
+            dict(
+                id=self.gID(entry.pk),
+                date=date,
+                taskId=self.gID(entry.task_id),
+                task=dict(
+                    id=self.gID(entry.task.id),
+                    name=self.gID(entry.task.name),
+                ),
+                type=self.genum(entry.type),
+                typeDisplay=entry.type.label,
+                userId=self.gID(self.user.id),
+                user=dict(
+                    id=self.gID(self.user.id),
+                    displayName=self.gID(self.user.display_name),
+                ),
+                status=self.genum(entry.status),
+                duration=45,
+                description=None,
+                startTime=None,
+            )
+            for entry in time_entries[::-1]
+        ]
 
     # TODO:
     # - Client

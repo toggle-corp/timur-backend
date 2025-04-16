@@ -1,5 +1,5 @@
+from datetime import datetime
 from enum import Enum
-from typing import Dict
 
 from django.conf import settings
 from django.db import models
@@ -60,7 +60,6 @@ S3_TEST_STORAGES_CONFIGS = dict(
     CELERY_TASK_ALWAYS_EAGER=True,
 )
 class TestCase(BaseTestCase):
-
     def setUp(self):
         from django.core.cache import cache
 
@@ -81,7 +80,7 @@ class TestCase(BaseTestCase):
         variables: dict | None = None,
         files: dict | None = None,
         **kwargs,
-    ) -> Dict:
+    ) -> dict:
         import json
 
         if files:
@@ -93,7 +92,7 @@ class TestCase(BaseTestCase):
                         {
                             "query": query,
                             "variables": variables,
-                        }
+                        },
                     ),
                     **files,
                     "map": json.dumps(kwargs.pop("map")),
@@ -125,8 +124,8 @@ class TestCase(BaseTestCase):
         :resp HttpResponse: Response
         """
         content = resp.json()
-        self.assertEqual(resp.status_code, 200, msg or content)
-        self.assertNotIn("errors", list(content.keys()), msg or content)
+        assert resp.status_code == 200, msg or content
+        assert "errors" not in content, msg or content
 
     def assertResponseHasErrors(self, resp, msg=None):
         """
@@ -135,22 +134,25 @@ class TestCase(BaseTestCase):
         :resp HttpResponse: Response
         """
         content = resp.json()
-        self.assertIn("errors", list(content.keys()), msg or content)
+        assert "errors" in content, msg or content
 
-    def genum(self, _enum: models.TextChoices | models.IntegerChoices | Enum):
+    def genum(self, _enum: models.TextChoices | models.IntegerChoices | Enum) -> str | None:
         """
         Return appropriate enum value.
         """
         if _enum:
             return _enum.name
+        return None
 
-    def gdatetime(self, _datetime):
+    def gdatetime(self, _datetime: datetime | None):
         if _datetime:
             return _datetime.isoformat()
+        return None
 
     def gID(self, pk):
         if pk:
             return str(pk)
+        return None
 
     def get_media_url(self, path):
         return f"http://testserver/media/{path}"
@@ -178,11 +180,9 @@ class TestCase(BaseTestCase):
         ignore_keys: list[str] | None = None,
         include_keys: list[str] | None = None,
     ):
-        self.assertEqual(
-            [self._dict_with_keys(item, ignore_keys=ignore_keys, include_keys=include_keys) for item in left],
-            [self._dict_with_keys(item, ignore_keys=ignore_keys, include_keys=include_keys) for item in right],
-            messages,
-        )
+        _left = [self._dict_with_keys(item, ignore_keys=ignore_keys, include_keys=include_keys) for item in left]
+        _right = [self._dict_with_keys(item, ignore_keys=ignore_keys, include_keys=include_keys) for item in right]
+        assert _left == _right, messages
 
     def no_op(*args, **_): ...
 

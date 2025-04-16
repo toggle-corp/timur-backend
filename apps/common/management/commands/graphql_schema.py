@@ -19,5 +19,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         file = options["out"]
         file.write(print_schema(schema))
+        file.write("\n")
         file.close()
         self.stdout.write(self.style.SUCCESS(f"{file.name} file generated"))

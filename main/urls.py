@@ -33,7 +33,7 @@ if settings.DEBUG:
         [
             path("graphiql/", CustomAsyncGraphQLView.as_view(schema=graphql_schema), name="graphiql"),
             path("dev/sign_in/", dev_sign_in, name="dev-sign-in"),
-        ]
+        ],
     )
 
     # Static and media file URLs

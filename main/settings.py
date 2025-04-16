@@ -8,7 +8,6 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
-import os
 import sys
 from pathlib import Path
 
@@ -40,8 +39,8 @@ env = environ.Env(
     DJANGO_STATIC_URL=(str, "/static/"),
     DJANGO_MEDIA_URL=(str, "/media/"),
     # -- File System
-    DJANGO_STATIC_ROOT=(str, os.path.join(BASE_DIR, "assets/static")),  # Where to store
-    DJANGO_MEDIA_ROOT=(str, os.path.join(BASE_DIR, "assets/media")),  # Where to store
+    DJANGO_STATIC_ROOT=(str, BASE_DIR / "assets/static"),  # Where to store
+    DJANGO_MEDIA_ROOT=(str, BASE_DIR / "assets/media"),  # Where to store
     # -- S3
     DJANGO_USE_S3=(bool, False),
     MEDIA_FILE_CACHE_URL_TTL=(int, 86400),  # 1 day default
@@ -105,14 +104,14 @@ SECRET_KEY = env("DJANGO_SECRET_KEY")
 DEBUG = env("DJANGO_DEBUG")
 ALLOW_DUMMY_DATA_SCRIPT = env("ALLOW_DUMMY_DATA_SCRIPT")
 
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOST")
+ALLOWED_HOSTS: list[str] = env.list("DJANGO_ALLOWED_HOST")  # type: ignore[assignment]
 
 APP_SITE_NAME = "Timur"
 APP_HTTP_PROTOCOL = env("APP_HTTP_PROTOCOL")
 APP_DOMAIN = env("APP_DOMAIN")
 APP_FRONTEND_HOST = env("APP_FRONTEND_HOST")
 
-APP_ENVIRONMENT = env("APP_ENVIRONMENT").upper()
+APP_ENVIRONMENT: str = env("APP_ENVIRONMENT").upper()  # type: ignore[assignment]
 APP_TYPE = env("APP_TYPE")
 
 # Application definition
@@ -237,7 +236,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATICFILES_DIRS = [
-    os.path.join("apps", "static"),
+    Path("apps") / "static",
 ]
 
 
@@ -355,7 +354,7 @@ TESTING = (
                 "/usr/local/lib/python3.6/dist-packages/py/test.py",
             ]
             # Provided by pytest-xdist
-        ]
+        ],
     )
     or env("PYTEST_XDIST_WORKER") is not None
 )
@@ -394,7 +393,7 @@ HCAPTCHA_SECRET = env("HCAPTCHA_SECRET")
 TOKEN_DEFAULT_RESET_TIMEOUT_DAYS = 7
 
 # EMAIL
-SPECIFED_EMAIL_BACKEND = env("EMAIL_BACKEND").upper()
+SPECIFED_EMAIL_BACKEND: str = env("EMAIL_BACKEND").upper()  # type: ignore[assignment]
 EMAIL_FROM = env("EMAIL_FROM")
 
 if not TESTING and SPECIFED_EMAIL_BACKEND == "SES":

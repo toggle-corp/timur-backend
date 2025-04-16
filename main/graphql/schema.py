@@ -32,11 +32,11 @@ class CustomAsyncGraphQLView(AsyncGraphQLView):
             # Generate cache
             await Event.aget_relative_event_dates()
 
-    async def get_context(self, *args, **kwargs) -> GraphQLContext:
+    async def get_context(self, request, response):  # type: ignore[reportIncompatibleMethodOverride]
         await self.load_event_cache()
         return GraphQLContext(
-            *args,
-            **kwargs,
+            request=request,
+            response=response,
             dl=GlobalDataLoader(),
         )
 
@@ -80,7 +80,7 @@ class Query:
     public: PublicQuery = strawberry.field(resolver=lambda: PublicQuery())
     private: PrivateQuery = strawberry.field(permission_classes=[IsAuthenticated], resolver=lambda: PrivateQuery())
     enums: AppEnumCollection = strawberry.field(  # type: ignore[reportGeneralTypeIssues]
-        resolver=lambda: AppEnumCollectionData()
+        resolver=lambda: AppEnumCollectionData(),
     )
 
 

@@ -230,13 +230,13 @@ class TestEntryBulkMutation(TestCase):
 
         current_time_entry_ids = set(TimeEntry.objects.values_list("id", flat=True))
 
-        assert current_time_entry_ids.isdisjoint(
-            set([i.pk for i in needs_to_be_deleted])
-        ), "Most of the user's time_entry should be deleted"
+        assert current_time_entry_ids.isdisjoint(set([i.pk for i in needs_to_be_deleted])), (
+            "Most of the user's time_entry should be deleted"
+        )
 
-        assert set(self._get_ids(needs_to_be_preserved)).issubset(
-            current_time_entry_ids
-        ), "All other user's time_entry should't be deleted"
+        assert set(self._get_ids(needs_to_be_preserved)).issubset(current_time_entry_ids), (
+            "All other user's time_entry should't be deleted"
+        )
 
     def test_bulk_time_entry_mix(self):
         """
@@ -369,13 +369,13 @@ class TestEntryBulkMutation(TestCase):
 
         current_time_entry_ids = set(TimeEntry.objects.values_list("id", flat=True))
 
-        assert current_time_entry_ids.isdisjoint(
-            set(self._get_ids(needs_to_be_deleted))
-        ), "Most of the user's time_entry should be deleted"
+        assert current_time_entry_ids.isdisjoint(set(self._get_ids(needs_to_be_deleted))), (
+            "Most of the user's time_entry should be deleted"
+        )
 
-        assert set(self._get_ids(needs_to_be_preserved)).issubset(
-            current_time_entry_ids
-        ), "All other user's time_entry should't be deleted"
+        assert set(self._get_ids(needs_to_be_preserved)).issubset(current_time_entry_ids), (
+            "All other user's time_entry should't be deleted"
+        )
 
     # TODO: Add mutation to check client_id preserve for TimeEntry
     # TODO: Test createdAt field as well

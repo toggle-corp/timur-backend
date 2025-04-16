@@ -28,7 +28,7 @@ class PrivateMutation:
     @strawberry.mutation
     async def update_time_entry(
         self,
-        id: strawberry.ID,
+        id: strawberry.ID,  # noqa: A002
         data: TimeEntryMutation.PartialInputType,  # type: ignore[reportInvalidTypeForm]
         info: Info,
     ) -> MutationResponseType[TimeEntryType]:

@@ -9,7 +9,6 @@ from apps.user.models import User
 
 
 class Journal(models.Model):
-
     class LeaveType(models.IntegerChoices):
         FULL = 1, _("Full")
         FIRST_HALF = 2, _("First Half")
@@ -33,7 +32,7 @@ class Journal(models.Model):
             (LeaveType.SECOND_HALF, None),
             (LeaveType.SECOND_HALF, WorkFromHomeType.FIRST_HALF),
             (None, WorkFromHomeType.SECOND_HALF),
-        ]
+        ],
     )
 
     user = models.ForeignKey(User, related_name="+", on_delete=models.PROTECT)
@@ -52,6 +51,9 @@ class Journal(models.Model):
             models.Index(fields=["date"]),
         ]
 
+    def __str__(self):
+        return f"{self.user_id}#{self.date}"
+
     @classmethod
     def as_leave_qs(cls, recent_only=False) -> models.QuerySet["Journal"]:
         """
@@ -67,14 +69,14 @@ class Journal(models.Model):
             return qs.filter(date__gte=timezone.now() - datetime.timedelta(days=30))
         return qs
 
-    def __str__(self):
-        return f"{self.user_id}#{self.date}"
-
     def leave_wfh_check(self):
         # Make sure leave_type and wfh_type don't conflict with each other
-        if self.leave_type is not None and self.wfh_type is not None:
-            if (self.leave_type, self.wfh_type) not in self.VALID_LEAVE_WFH_COMBINATION:
-                raise ValidationError(_("Provided Leave and Work from home combination is invalid"))
+        if (
+            self.leave_type is not None
+            and self.wfh_type is not None
+            and (self.leave_type, self.wfh_type) not in self.VALID_LEAVE_WFH_COMBINATION
+        ):
+            raise ValidationError(_("Provided Leave and Work from home combination is invalid"))
 
     def clean(self):
         super().clean()

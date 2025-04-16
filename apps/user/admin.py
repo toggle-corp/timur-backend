@@ -19,7 +19,7 @@ class UserAdmin(DjangoUserAdmin):
                 "fields": (
                     "email",
                     "password",
-                )
+                ),
             },
         ),
         (
@@ -31,7 +31,7 @@ class UserAdmin(DjangoUserAdmin):
                     "department",
                     "display_picture",
                     "exclude_from_slides",
-                )
+                ),
             },
         ),
         (

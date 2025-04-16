@@ -38,7 +38,7 @@ class DeadlineAdmin(VersionAdmin, UserResourceAdmin):
                 request,
                 _(
                     "It appears that the start date is in the future. "
-                    "This deadline will remain hidden until the start date is reached."
+                    "This deadline will remain hidden until the start date is reached.",
                 ),
             )
 

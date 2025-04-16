@@ -1,3 +1,9 @@
+"""
+XXX:
+- This is a experimental transformer which translates DRF -> Strawberry Input Type
+- Also overwrites some modules
+"""
+
 import dataclasses
 import datetime
 import decimal
@@ -6,33 +12,28 @@ from collections import OrderedDict
 from functools import singledispatch
 from importlib import import_module
 
-import strawberry
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.module_loading import import_string
 from rest_framework import fields as drf_fields
 from rest_framework import serializers
+from strawberry_django.type import _process_type
+
+import strawberry
 from strawberry.annotation import StrawberryAnnotation
 from strawberry.file_uploads import Upload as StrawberryUploadField
 from strawberry.types.base import get_object_definition
 from strawberry.types.field import StrawberryField
-from strawberry_django.type import _process_type
 
 from . import types
 from .enums import get_enum_name_from_django_field
 from .serializers import IntegerIDField, StringIDField, TimeDurationField
 
-"""
-XXX:
-- This is a experimental transformer which translates DRF -> Strawberry Input Type
-- Also overwrites some modules
-"""
-
 
 @singledispatch
 def get_strawberry_type_from_serializer_field(field):
     raise ImproperlyConfigured(
-        "Don't know how to convert the serializer field %s (%s) " "to strawberry type" % (field, field.__class__)
+        "Don't know how to convert the serializer field %s (%s) to strawberry type" % (field, field.__class__),
     )
 
 
@@ -150,7 +151,7 @@ def convert_serializer_to_type(serializer_class, name=None, partial=False):
         if partial:
             ref_name = f"{serializer_name}NestUpdateInputType"
 
-    cached_type = convert_serializer_to_type_cache.get(ref_name, None)
+    cached_type = convert_serializer_to_type_cache.get(ref_name)
     if cached_type:
         return cached_type
 
@@ -192,7 +193,7 @@ def convert_serializer_field(field, convert_choices_to_enum=True, force_optional
         graphql_type = graphql_type[0]
 
     if isinstance(field, serializers.Serializer):
-        pass
+        graphql_type = convert_serializer_to_type(field.__class__, partial=force_optional)
     elif isinstance(field, serializers.ListSerializer):
         field = field.child
         of_type = convert_serializer_to_type(field.__class__, partial=force_optional)
@@ -267,7 +268,7 @@ def generate_type_for_serializer(
                 *non_defaults_model_fields,
                 *defaults_model_fields,
             ],
-        )
+        ),
     )
 
 

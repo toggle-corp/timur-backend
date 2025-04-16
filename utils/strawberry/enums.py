@@ -1,18 +1,18 @@
 import typing
 
-import strawberry
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
-from django.db.models.fields import Field as DjangoBaseField
 from django.utils.encoding import force_str
 from django.utils.hashable import make_hashable
 from django.utils.module_loading import import_string
 from rest_framework import serializers
 
+import strawberry
 from utils.common import to_camel_case
 
 if typing.TYPE_CHECKING:
+    from django.db.models.fields import Field as DjangoBaseField
     from django.db.models.fields import _FieldDescriptor
 
     GET_ENUM_NAME_FROM_DJANGO_FIELD_FIELD_TYPE: typing.TypeAlias = DjangoBaseField | _FieldDescriptor | list | None
@@ -25,12 +25,12 @@ def get_enum_name_from_django_field(
     serializer_name=None,
 ):
     def _have_model(_field):
-        if hasattr(_field, "model") or hasattr(getattr(_field, "Meta", None), "model"):
-            return True
+        return hasattr(_field, "model") or hasattr(getattr(_field, "Meta", None), "model")
 
     def _get_serializer_name(_field):
         if hasattr(_field, "parent"):
             return type(_field.parent).__name__
+        return None
 
     if field_name is None or model_name is None:
         if isinstance(field, models.query_utils.DeferredAttribute):
@@ -40,19 +40,24 @@ def get_enum_name_from_django_field(
                 model_name=model_name,
                 serializer_name=serializer_name,
             )
-        if isinstance(field, serializers.ChoiceField):
+        if isinstance(field, serializers.ListField):
+            if isinstance(field.child, serializers.ChoiceField):
+                if _have_model(field.parent) and model_name is None:
+                    assert field.parent is not None
+                    model_name = field.parent.Meta.model.__name__  # type: ignore[reportAttributeAccessIssue]
+                serializer_name = _get_serializer_name(field)
+                field_name = field_name or field.field_name
+        elif isinstance(field, serializers.ChoiceField):
             if isinstance(field.parent, serializers.ListField):
-                if _have_model(field.parent.parent):
-                    if model_name is None:
-                        assert field.parent.parent is not None
-                        model_name = field.parent.parent.Meta.model.__name__  # type: ignore[reportAttributeAccessIssue]
+                if _have_model(field.parent.parent) and model_name is None:
+                    assert field.parent.parent is not None
+                    model_name = field.parent.parent.Meta.model.__name__  # type: ignore[reportAttributeAccessIssue]
                 serializer_name = _get_serializer_name(field.parent)
                 field_name = field_name or field.parent.field_name
             else:
-                if _have_model(field.parent):
-                    if model_name is None:
-                        assert field.parent is not None
-                        model_name = field.parent.Meta.model.__name__  # type: ignore[reportAttributeAccessIssue]
+                if _have_model(field.parent) and model_name is None:
+                    assert field.parent is not None
+                    model_name = field.parent.Meta.model.__name__  # type: ignore[reportAttributeAccessIssue]
                 serializer_name = _get_serializer_name(field)
                 field_name = field_name or field.field_name
         elif isinstance(field, ArrayField):
@@ -96,7 +101,7 @@ def enum_display_field(field) -> typing.Callable[..., str]:  # type: ignore[repo
         # https://github.com/django/django/blob/stable/4.2.x/django/db/models/base.py#L1144-L1150
         value = getattr(root, _field.attname)
         if value is None:
-            return
+            return None
         choices_dict = dict(make_hashable(_field.flatchoices))
         # force_str() to coerce lazy strings.
         if is_array:
@@ -115,7 +120,7 @@ def enum_display_field(field) -> typing.Callable[..., str]:  # type: ignore[repo
         return _get_value(root)  # type: ignore[reportGeneralTypeIssues]
 
     @strawberry.field
-    def nullable_field_(root) -> typing.Optional[str]:
+    def nullable_field_(root) -> str | None:
         return _get_value(root)  # type: ignore[reportGeneralTypeIssues]
 
     if _field.null:
@@ -140,7 +145,7 @@ def enum_field(field):  # type: ignore[reportGeneralTypeIssues] FIXME
     def _get_value(root) -> None | FieldEnum | list[FieldEnum]:  # type: ignore[reportGeneralTypeIssues]
         value = getattr(root, _field.attname)
         if value is None:
-            return
+            return None
         if is_array:
             return [FieldEnum(v) for v in value or []]
         return FieldEnum(value)
@@ -157,7 +162,7 @@ def enum_field(field):  # type: ignore[reportGeneralTypeIssues] FIXME
         return _get_value(root)
 
     @strawberry.field
-    def nullable_field_(root) -> typing.Optional[FieldEnum]:  # type: ignore[reportGeneralTypeIssues]
+    def nullable_field_(root) -> FieldEnum | None:  # type: ignore[reportGeneralTypeIssues]
         return _get_value(root)
 
     if _field.null:

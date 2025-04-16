@@ -65,6 +65,14 @@ class Event(UserResource):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        self.reload_cache()
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        self.reload_cache()
+        return super().delete(*args, **kwargs)
+
     @classmethod
     def reload_cache(cls):
         # Delete
@@ -79,14 +87,6 @@ class Event(UserResource):
     def clean(self):
         super().clean()
         self.dates_check()
-
-    def save(self, *args, **kwargs):
-        self.reload_cache()
-        return super().save(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        self.reload_cache()
-        return super().delete(*args, **kwargs)
 
     @staticmethod
     def is_weekend(date: datetime.date):
@@ -143,6 +143,7 @@ class Event(UserResource):
                 found_count += 1
                 continue
             return date
+        return timezone.now()  # XXX: Fallback to now
 
     @classmethod
     @sync_to_async
@@ -216,7 +217,7 @@ class Event(UserResource):
                 end_date,
                 include_weekends=include_weekends,
                 include_holidays=include_holidays,
-            )
+            ),
         )
 
     @classmethod

@@ -43,5 +43,5 @@ serializers.ModelSerializer.serializer_field_mapping.update(
     {
         models.CharField: CustomCharField,
         models.TextField: CustomCharField,
-    }
+    },
 )

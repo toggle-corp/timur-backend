@@ -19,7 +19,7 @@ for _logger in IGNORED_LOGGERS:
     ignore_logger(_logger)
 
 
-def init_sentry(app_type, tags={}, **config):
+def init_sentry(app_type, tags: dict | None = None, **config):
     integrations = [
         DjangoIntegration(),
         CeleryIntegration(),
@@ -33,7 +33,7 @@ def init_sentry(app_type, tags={}, **config):
     )
     with sentry_sdk.configure_scope() as scope:
         scope.set_tag("app_type", app_type)
-        for tag, value in tags.items():
+        for tag, value in (tags or {}).items():
             scope.set_tag(tag, value)
 
 
@@ -67,5 +67,5 @@ class SentryTransactionMiddlewareHelper:
                         "id": user.pk,
                         "email": user.email,
                         "is_superuser": user.is_superuser,
-                    }
+                    },
                 )
