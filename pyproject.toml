@@ -54,21 +54,6 @@ package = false
 DJANGO_SETTINGS_MODULE = "main.settings"
 log_cli = true
 
-[tool.black]
-line-length = 125
-# NOTE: Update in .pre-commit-config.yaml as well
-extend-exclude = "(__pycache__|.*snap_test_.*\\.py|.+\\/.+\\/migrations\\/.*)"
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-skip = [
-    "**/__pycache__",
-    "**/snap_test_*.py",
-    ".venv/",
-    "**/migrations/*.py",
-]
-
 [tool.pyright]
 exclude = [
     "**/__pycache__",
@@ -80,3 +65,34 @@ reportMissingImports = true
 reportMissingTypeStubs = false
 venvPath = "."
 venv = ".venv"
+
+[tool.ruff]
+line-length = 125
+extend-exclude = [
+    ".git",
+    ".pytest_cache",
+    ".venv",
+    "venv",
+    "**/migrations/*",
+    "__pycache__",
+]
+
+[tool.ruff.lint]
+flake8-builtins.builtins-strict-checking = false
+ignore = [
+    "C901",
+    "E701",
+    "E203",
+    "DJ001",
+    "G201",
+]
+extend-select = ["I", "E", "F", "B", "A", "W", "DJ", "AIR", "COM", "INT", "ISC", "ICN", "LOG", "G", "T20", "TID", "PT", "Q", "RET", "SIM", "TC", "PTH", "UP"]
+# TODO: Use this instead `select = ["ALL"]` and add rules to ignore
+#   ruff check --statistics ./
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["E402"]
+"**/**/mutations.py" = ["B006"]
+"utils/strawberry/*.py" = ["UP"]
+"/**/tests/*_mock_data.py" = ["E501"]
+"**/snap_test_*.py" = ["E501"]
