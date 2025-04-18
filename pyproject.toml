@@ -46,6 +46,7 @@ dev = [
     "djangorestframework-stubs",
     "google-api-python-client-stubs",
     "celery-types",
+    "colorlog",
 ]
 
 [tool.uv]
@@ -86,6 +87,7 @@ ignore = [
     "E203",
     "DJ001",
     "G201",
+    "SIM108",
 ]
 extend-select = ["I", "E", "F", "B", "A", "W", "DJ", "AIR", "COM", "INT", "ISC", "ICN", "LOG", "G", "T20", "TID", "PT", "Q", "RET", "SIM", "TC", "PTH", "UP"]
 # TODO: Use this instead `select = ["ALL"]` and add rules to ignore

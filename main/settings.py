@@ -15,6 +15,7 @@ import environ
 from corsheaders.defaults import default_headers
 
 from main import sentry
+from main.logging import log_render_custom_field
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -68,6 +69,7 @@ env = environ.Env(
     RELEASE=(str, "develop"),
     APP_ENVIRONMENT=str,  # dev/prod
     APP_TYPE=str,
+    APP_LOG_LEVEL=(str, "INFO"),
     DJANGO_TIME_ZONE=(str, "UTC"),
     DOCKER_HOST_IP=(str, None),
     # Hcaptcha
@@ -470,3 +472,75 @@ HEALTH_CHECK = {
     "DISK_USAGE_MAX": 80,  # percent
     "MEMORY_MIN": 100,  # in MB
 }
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "render_extra_context": {
+            "()": "django.utils.log.CallbackFilter",
+            "callback": log_render_custom_field,
+        },
+    },
+    "formatters": {
+        "simple": {
+            "format": ("%(asctime)s: - %(short_name)s - %(message)s %(context)s"),
+            "datefmt": "%Y-%m-%dT%H:%M:%S",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+            "filters": ["render_extra_context"],
+        },
+    },
+    "loggers": {
+        **{
+            app: {
+                "level": env("APP_LOG_LEVEL"),
+                "handlers": ["console"],
+                "propagate": False,
+            }
+            for app in ["apps", "main", "utils", "celery", "django"]
+        },
+    },
+    "root": {
+        "level": env("APP_LOG_LEVEL"),
+        "handlers": ["console"],
+    },
+}
+
+if DEBUG:
+    LOGGING = {
+        **LOGGING,
+        "formatters": {
+            **LOGGING["formatters"],
+            "colored_verbose": {
+                "()": "colorlog.ColoredFormatter",
+                "format": ("%(log_color)s%(asctime)s: %(red)s %(short_name)-s%(reset)s %(blue)s%(message)s %(context)s"),
+                "datefmt": "%m/%d %H:%M:%S",
+            },
+        },
+        "handlers": {
+            **LOGGING["handlers"],
+            "colored_console": {
+                "class": "logging.StreamHandler",
+                "formatter": "colored_verbose",
+                "filters": ["render_extra_context"],
+            },
+        },
+        "loggers": {
+            **{
+                key: {
+                    **logger,
+                    "handlers": ["colored_console"],
+                }
+                for key, logger in LOGGING["loggers"].items()
+            },
+        },
+        "root": {
+            "level": env("APP_LOG_LEVEL"),
+            "handlers": ["colored_console"],
+        },
+    }
