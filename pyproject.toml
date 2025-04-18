@@ -44,6 +44,7 @@ dev = [
     "pytest-django",
     "django-stubs==4.2.6",
     "djangorestframework-stubs",
+    "google-api-python-client-stubs",
     "celery-types",
 ]
 

@@ -598,6 +598,20 @@ wheels = [
 ]
 
 [[package]]
+name = "google-api-python-client-stubs"
+version = "1.29.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "google-api-python-client" },
+    { name = "types-httplib2" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d8/95/10777e7b965319ad1ac3b8379747040e9002827be18587b313aec0c47fc8/google_api_python_client_stubs-1.29.0.tar.gz", hash = "sha256:ef88272accb67b92e512e41d04b73651da183c0eabb6028d71b4633e23a9e47e", size = 2089717 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/19/cc/970860afcb563f5c19fffd72f265f5cc7f302bfc61cd838a39749b05d1d1/google_api_python_client_stubs-1.29.0-py3-none-any.whl", hash = "sha256:e874eda842dec69781e4bf4e151b47f6e57cc419ff2c0d1e4719ff8dc3a559fc", size = 2907336 },
+]
+
+[[package]]
 name = "google-auth"
 version = "2.39.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1309,6 +1323,7 @@ dev = [
     { name = "dacite" },
     { name = "django-stubs" },
     { name = "djangorestframework-stubs" },
+    { name = "google-api-python-client-stubs" },
     { name = "pytest" },
     { name = "pytest-django" },
     { name = "pytest-ordering" },
@@ -1351,6 +1366,7 @@ dev = [
     { name = "dacite" },
     { name = "django-stubs", specifier = "==4.2.6" },
     { name = "djangorestframework-stubs" },
+    { name = "google-api-python-client-stubs" },
     { name = "pytest" },
     { name = "pytest-django" },
     { name = "pytest-ordering" },
@@ -1364,6 +1380,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/eb/79/72064e6a701c2183016abbbfedaba506d81e30e232a68c9f0d6f6fcd1574/traitlets-5.14.3.tar.gz", hash = "sha256:9ed0579d3502c94b4b3732ac120375cda96f923114522847de4b3bb98b96b6b7", size = 161621 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/00/c0/8f5d070730d7836adc9c9b6408dec68c6ced86b304a9b26a14df072a6e8c/traitlets-5.14.3-py3-none-any.whl", hash = "sha256:b74e89e397b1ed28cc831db7aea759ba6640cb3de13090ca145426688ff1ac4f", size = 85359 },
+]
+
+[[package]]
+name = "types-httplib2"
+version = "0.22.0.20250401"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/75/ba/dcf9ca5bfcda1a6c949f6eb6c86231a4f4442fbd079108cd70a334e7a835/types_httplib2-0.22.0.20250401.tar.gz", hash = "sha256:4c7ef56997153a9a2cf1b4970a784c12ca8860dc21ded150370e97d09ef1100b", size = 10198 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4d/17/3950e88eca35e8065eded9659ba9f28d8f157ee635a6b6cb1de172969fc9/types_httplib2-0.22.0.20250401-py3-none-any.whl", hash = "sha256:613a441cfdd2b43d7100ddd8a3959f1d411dd46197dac44de1852b0f68b6cd56", size = 10487 },
 ]
 
 [[package]]

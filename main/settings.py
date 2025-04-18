@@ -90,6 +90,9 @@ env = environ.Env(
     GOOGLE_OAUTH_CLIENT_ID=(str, None),
     GOOGLE_OAUTH_SECRET=(str, None),
     GOOGLE_OAUTH_REDIRECT_URL=(str, None),
+    # Google services
+    GOOGLE_CREDENTIALS_B64_GZ=(str, None),  # gzip -cn credential.json | base64 -w 0
+    GOOGLE_CALENDAR_ID=(str, None),
     # MISC
     ALLOW_DUMMY_DATA_SCRIPT=(bool, False),  # WARNING
 )
@@ -455,6 +458,10 @@ GOOGLE_OAUTH_REDIRECT_URL = env("GOOGLE_OAUTH_REDIRECT_URL")
 # TODO: We need these lines below to allow the Google sign in popup to work.
 SECURE_REFERRER_POLICY = "no-referrer-when-downgrade"
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"
+
+# Google services
+GOOGLE_CREDENTIALS_B64_GZ = env("GOOGLE_CREDENTIALS_B64_GZ")
+GOOGLE_CALENDAR_ID = env("GOOGLE_CALENDAR_ID")
 
 # Health check
 REDIS_URL = DJANGO_CACHE_REDIS_URL
