@@ -59,6 +59,11 @@ class Project(UserResource):
 
 
 class Deadline(UserResource):
+    class GoogleCalendarSyncStatus(models.IntegerChoices):
+        PENDING = 1, "Pending"
+        SUCCESS = 2, "Success"
+        FAILURE = 3, "Failure"
+
     name = models.CharField(max_length=225)
     project = models.ForeignKey(Project, on_delete=models.PROTECT, related_name="deadlines")
     contract = models.ForeignKey(
@@ -73,10 +78,26 @@ class Deadline(UserResource):
     start_date = models.DateField(help_text=_("This will be the date from which we need to start working."))
     end_date = models.DateField(help_text=_("This will be the date on which we need to deliver the work."))
 
+    # Google calendar
+    google_calendar_sync_status = models.PositiveSmallIntegerField(
+        choices=GoogleCalendarSyncStatus.choices,
+        default=GoogleCalendarSyncStatus.PENDING,
+    )
+    google_calendar_event_id = models.CharField(null=True, blank=True)
+    google_calendar_html_link = models.URLField(null=True, blank=True)
+
+    # Type hints
     project_id: int
 
     class Meta:  # type: ignore [reportIncompatibleVariableOverride]
         indexes = [NotArchivedFilterIndex]
+
+    def delete(self, *args, **kwargs):
+        from apps.project.tasks import delete_deadline_from_google_calendar
+
+        # TODO(thenav56): Make this async with celery
+        delete_deadline_from_google_calendar(self)
+        return super().delete(*args, **kwargs)
 
     def dates_check(self):
         if self.start_date > self.end_date:

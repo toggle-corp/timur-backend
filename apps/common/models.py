@@ -1,4 +1,5 @@
 import datetime
+import typing
 
 from asgiref.sync import sync_to_async
 from django.core.cache import cache
@@ -56,11 +57,27 @@ class Event(UserResource):
             RETREAT[0],
         ]
 
+    class GoogleCalendarSyncStatus(models.IntegerChoices):
+        PENDING = 1, "Pending"
+        SUCCESS = 2, "Success"
+        FAILURE = 3, "Failure"
+
     name = models.CharField(max_length=225)
     type = models.PositiveSmallIntegerField(choices=Type.choices, default=Type.HOLIDAY)
 
+    # Google calendar
+    google_calendar_sync_status = models.PositiveSmallIntegerField(
+        choices=GoogleCalendarSyncStatus.choices,
+        default=GoogleCalendarSyncStatus.PENDING,
+    )
+    google_calendar_event_id = models.CharField(null=True, blank=True)
+    google_calendar_html_link = models.URLField(null=True, blank=True)
+
     start_date = models.DateField()
     end_date = models.DateField()
+
+    # type hints
+    get_type_display: typing.Callable[..., str]
 
     def __str__(self):
         return self.name
@@ -70,7 +87,11 @@ class Event(UserResource):
         return super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
+        from apps.common.tasks import delete_event_from_google_calendar
+
         self.reload_cache()
+        # TODO(thenav56): Make this async with celery
+        delete_event_from_google_calendar(self)
         return super().delete(*args, **kwargs)
 
     @classmethod

@@ -1,4 +1,5 @@
 import base64
+import datetime
 import functools
 import gzip
 import io
@@ -9,6 +10,16 @@ import typing
 from django.conf import settings
 from google.oauth2 import service_account
 from googleapiclient.discovery import build as google_build
+from googleapiclient.errors import HttpError as GoogleHttpError
+
+from apps.common.models import Event
+from apps.project.models import Deadline
+from main.logging import log_extra
+
+if typing.TYPE_CHECKING:
+    from googleapiclient._apis.calendar.v3.schemas import (  # type: ignore[reportMissingModuleSource]
+        Event as CalendarEvent,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -95,3 +106,139 @@ class GoogleServiceAccount:
         except Exception:
             logger.error("Error sharing calendar with %s as %s", email, role, exc_info=True)
         return False
+
+
+class GoogleCalendar:
+    def __init__(self):
+        self.calendar_id: str = settings.GOOGLE_CALENDAR_ID
+        if self.calendar_id is None:
+            raise GoogleCalendarInitialisationError("GOOGLE_CALENDAR_ID is not defined")
+
+        try:
+            self.service = GoogleServiceAccount().service_account
+        except Exception as e:
+            raise GoogleCalendarInitialisationError("GOOGLE_CREDENTIALS_B64_GZ is not defined or invalid") from e
+
+    @staticmethod
+    def _generate_google_calendar_event_data(event: Event | Deadline) -> "CalendarEvent":
+        start_date = event.start_date.isoformat()
+        # NOTE: Google calendar will create event till end_date - 1 day
+        end_date = (event.end_date + datetime.timedelta(days=1)).isoformat()
+
+        # Allowed attributes https://developers.google.com/calendar/api/v3/reference/events
+        if isinstance(event, Event):
+            name = f"{event.get_type_display()}: {event.name}"
+            color_id = {
+                Event.Type.HOLIDAY: "4",
+                Event.Type.RETREAT: "6",
+                Event.Type.MISC: "1",
+            }.get(event.type, "4")
+
+            description = ""
+        else:
+            name = f"Deadline: {event.name}"
+            color_id = "11"
+            description = ""
+        return {
+            "summary": name,
+            "colorId": color_id,
+            "description": description,
+            # "description": event.description,
+            "start": {
+                "date": start_date,
+            },
+            "end": {
+                "date": end_date,
+            },
+            "reminders": {"useDefault": True},
+            # TODO: "eventType": "birthday|default"
+        }
+
+    # Add an event to Google Calendar
+    def add_event(self, timur_obj: Event | Deadline):
+        TimurModel = type(timur_obj)
+        try:
+            calendar_event_data: CalendarEvent = self._generate_google_calendar_event_data(timur_obj)
+
+            calendar_event = (
+                self.service.events()
+                .insert(
+                    calendarId=self.calendar_id,
+                    body=calendar_event_data,
+                )
+                .execute()
+            )
+            timur_obj.google_calendar_sync_status = TimurModel.GoogleCalendarSyncStatus.SUCCESS
+            timur_obj.google_calendar_event_id = calendar_event.get("id")
+            timur_obj.google_calendar_html_link = calendar_event.get("htmlLink")
+        except Exception:
+            timur_obj.google_calendar_sync_status = timur_obj.GoogleCalendarSyncStatus.FAILURE
+            logger.error(
+                "Failed to add google calendar event",
+                exc_info=True,
+                extra=log_extra({"event_id": timur_obj.pk}),
+            )
+        timur_obj.save(
+            update_fields=(
+                "google_calendar_sync_status",
+                "google_calendar_event_id",
+                "google_calendar_html_link",
+            ),
+        )
+
+    # Update an event in Google Calendar
+    def update_event(
+        self,
+        timur_obj: Event | Deadline,
+    ):
+        TimurModel = type(timur_obj)
+        try:
+            calendar_event_data = (
+                self.service.events()
+                .get(
+                    calendarId=self.calendar_id,
+                    eventId=timur_obj.google_calendar_event_id,
+                )
+                .execute()
+            )
+
+            # Update event details
+            calendar_event_data.update(
+                self._generate_google_calendar_event_data(timur_obj),
+            )
+
+            updated_event = (
+                self.service.events()
+                .update(
+                    calendarId=self.calendar_id,
+                    eventId=timur_obj.google_calendar_event_id,
+                    body=calendar_event_data,
+                )
+                .execute()
+            )
+
+            timur_obj.google_calendar_sync_status = TimurModel.GoogleCalendarSyncStatus.SUCCESS
+            timur_obj.google_calendar_html_link = updated_event.get("htmlLink")
+            assert timur_obj.google_calendar_html_link == updated_event.get("htmlLink")
+            logger.info("Event updated: %s", timur_obj.google_calendar_html_link)
+        except Exception:
+            timur_obj.google_calendar_sync_status = TimurModel.GoogleCalendarSyncStatus.FAILURE
+            logger.error(
+                "Failed to update google calendar event",
+                exc_info=True,
+                extra=log_extra({"event_id": timur_obj.pk}),
+            )
+        timur_obj.save(update_fields=("google_calendar_sync_status", "google_calendar_html_link"))
+
+    # Delete an event from Google Calendar
+    def delete_event(self, timur_obj: Event | Deadline):
+        try:
+            self.service.events().delete(
+                calendarId=self.calendar_id,
+                eventId=timur_obj.google_calendar_event_id,
+            ).execute()
+            logger.info("Event with ID '%s' has been deleted", timur_obj.google_calendar_event_id)
+            timur_obj.google_calendar_event_id = None
+            timur_obj.save(update_fields=("google_calendar_event_id",))
+        except GoogleHttpError:
+            logger.error("Failed to delete Event with ID '%s'", timur_obj.google_calendar_event_id, exc_info=True)

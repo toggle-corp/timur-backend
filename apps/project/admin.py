@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from apps.common.admin import UserResourceAdmin, VersionAdmin
 
 from .models import Client, Contractor, Deadline, Project
+from .tasks import sync_deadline_with_google_calendar
 
 
 @admin.register(Client)
@@ -31,8 +32,27 @@ class DeadlineAdmin(VersionAdmin, UserResourceAdmin):
         AutocompleteFilterFactory("Contract", "contract"),
     )
 
+    def get_readonly_fields(self, *args, **kwargs):
+        readonly_fields = super().get_readonly_fields(*args, **kwargs)  # type: ignore[reportAttributeAccessIssue]
+        return [
+            # To maintain order
+            *dict.fromkeys(
+                [
+                    *readonly_fields,
+                    "google_calendar_sync_status",
+                    "google_calendar_event_id",
+                    "google_calendar_html_link",
+                ],
+            ),
+        ]
+
     def save_model(self, request, obj, form, change):
+        obj.google_calendar_sync_status = Deadline.GoogleCalendarSyncStatus.PENDING
         super().save_model(request, obj, form, change)
+
+        # TODO(thenav56): Make this async with celery
+        sync_deadline_with_google_calendar(obj)
+
         if obj.start_date > timezone.now().date():
             messages.warning(
                 request,

@@ -6,6 +6,7 @@ from django.http import HttpRequest
 from reversion.admin import VersionAdmin as OgVersionAdmin
 
 from .models import Event, UserResource
+from .tasks import sync_event_with_google_calendar
 
 DjangoModel = typing.TypeVar("DjangoModel", bound=models.Model)
 
@@ -95,3 +96,23 @@ class EventAdmin(VersionAdmin, UserResourceAdmin):
     list_display = ("name", "type", "start_date", "end_date")
     list_filter = ("type",)
     ordering = ("start_date",)
+
+    def get_readonly_fields(self, *args, **kwargs):
+        readonly_fields = super().get_readonly_fields(*args, **kwargs)  # type: ignore[reportAttributeAccessIssue]
+        return [
+            # To maintain order
+            *dict.fromkeys(
+                [
+                    *readonly_fields,
+                    "google_calendar_sync_status",
+                    "google_calendar_event_id",
+                    "google_calendar_html_link",
+                ],
+            ),
+        ]
+
+    def save_model(self, request, obj, form, change):
+        obj.google_calendar_sync_status = Event.GoogleCalendarSyncStatus.PENDING
+        super().save_model(request, obj, form, change)
+        # TODO(thenav56): Make this async with celery
+        sync_event_with_google_calendar(obj)
