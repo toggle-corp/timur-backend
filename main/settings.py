@@ -9,7 +9,9 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 import sys
+import typing
 from pathlib import Path
+from urllib.parse import urlparse
 
 import environ
 from corsheaders.defaults import default_headers
@@ -43,37 +45,33 @@ env = environ.Env(
     DJANGO_STATIC_ROOT=(str, BASE_DIR / "assets/static"),  # Where to store
     DJANGO_MEDIA_ROOT=(str, BASE_DIR / "assets/media"),  # Where to store
     # -- S3
-    DJANGO_USE_S3=(bool, False),
-    MEDIA_FILE_CACHE_URL_TTL=(int, 86400),  # 1 day default
-    TEMP_FILE_DIR=(str, "/tmp/"),
-    AWS_S3_BUCKET_STATIC=str,
-    AWS_S3_BUCKET_MEDIA=str,
-    AWS_S3_QUERYSTRING_EXPIRE=(int, 60 * 60 * 24 * 2),  # Default 2 days
-    # -- -- S3 Credentials - Role is preferred
-    AWS_S3_ACCESS_KEY_ID=(str, None),
-    AWS_S3_SECRET_ACCESS_KEY=(str, None),
-    AWS_S3_ENDPOINT_URL=(str, None),  # Optional
+    AWS_S3_ENABLED=(bool, False),
+    AWS_S3_ENDPOINT_URL=(str, None),
+    AWS_S3_ACCESS_KEY_ID=str,
+    AWS_S3_SECRET_ACCESS_KEY=str,
+    AWS_S3_REGION_NAME=str,
+    AWS_S3_MEDIA_BUCKET_NAME=str,
+    AWS_S3_STATIC_BUCKET_NAME=str,
     # Sentry
     SENTRY_DSN=(str, None),
     SENTRY_TRACES_SAMPLE_RATE=(float, 0.2),
     SENTRY_PROFILE_SAMPLE_RATE=(float, 0.2),
     # App Domain
-    APP_DOMAIN=str,  # api.example.com
-    APP_HTTP_PROTOCOL=str,  # http|https
+    APP_DOMAIN=str,  # https://api.example.com
     APP_FRONTEND_HOST=str,  # http://frontend.example.com
-    DJANGO_ALLOWED_HOST=(list, ["*"]),
+    ADDITIONAL_ALLOWED_HOST=(list, []),
     SESSION_COOKIE_DOMAIN=str,
     SESSION_COOKIE_AGE=(int, 1209600),  # seconds (Default: 2 weeks)
     CSRF_COOKIE_DOMAIN=str,
     # Misc
+    TEMP_FILE_DIR=(str, "/tmp/"),
     RELEASE=(str, "develop"),
     APP_ENVIRONMENT=str,  # dev/prod
     APP_TYPE=str,
     APP_LOG_LEVEL=(str, "INFO"),
     DJANGO_TIME_ZONE=(str, "UTC"),
     DOCKER_HOST_IP=(str, None),
-    # Hcaptcha
-    HCAPTCHA_SECRET=(str, "0x0000000000000000000000000000000000000000"),
+    ALLOW_DUMMY_DATA_SCRIPT=(bool, False),  # WARNING
     # Testing
     PYTEST_XDIST_WORKER=(str, None),
     # EMAIL
@@ -95,8 +93,6 @@ env = environ.Env(
     # Google services
     GOOGLE_CREDENTIALS_B64_GZ=(str, None),  # gzip -cn credential.json | base64 -w 0
     GOOGLE_CALENDAR_ID=(str, None),
-    # MISC
-    ALLOW_DUMMY_DATA_SCRIPT=(bool, False),  # WARNING
 )
 
 # Quick-start development settings - unsuitable for production
@@ -109,15 +105,17 @@ SECRET_KEY = env("DJANGO_SECRET_KEY")
 DEBUG = env("DJANGO_DEBUG")
 ALLOW_DUMMY_DATA_SCRIPT = env("ALLOW_DUMMY_DATA_SCRIPT")
 
-ALLOWED_HOSTS: list[str] = env.list("DJANGO_ALLOWED_HOST")  # type: ignore[assignment]
-
 APP_SITE_NAME = "Timur"
-APP_HTTP_PROTOCOL = env("APP_HTTP_PROTOCOL")
-APP_DOMAIN = env("APP_DOMAIN")
+APP_DOMAIN = typing.cast("str", env("APP_DOMAIN"))
 APP_FRONTEND_HOST = env("APP_FRONTEND_HOST")
 
-APP_ENVIRONMENT: str = env("APP_ENVIRONMENT").upper()  # type: ignore[assignment]
+APP_ENVIRONMENT = typing.cast("str", env("APP_ENVIRONMENT")).upper()
 APP_TYPE = env("APP_TYPE")
+
+ALLOWED_HOSTS: list[str] = [
+    *env.list("ADDITIONAL_ALLOWED_HOST"),  # type: ignore[assignment]
+    urlparse(APP_DOMAIN).netloc,
+]
 
 # Application definition
 
@@ -259,33 +257,34 @@ STORAGES = {
 }
 
 TEMP_FILE_DIR = env("TEMP_FILE_DIR")
-MEDIA_FILE_CACHE_URL_TTL = env("MEDIA_FILE_CACHE_URL_TTL")
 
-if env("DJANGO_USE_S3"):
-    # AWS S3 Bucket Credentials
-    AWS_S3_BUCKET_STATIC = env("AWS_S3_BUCKET_STATIC")
-    AWS_S3_BUCKET_MEDIA = env("AWS_S3_BUCKET_MEDIA")
-    # If environment variable are not provided, then EC2 Role will be used.
+if env("AWS_S3_ENABLED"):
+    AWS_S3_ENDPOINT_URL = env("AWS_S3_ENDPOINT_URL")
+
     AWS_S3_ACCESS_KEY_ID = env("AWS_S3_ACCESS_KEY_ID")
     AWS_S3_SECRET_ACCESS_KEY = env("AWS_S3_SECRET_ACCESS_KEY")
-    AWS_S3_ENDPOINT_URL = env("AWS_S3_ENDPOINT_URL")
-    AWS_QUERYSTRING_EXPIRE = env("AWS_S3_QUERYSTRING_EXPIRE")
-    AWS_S3_FILE_OVERWRITE = False
-    AWS_S3_SIGNATURE_VERSION = "s3v4"
-    AWS_IS_GZIPPED = True
-    GZIP_CONTENT_TYPES = [
-        "text/css",
-        "text/javascript",
-        "application/javascript",
-        "application/x-javascript",
-        "image/svg+xml",
-        "application/json",
-    ]
-    # Static configuration
-    STORAGES["staticfiles"]["BACKEND"] = "main.storages.S3StaticStorage"
-    # Media configuration
-    STORAGES["default"]["BACKEND"] = "main.storages.S3MediaStorage"
-else:  # File system storage
+    AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME")
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "bucket_name": env("AWS_S3_MEDIA_BUCKET_NAME"),
+                "location": "media/",
+                "file_overwrite": False,
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "bucket_name": env("AWS_S3_STATIC_BUCKET_NAME"),
+                "querystring_auth": False,
+                "location": "static/",
+                "file_overwrite": True,
+            },
+        },
+    }
+else:
     STATIC_ROOT = env("DJANGO_STATIC_ROOT")
     MEDIA_ROOT = env("DJANGO_MEDIA_ROOT")
 
@@ -373,7 +372,7 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 CSP_DEFAULT_SRC = ["'self'"]
 SECURE_REFERRER_POLICY = "same-origin"
-if APP_HTTP_PROTOCOL == "https":
+if APP_DOMAIN.startswith("https"):
     SESSION_COOKIE_NAME = f"__Secure-{SESSION_COOKIE_NAME}"
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
@@ -383,7 +382,7 @@ if APP_HTTP_PROTOCOL == "https":
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     CSRF_TRUSTED_ORIGINS = [
         APP_FRONTEND_HOST,
-        f"{APP_HTTP_PROTOCOL}://{APP_DOMAIN}",
+        APP_DOMAIN,
     ]
 
 # https://docs.djangoproject.com/en/3.2/ref/settings/#std:setting-SESSION_COOKIE_DOMAIN
@@ -391,9 +390,6 @@ SESSION_COOKIE_DOMAIN = env("SESSION_COOKIE_DOMAIN")
 SESSION_COOKIE_AGE = env("SESSION_COOKIE_AGE")
 # https://docs.djangoproject.com/en/3.2/ref/settings/#csrf-cookie-domain
 CSRF_COOKIE_DOMAIN = env("CSRF_COOKIE_DOMAIN")
-
-# https://docs.hcaptcha.com/#integration-testing-test-keys
-HCAPTCHA_SECRET = env("HCAPTCHA_SECRET")
 
 TOKEN_DEFAULT_RESET_TIMEOUT_DAYS = 7
 
