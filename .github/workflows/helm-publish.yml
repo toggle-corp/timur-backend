@@ -1,0 +1,25 @@
+name: Helm
+
+on:
+  workflow_dispatch:
+  # Build and push Docker image and Helm charts on every push to develop branch
+  # and on every tag push
+  push:
+    branches:
+      - develop
+      - master
+      - project/*
+      - chore/*
+      - feature/helm  # TODO: Remove me
+    tags:
+      - "**"
+
+permissions:
+  packages: write
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+    with:
+      push_docker_image: true
