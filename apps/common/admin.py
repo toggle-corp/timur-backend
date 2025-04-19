@@ -90,12 +90,22 @@ class UserResourceTabularInline(admin.TabularInline):
 
 
 # -- Common Models
+@admin.action(description="Sync with google calendar")
+def sync_with_google_calendar(modeladmin, request, queryset):
+    to_process_qs = queryset.exclude(
+        google_calendar_sync_status=Event.GoogleCalendarSyncStatus.SUCCESS,
+    )
+    for event in to_process_qs.iterator():
+        sync_event_with_google_calendar(event)
+
+
 @admin.register(Event)
 class EventAdmin(VersionAdmin, UserResourceAdmin):
     search_fields = ("name",)
     list_display = ("name", "type", "start_date", "end_date")
-    list_filter = ("type",)
+    list_filter = ("type", "google_calendar_sync_status")
     ordering = ("start_date",)
+    actions = [sync_with_google_calendar]
 
     def get_readonly_fields(self, *args, **kwargs):
         readonly_fields = super().get_readonly_fields(*args, **kwargs)  # type: ignore[reportAttributeAccessIssue]

@@ -78,6 +78,7 @@ class Event(UserResource):
 
     # type hints
     get_type_display: typing.Callable[..., str]
+    get_google_calendar_sync_status_display: typing.Callable[..., str]
 
     def __str__(self):
         return self.name

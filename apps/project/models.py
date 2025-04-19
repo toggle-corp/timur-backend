@@ -1,3 +1,5 @@
+import typing
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -88,9 +90,13 @@ class Deadline(UserResource):
 
     # Type hints
     project_id: int
+    get_google_calendar_sync_status_display: typing.Callable[..., str]
 
     class Meta:  # type: ignore [reportIncompatibleVariableOverride]
         indexes = [NotArchivedFilterIndex]
+
+    def __str__(self):
+        return self.name
 
     def delete(self, *args, **kwargs):
         from apps.project.tasks import delete_deadline_from_google_calendar
