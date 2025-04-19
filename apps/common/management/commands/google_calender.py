@@ -5,17 +5,23 @@ import typing
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
+from apps.common.models import Event
+from apps.common.tasks import sync_event_with_google_calendar
 from apps.common.utils.google_calendar import GoogleCalendarShareRoleType, GoogleServiceAccount
+from apps.project.models import Deadline
+from apps.project.tasks import sync_deadline_with_google_calendar
 
 CommandActionType = typing.Literal[
     "list-calendars",
     "list-events",
     "list-colors",
+    "list-calendar-access",
     # Mutations
     "create-calendar",
     "share-calendar",
     "delete-calendar",
     "delete-event",
+    "sync-timur-data",
 ]
 
 logger = logging.getLogger(__name__)
@@ -38,10 +44,17 @@ class Command(BaseCommand):
         list_events_parser.add_argument("time_min", type=str, help="From (eg: 2024-01-01T10:00:00Z)")
         list_events_parser.add_argument("--max-results", type=str, default=10)
 
-        subparsers.add_parser("create-calendar", help="Create new calenadr")
+        list_calendar_access_parser = subparsers.add_parser(
+            "list-calendar-access",
+            help="List users with access to calendar",
+        )
+        list_calendar_access_parser.add_argument("--calendar-id", type=str, default=None, help="Calendar ID (Optional)")
+        list_calendar_access_parser.add_argument("--compact", action="store_true")
+
+        subparsers.add_parser("create-calendar", help="Create new calendar")
 
         share_calendar_parser = subparsers.add_parser("share-calendar", help="Create new calendar")
-        share_calendar_parser.add_argument("email", type=str, help="User Email")
+        share_calendar_parser.add_argument("emails", type=str, help="User Emails (Seperated by comma)")
         share_calendar_parser.add_argument(
             "role",
             type=str,
@@ -55,6 +68,14 @@ class Command(BaseCommand):
 
         delete_event_parser = subparsers.add_parser("delete-event", help="Delete calendar")
         delete_event_parser.add_argument("event-id", type=str, help="Event id to delete")
+
+        sync_timur_data_parser = subparsers.add_parser(
+            "sync-timur-data",
+            help="Sync timur data (events, deadlines) with google calendar",
+        )
+        sync_timur_data_parser.add_argument("--events", action="store_true")
+        sync_timur_data_parser.add_argument("--deadlines", action="store_true")
+        sync_timur_data_parser.add_argument("--all", action="store_true")
 
     def list_calendars(self, service: GoogleServiceAccount):
         logger.info("Action calendar ID: %s", settings.GOOGLE_CALENDAR_ID)
@@ -70,15 +91,25 @@ class Command(BaseCommand):
         service: GoogleServiceAccount,
         **options: dict,
     ):
-        email = options["email"]
-        role = options["role"]
-        calendar_id = options.get("calendar_id") or settings.GOOGLE_CALENDAR_ID
+        emails = typing.cast("str", options["emails"])
+        role = typing.cast("GoogleCalendarShareRoleType", options["role"])
+        calendar_id = typing.cast(
+            "str",
+            options.get("calendar_id") or settings.GOOGLE_CALENDAR_ID,
+        )
 
-        success = service.share_calendar(calendar_id, email, role)  # type: ignore[reportArgumentType]
-        if success:
-            self.stdout.write(self.style.SUCCESS("Calendar has been shared"))
-            return
-        self.stderr.write(self.style.ERROR("Failed to share"))
+        if role == "owner":
+            confirm_message = f"Are you sure? You want to add <{emails}> as {role}?"
+            if not self.confirm(confirm_message):
+                self.stderr.write(self.style.ERROR("Skipped"))
+                return
+
+        for email in emails.split(","):
+            success = service.share_calendar(calendar_id, email, role)
+            if success:
+                self.stdout.write(self.style.SUCCESS("Calendar has been shared"))
+            else:
+                self.stderr.write(self.style.ERROR("Failed to share"))
 
     def delete_calendar(self, service: GoogleServiceAccount, **options):
         calendar_id = options["calendar-id"]
@@ -114,6 +145,24 @@ class Command(BaseCommand):
         results = service.service_account.colors().get().execute()
         self.stdout.write(json.dumps(list(results.items()), indent=2))
 
+    def list_calendar_access(self, service: GoogleServiceAccount, **options):
+        calendar_id = options.get("calendar_id") or settings.GOOGLE_CALENDAR_ID
+        compact = options.get("compact", False)
+
+        results = service.service_account.acl().list(calendarId=calendar_id).execute()
+        for result in results.get("items", []):
+            if compact:
+                scope = result.get("scope") or {}
+                role = typing.cast("GoogleCalendarShareRoleType", result.get("role"))
+                scope_type = scope.get("type")
+                scope_value = scope.get("value", "N/A")
+                _role = self.style.SUCCESS(role)
+                if role in ["writer", "owner"]:
+                    _role = self.style.ERROR(role)
+                self.stdout.write(f"- {scope_type}: {scope_value} → {_role}")
+            else:
+                self.stdout.write(json.dumps(result, indent=2))
+
     def delete_event(self, service: GoogleServiceAccount, **options):
         event_id = options["event-id"]
 
@@ -127,6 +176,35 @@ class Command(BaseCommand):
             return
         self.stdout.write(self.style.ERROR("Skipped"))
 
+    def sync_timur_data(self, **options):
+        process_all = options["all"]
+        process_events = process_all or options["events"]
+        process_deadlines = process_all or options["deadlines"]
+
+        if process_events:
+            self.stdout.write("Syncing timur events with google calendar")
+            to_process_qs = Event.objects.exclude(
+                google_calendar_sync_status=Event.GoogleCalendarSyncStatus.SUCCESS,
+            )
+            if to_process_qs.count() > 0:
+                for event in to_process_qs.iterator():
+                    sync_event_with_google_calendar(event)
+                    self.stdout.write(f" - {event.get_google_calendar_sync_status_display()} - {event}")
+            else:
+                self.stdout.write(" - All up-to-date")
+
+        if process_deadlines:
+            self.stdout.write("Syncing timur deadlines with google calendar")
+            to_process_qs = Deadline.objects.exclude(
+                google_calendar_sync_status=Deadline.GoogleCalendarSyncStatus.SUCCESS,
+            )
+            if to_process_qs.count() > 0:
+                for deadline in to_process_qs.iterator():
+                    sync_deadline_with_google_calendar(deadline)
+                    self.stdout.write(f" - {deadline.get_google_calendar_sync_status_display()} - {deadline}")
+            else:
+                self.stdout.write(" - All up-to-date")
+
     def handle(self, action: CommandActionType, **options):
         gsc = GoogleServiceAccount()
 
@@ -137,6 +215,8 @@ class Command(BaseCommand):
                 return self.list_colors(gsc)
             case "list-events":
                 return self.list_events(gsc, **options)
+            case "list-calendar-access":
+                return self.list_calendar_access(gsc, **options)
             # Mutations
             case "create-calendar":
                 return self.create_calendar(gsc)
@@ -146,5 +226,7 @@ class Command(BaseCommand):
                 return self.delete_calendar(gsc, **options)
             case "delete-event":
                 return self.delete_event(gsc, **options)
+            case "sync-timur-data":
+                return self.sync_timur_data(**options)
             case _:
                 typing.assert_never(action)

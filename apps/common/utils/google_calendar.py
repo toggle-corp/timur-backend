@@ -24,7 +24,7 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-GoogleCalendarShareRoleType = typing.Literal["reader", "writer", "freeBusyReader"]
+GoogleCalendarShareRoleType = typing.Literal["owner", "reader", "writer", "freeBusyReader"]
 
 
 class GoogleCalendarInitialisationError(Exception): ...
