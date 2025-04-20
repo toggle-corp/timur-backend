@@ -67,7 +67,7 @@ env = environ.Env(
     TEMP_FILE_DIR=(str, "/tmp/"),
     RELEASE=(str, "develop"),
     APP_ENVIRONMENT=str,  # dev/prod
-    APP_TYPE=str,
+    DJANGO_APP_TYPE=str,
     APP_LOG_LEVEL=(str, "INFO"),
     DJANGO_TIME_ZONE=(str, "UTC"),
     DOCKER_HOST_IP=(str, None),
@@ -110,7 +110,7 @@ APP_DOMAIN = typing.cast("str", env("APP_DOMAIN"))
 APP_FRONTEND_HOST = env("APP_FRONTEND_HOST")
 
 APP_ENVIRONMENT = typing.cast("str", env("APP_ENVIRONMENT")).upper()
-APP_TYPE = env("APP_TYPE")
+DJANGO_APP_TYPE = env("DJANGO_APP_TYPE")
 
 ALLOWED_HOSTS: list[str] = [
     *env.list("ADDITIONAL_ALLOWED_HOST"),  # type: ignore[assignment]
@@ -327,7 +327,7 @@ SENTRY_DSN = env("SENTRY_DSN")
 SENTRY_ENABLED = False
 
 SENTRY_CONFIG = {
-    "app_type": APP_TYPE,
+    "app_type": DJANGO_APP_TYPE,
     "dsn": SENTRY_DSN,
     "send_default_pii": True,
     "release": env("RELEASE"),
