@@ -60,7 +60,10 @@
     <div>
         <p>Hi {{ request.user.display_name }} 🙂</p>
         <p>Your email is {{ request.user.email }}</p>
-        </br> Go back to the application here: <a href='{{APP_FRONTEND_HOST}}'>{{APP_FRONTEND_HOST}}</a>
+        </br> Go to the <a href='{{APP_FRONTEND_HOST}}'>Timur App</a>
+        {% if request.user.is_superuser %}
+        </br> Go to the <a href='{{APP_DOMAIN}}/admin'>Admin Panel</a>
+        {% endif %}
     </div>
     {% else %}
     <div>
@@ -89,6 +92,7 @@
              data-logo_alignment="left">
         </div>
 
+        </br> Login using <a href='{{APP_DOMAIN}}/admin'>admin panel</a> instead?
         <p>{{ APP_ENVIRONMENT }}</p>
 
     </div>

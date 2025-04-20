@@ -31,12 +31,13 @@ urlpatterns = [
     path("o/google", google_oauth, name="google_oauth"),
 ]
 
+if settings.GOOGLE_OAUTH_ENABLED:
+    urlpatterns.append(path("dev/sign_in/", dev_sign_in, name="dev-sign-in"))
 
 if settings.DEBUG:
     urlpatterns.extend(
         [
             path("graphiql/", CustomAsyncGraphQLView.as_view(schema=graphql_schema), name="graphiql"),
-            path("dev/sign_in/", dev_sign_in, name="dev-sign-in"),
         ],
     )
 
