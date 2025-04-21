@@ -1,0 +1,13 @@
+apiVersion: v2
+name: timur-backend-helm
+description: "Helm Chart to deploy the Timur Backend"
+type: application
+version: 0.0.1-SET-BY-CICD
+sources:
+  - https://github.com/toggle-corp/timur-backend
+
+dependencies:
+  - name: django-app
+    alias: app
+    version: 0.1.1-beta
+    repository: oci://ghcr.io/toggle-corp/charts

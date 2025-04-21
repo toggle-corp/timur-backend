@@ -1,0 +1,176 @@
+app:
+  environment: PROD
+  # Global Image
+  image:
+    name: SET-BY-CICD-IMAGE
+    tag: SET-BY-CICD-TAG
+    imagePullPolicy: IfNotPresent
+
+  ingress:
+    enabled: true
+    className:
+    host:
+
+  redis:
+    enabled: true
+    architecture: standalone
+    fullnameOverride: timur-redis
+    auth:
+      enabled: false
+    master:
+      persistence:
+        enabled: true
+        size: .5Gi
+        storageClass:
+
+  postgresql:
+    enabled: false
+    fullnameOverride: "timur-pg"
+    architecture: standalone
+    auth:
+      postgresPassword: ""
+      username: ""
+      password: ""
+      database: ""
+    primary:
+      persistence:
+        enabled: true
+        storageClass: ""
+        size: 8Gi
+
+  # https://artifacthub.io/packages/helm/bitnami/minio
+  # extraEnvVars: https://github.com/bitnami/containers/blob/main/bitnami/minio/README.md#environment-variables
+  minio:
+    enabled: false
+    disableWebUI: true
+    mode: standalone
+    fullnameOverride: timur-minio
+    global:
+      defaultStorageClass:
+    apiIngress:
+      enabled: true
+      ingressClassName:
+      hostname:
+      annotations:
+        nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    auth:
+      forceNewKeys: True
+      rootUser: timur
+      rootPassword:
+    persistence:
+      enabled: true
+      size: 1Gi
+    defaultBuckets: timur-static,timur-media  # XXX: Don't change this
+    provisioning:
+      enabled: true
+      resourcesPreset: "nano"
+      cleanupAfterFinished:
+        enabled: true
+      extraCommands:
+        - "mc anonymous set download provisioning/timur-static"
+
+  api:
+    enabled: true
+    replicaCount: 1
+    containerPort: 80
+    command: ["/code/scripts/deploy/run_web.sh"]
+    resources:
+      requests:
+        cpu: "2"
+        memory: 0.5Gi
+      limits:
+        cpu: "2"
+        memory: 1Gi
+
+  worker:
+    enabled: false
+
+  argoHook:
+    enabled: true
+    resources:
+      requests:
+        cpu: "0.1"
+        memory: 1Gi
+      limits:
+        cpu: "4"
+        memory: 2Gi
+    hooks:
+      # NOTE: Make sure keys are lowercase
+      db-migrate:
+        enabled: true
+        hook: PostSync
+        preserveHistory: true
+        command: ["/bin/bash", "-c"]
+        args:
+          - "./manage.py wait_for_resources --db && ./manage.py migrate"
+      collect-static:
+        enabled: true
+        hook: PostSync
+        command: ["/bin/bash", "-c"]
+        args:
+          - "./manage.py wait_for_resources --minio && ./manage.py collectstatic --noinput"
+
+  cronjobs:
+    enabled: true
+    defaultResources:
+      requests:
+        cpu: "0.1"
+        memory: 0.5Gi
+      limits:
+        cpu: "2"
+        memory: 1Gi
+    jobs:
+      "process_not_done_time_entries":
+        schedule: "5 0 * * *"  # Every day at 0:5
+        enabled: true
+        command: ["./manage.py", "process_not_done_time_entries"]
+
+  # NOTE: Check main/settings.py for all available options
+  env:
+    APP_RELEASE: "{{ $.Values.image.tag }}"
+    APP_ENVIRONMENT: "{{ $.Values.environment }}"
+    DJANGO_TIME_ZONE: "Asia/Kathmandu"
+    DJANGO_DEBUG: "false"
+    # AWS
+    AWS_S3_ENABLED: "false"
+    AWS_S3_ENDPOINT_URL: "https://{{ $.Values.minio.apiIngress.hostname }}/"
+    AWS_S3_MEDIA_BUCKET_NAME: "timur-media"
+    AWS_S3_STATIC_BUCKET_NAME: "timur-static"
+    # App Domain
+    APP_DOMAIN: "{{ required \".app.env.APP_DOMAIN\" nil }}"
+    APP_FRONTEND_HOST: "{{ required \".app.env.APP_FRONTEND_HOST\" nil }}"
+    SESSION_COOKIE_DOMAIN: "{{ required \".app.env.SESSION_COOKIE_DOMAIN\" nil }}"
+    CSRF_COOKIE_DOMAIN: "{{ required \".app.env.CSRF_COOKIE_DOMAIN\" nil }}"
+    SESSION_COOKIE_AGE: "2592000"  # 30 days
+    # Email
+    EMAIL_FROM: "{{ required \".app.env.EMAIL_FROM\" nil }}"
+    # Sentry
+    SENTRY_TRACES_SAMPLE_RATE: "0.2"
+    SENTRY_PROFILE_SAMPLE_RATE: "0.2"
+    # Google SSO
+    GOOGLE_OAUTH_ENABLED: "false"
+
+  # NOTE: Check main/settings.py for all available options
+  secrets:
+    DJANGO_SECRET_KEY: "{{ required \".app.secrets.DJANGO_SECRET_KEY\" nil }}"
+    # Postgres
+    DB_NAME: "{{ $.Values.postgresql.auth.database }}"
+    DB_USER: "postgres"
+    DB_PASSWORD: "{{ $.Values.postgresql.auth.postgresPassword }}"
+    DB_HOST: "{{ include \"postgresql.v1.primary.fullname\" $.Subcharts.postgresql }}"
+    DB_PORT: "{{ include \"postgresql.v1.service.port\" $.Subcharts.postgresql }}"
+    # Redis
+    CELERY_REDIS_URL: "redis://{{ printf \"%s-master\" (include \"common.names.fullname\" $.Subcharts.redis) }}:6379/0"
+    DJANGO_CACHE_REDIS_URL: "redis://{{ printf \"%s-master\" (include \"common.names.fullname\" $.Subcharts.redis) }}:6379/1"
+    # Minio (S3)
+    AWS_S3_ACCESS_KEY_ID: "{{ required \".app.minio.auth.rootUser\" $.Values.minio.auth.rootUser }}"
+    AWS_S3_SECRET_ACCESS_KEY: "{{ required \".app.minio.auth.rootPassword\" $.Values.minio.auth.rootPassword }}"
+    AWS_S3_REGION_NAME: "us-east-1"
+    # Google calendar
+    GOOGLE_CALENDAR_ID: "{{ required \".app.env.GOOGLE_CALENDAR_ID\" nil }}"
+    GOOGLE_CREDENTIALS_B64_GZ: "{{ required \".app.env.GOOGLE_CREDENTIALS_B64_GZ\" nil }}"
+    # Google SSO
+    GOOGLE_OAUTH_CLIENT_ID:
+    GOOGLE_OAUTH_REDIRECT_URL:
+    # Misc
+    SENTRY_DSN: "{{ required \".app.secrets.SENTRY_DSN\" nil }}"
