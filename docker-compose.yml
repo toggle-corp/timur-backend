@@ -21,8 +21,7 @@ x-server: &base_server_setup
     DJANGO_TIME_ZONE: ${DJANGO_TIME_ZONE:-Asia/Kathmandu}
     # -- Domain configurations
     DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-*}
-    APP_DOMAIN: localhost:8000
-    APP_HTTP_PROTOCOL: ${APP_HTTP_PROTOCOL:-http}
+    APP_DOMAIN: http://localhost:8100
     APP_FRONTEND_HOST: ${APP_FRONTEND_HOST:-http://localhost:3000}
     SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN:-localhost}
     CSRF_COOKIE_DOMAIN: ${CSRF_COOKIE_DOMAIN:-localhost}

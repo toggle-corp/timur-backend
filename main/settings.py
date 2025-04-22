@@ -118,7 +118,6 @@ DJANGO_APP_TYPE = typing.cast("str", env("DJANGO_APP_TYPE"))
 
 ALLOWED_HOSTS: list[str] = [
     *env.list("ADDITIONAL_ALLOWED_HOST"),  # type: ignore[assignment]
-    urlparse(APP_DOMAIN).netloc,
     typing.cast("str", urlparse(APP_DOMAIN).hostname),
 ]
 

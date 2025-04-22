@@ -10,7 +10,8 @@ from main.graphql.schema import schema as graphql_schema
 
 admin.site.site_header = "Timur"
 admin.site.index_title = "Django Admin Panel"
-admin.site.site_title = "HTML title from adminsitration"
+admin.site.site_title = "Timur web app"
+admin.site.site_url = settings.APP_FRONTEND_HOST
 
 
 urlpatterns = [
