@@ -96,6 +96,7 @@ env = environ.Env(
     # Google services
     GOOGLE_CREDENTIALS_B64_GZ=(str, None),  # gzip -cn credential.json | base64 -w 0
     GOOGLE_CALENDAR_ID=(str, None),
+    GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_EVENT=(bool, False),
 )
 
 # Quick-start development settings - unsuitable for production
@@ -118,6 +119,7 @@ DJANGO_APP_TYPE = typing.cast("str", env("DJANGO_APP_TYPE"))
 ALLOWED_HOSTS: list[str] = [
     *env.list("ADDITIONAL_ALLOWED_HOST"),  # type: ignore[assignment]
     urlparse(APP_DOMAIN).netloc,
+    typing.cast("str", urlparse(APP_DOMAIN).hostname),
 ]
 
 # Application definition
@@ -464,6 +466,7 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"
 # Google services
 GOOGLE_CREDENTIALS_B64_GZ = env("GOOGLE_CREDENTIALS_B64_GZ")
 GOOGLE_CALENDAR_ID = env("GOOGLE_CALENDAR_ID")
+GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_EVENT = env("GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_EVENT")
 
 # Health check
 REDIS_URL = DJANGO_CACHE_REDIS_URL

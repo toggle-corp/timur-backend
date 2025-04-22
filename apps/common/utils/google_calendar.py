@@ -15,6 +15,7 @@ from googleapiclient.errors import HttpError as GoogleHttpError
 from apps.common.models import Event
 from apps.project.models import Deadline
 from main.logging import log_extra
+from utils.common import reverse_admin_panel
 
 if typing.TYPE_CHECKING:
     from googleapiclient._apis.calendar.v3.schemas import (  # type: ignore[reportMissingModuleSource]
@@ -153,6 +154,7 @@ class GoogleCalendar:
             map_key = (Event, event.type)
             emoji_icon = CALENDAR_EMOJI_MAPPING.get(map_key, CALENDAR_FALLBACK_EMOJI)
             color_id = CALENDAR_COLOR_ID_MAPPING.get(map_key, CALENDAR_FALLBACK_COLOR_ID)
+
             name = f"{emoji_icon} {event.name}"
             start_date = event.start_date
         else:
@@ -163,11 +165,12 @@ class GoogleCalendar:
             name = f"{emoji_icon} {event.display_name}"
             start_date = event.end_date  # NOTE: Range creates noise in the calendar
 
+        description = f"Timur admin panel: {reverse_admin_panel(event, _type='change', absolute=True)}"
+
         payload: CalendarEvent = {
             "summary": name,
             "colorId": color_id,
             "description": "",
-            # "description": event.description,
             "start": {
                 "date": start_date.isoformat(),
             },
@@ -177,7 +180,18 @@ class GoogleCalendar:
             "reminders": {"useDefault": True},
             # TODO: "eventType": "birthday|default"
         }
-        payload["description"] = json.dumps(payload)
+
+        if settings.GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_EVENT:
+            description = "\n".join(
+                [
+                    description,
+                    "\n---------------",
+                    "For debugging:",
+                    ("```\n" + json.dumps(payload) + "\n```"),
+                ],
+            )
+
+        payload["description"] = description
 
         return payload
 
