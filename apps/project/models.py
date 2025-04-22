@@ -77,6 +77,7 @@ class Deadline(UserResource):
     )
 
     is_archived = models.BooleanField(default=False)
+    is_external = models.BooleanField(default=True, help_text=_("This is the deadline for clients"))
     start_date = models.DateField(help_text=_("This will be the date from which we need to start working."))
     end_date = models.DateField(help_text=_("This will be the date on which we need to deliver the work."))
 

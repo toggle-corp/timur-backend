@@ -30,6 +30,30 @@ GoogleCalendarShareRoleType = typing.Literal["owner", "reader", "writer", "freeB
 class GoogleCalendarInitialisationError(Exception): ...
 
 
+CALENDAR_FALLBACK_COLOR_ID = "8"  # #e1e1e1
+CALENDAR_COLOR_ID_MAPPING = {
+    # Events - type
+    (Event, Event.Type.HOLIDAY): "10",  # #51b749
+    (Event, Event.Type.RETREAT): "3",  # #dbadff
+    (Event, Event.Type.MISC): "8",  # #e1e1e1
+    # Deadlines - is_external
+    (Deadline, True): "11",  # #dc2127
+    (Deadline, False): "4",  # #ff887c
+}
+
+
+CALENDAR_FALLBACK_EMOJI = "❓"
+CALENDAR_EMOJI_MAPPING = {
+    # Events - type
+    (Event, Event.Type.HOLIDAY): "🏖️",
+    (Event, Event.Type.RETREAT): "🎉",
+    (Event, Event.Type.MISC): "💼",
+    # Deadlines - is_external
+    (Deadline, True): "🎯",
+    (Deadline, False): "📌",
+}
+
+
 class GoogleServiceAccount:
     def __init__(self):
         # Create a Google Calendar service
@@ -121,34 +145,33 @@ class GoogleCalendar:
 
     @staticmethod
     def _generate_google_calendar_event_data(event: Event | Deadline) -> "CalendarEvent":
-        start_date = event.start_date.isoformat()
         # NOTE: Google calendar will create event till end_date - 1 day
-        end_date = (event.end_date + datetime.timedelta(days=1)).isoformat()
+        end_date = event.end_date + datetime.timedelta(days=1)
 
         # Allowed attributes https://developers.google.com/calendar/api/v3/reference/events
         if isinstance(event, Event):
-            name = f"{event.get_type_display()}: {event.name}"
-            color_id = {
-                Event.Type.HOLIDAY: "4",
-                Event.Type.RETREAT: "6",
-                Event.Type.MISC: "1",
-            }.get(event.type, "4")
-
-            description = ""
+            map_key = (Event, event.type)
+            emoji_icon = CALENDAR_EMOJI_MAPPING.get(map_key, CALENDAR_FALLBACK_EMOJI)
+            color_id = CALENDAR_COLOR_ID_MAPPING.get(map_key, CALENDAR_FALLBACK_COLOR_ID)
+            start_date = event.start_date
         else:
-            name = f"Deadline: {event.name}"
-            color_id = "11"
-            description = ""
+            map_key = (Deadline, event.is_external)
+            emoji_icon = CALENDAR_EMOJI_MAPPING.get(map_key, CALENDAR_FALLBACK_EMOJI)
+            color_id = CALENDAR_COLOR_ID_MAPPING.get(map_key, CALENDAR_FALLBACK_COLOR_ID)
+            start_date = end_date  # NOTE: Range creates noise in the calendar
+
+        name = f"{emoji_icon} {event.name}"
+        description = ""
         return {
             "summary": name,
             "colorId": color_id,
             "description": description,
             # "description": event.description,
             "start": {
-                "date": start_date,
+                "date": start_date.isoformat(),
             },
             "end": {
-                "date": end_date,
+                "date": end_date.isoformat(),
             },
             "reminders": {"useDefault": True},
             # TODO: "eventType": "birthday|default"
