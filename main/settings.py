@@ -16,8 +16,8 @@ from urllib.parse import urlparse
 import environ
 from corsheaders.defaults import default_headers
 
-from main import sentry
 from main.logging import log_render_custom_field
+from main.sentry import SentryConfig
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -54,7 +54,9 @@ env = environ.Env(
     AWS_S3_MEDIA_BUCKET_NAME=str,
     AWS_S3_STATIC_BUCKET_NAME=str,
     # Sentry
-    SENTRY_DSN=(str, None),
+    SENTRY_ENABLED=(str, False),
+    SENTRY_DEBUG=(str, False),
+    SENTRY_DSN=str,
     SENTRY_TRACES_SAMPLE_RATE=(float, 0.2),
     SENTRY_PROFILE_SAMPLE_RATE=(float, 0.2),
     # App Domain
@@ -327,26 +329,24 @@ CORS_ALLOW_HEADERS = (
 )
 
 # Sentry Config
-SENTRY_DSN = env("SENTRY_DSN")
-SENTRY_ENABLED = False
+SENTRY_ENABLED = env("SENTRY_ENABLED")
 
-SENTRY_CONFIG = {
-    "app_type": DJANGO_APP_TYPE,
-    "dsn": SENTRY_DSN,
-    "send_default_pii": True,
-    "release": env("RELEASE"),
-    "environment": APP_ENVIRONMENT,
-    "traces_sample_rate": env("SENTRY_TRACES_SAMPLE_RATE"),
-    "profiles_sample_rate": env("SENTRY_PROFILE_SAMPLE_RATE"),
-    "debug": DEBUG,
-    "tags": {
-        "site": ",".join(set(ALLOWED_HOSTS)),
-    },
-}
+if SENTRY_ENABLED:
+    SENTRY_CONFIG = SentryConfig(
+        dsn=typing.cast("str", env("SENTRY_DSN")),
+        debug=typing.cast("bool", env("SENTRY_DEBUG")),
+        app_type=DJANGO_APP_TYPE,
+        release=typing.cast("str", env("RELEASE")),
+        environment=APP_ENVIRONMENT,
+        send_default_pii=True,
+        traces_sample_rate=typing.cast("float", env("SENTRY_TRACES_SAMPLE_RATE")),
+        profiles_sample_rate=typing.cast("float", env("SENTRY_PROFILE_SAMPLE_RATE")),
+        # Custom configs
+        tags={"site": APP_DOMAIN},
+        # TODO: monitor_celery_beat_tasks=env("SENTRY_MONITOR_CELERY_BEAT_TASKS"),
+    )
+    SENTRY_CONFIG.init_sentry()
 
-if SENTRY_DSN:
-    sentry.init_sentry(**SENTRY_CONFIG)
-    SENTRY_ENABLED = True
 
 # See if we are inside a test environment (pytest)
 TESTING = (
