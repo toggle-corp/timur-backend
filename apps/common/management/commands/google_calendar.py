@@ -22,6 +22,7 @@ CommandActionType = typing.Literal[
     "delete-calendar",
     "delete-event",
     "sync-timur-data",
+    "reset-timur-data",
 ]
 
 logger = logging.getLogger(__name__)
@@ -77,6 +78,8 @@ class Command(BaseCommand):
         sync_timur_data_parser.add_argument("--events", action="store_true")
         sync_timur_data_parser.add_argument("--deadlines", action="store_true")
         sync_timur_data_parser.add_argument("--all", action="store_true")
+
+        subparsers.add_parser("reset-timur-data", help="List calendars")
 
     def list_calendars(self, service: GoogleServiceAccount):
         logger.info("Action calendar ID: %s", settings.GOOGLE_CALENDAR_ID)
@@ -224,6 +227,26 @@ class Command(BaseCommand):
         if process_deadlines:
             self._sync_timur_deadlines(force_update)
 
+    def reset_timur_data(self):
+        to_process_event_qs = Event.objects.all()
+        to_process_deadline_qs = Deadline.objects.all()
+
+        if self.confirm(f"Are you sure? This will update {to_process_event_qs.count()} events"):
+            resp = to_process_event_qs.update(
+                google_calendar_event_id=None,
+                google_calendar_html_link=None,
+                google_calendar_sync_status=Event.GoogleCalendarSyncStatus.PENDING,
+            )
+            self.stdout.write(f" - Success {resp}")
+
+        if self.confirm(f"Are you sure? This will update {to_process_deadline_qs.count()} deadlines"):
+            resp = to_process_deadline_qs.update(
+                google_calendar_event_id=None,
+                google_calendar_html_link=None,
+                google_calendar_sync_status=Deadline.GoogleCalendarSyncStatus.PENDING,
+            )
+            self.stdout.write(f" - Success {resp}")
+
     def handle(self, action: CommandActionType, **options):
         gsc = GoogleServiceAccount()
 
@@ -247,5 +270,7 @@ class Command(BaseCommand):
                 return self.delete_event(gsc, **options)
             case "sync-timur-data":
                 return self.sync_timur_data(**options)
+            case "reset-timur-data":
+                return self.reset_timur_data()
             case _:
                 typing.assert_never(action)
