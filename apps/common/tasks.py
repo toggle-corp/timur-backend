@@ -7,9 +7,9 @@ from apps.project.models import Deadline
 logger = logging.getLogger(__name__)
 
 
-def sync_with_google_calendar(timur_obj: Event | Deadline):
+def sync_with_google_calendar(timur_obj: Event | Deadline, force_update=False):
     TimurModel = type(timur_obj)
-    if timur_obj.google_calendar_sync_status == TimurModel.GoogleCalendarSyncStatus.SUCCESS:
+    if not force_update and timur_obj.google_calendar_sync_status == TimurModel.GoogleCalendarSyncStatus.SUCCESS:
         logger.warning("Skip google calendar sync.. Already SUCCESS")
         return
 
@@ -41,8 +41,8 @@ def delete_from_google_calendar(timur_obj: Event | Deadline):
         )
 
 
-def sync_event_with_google_calendar(event: Event):
-    return sync_with_google_calendar(event)
+def sync_event_with_google_calendar(event: Event, force_update=False):
+    return sync_with_google_calendar(event, force_update=force_update)
 
 
 def delete_event_from_google_calendar(event: Event):

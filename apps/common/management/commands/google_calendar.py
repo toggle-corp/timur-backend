@@ -73,6 +73,7 @@ class Command(BaseCommand):
             "sync-timur-data",
             help="Sync timur data (events, deadlines) with google calendar",
         )
+        sync_timur_data_parser.add_argument("--force-update", action="store_true")
         sync_timur_data_parser.add_argument("--events", action="store_true")
         sync_timur_data_parser.add_argument("--deadlines", action="store_true")
         sync_timur_data_parser.add_argument("--all", action="store_true")
@@ -176,34 +177,52 @@ class Command(BaseCommand):
             return
         self.stdout.write(self.style.ERROR("Skipped"))
 
+    def _sync_timur_events(self, force_update):
+        self.stdout.write("Syncing timur events with google calendar")
+
+        to_process_qs = Event.objects.all()
+
+        if not force_update:
+            to_process_qs = to_process_qs.exclude(google_calendar_sync_status=Event.GoogleCalendarSyncStatus.SUCCESS)
+        elif not self.confirm(f"Are you sure? This will update {to_process_qs.count()} events"):
+            return
+
+        if to_process_qs.count() == 0:
+            self.stdout.write(" - All up-to-date")
+            return
+
+        for event in to_process_qs.iterator():
+            sync_event_with_google_calendar(event, force_update=force_update)
+            self.stdout.write(f" - {event.get_google_calendar_sync_status_display()} - {event}")
+
+    def _sync_timur_deadlines(self, force_update):
+        self.stdout.write("Syncing timur deadlines with google calendar")
+
+        to_process_qs = Deadline.objects.all()
+
+        if not force_update:
+            to_process_qs = to_process_qs.exclude(google_calendar_sync_status=Deadline.GoogleCalendarSyncStatus.SUCCESS)
+        elif not self.confirm(f"Are you sure? This will update {to_process_qs.count()} deadlines"):
+            return
+
+        if to_process_qs.count() == 0:
+            self.stdout.write(" - All up-to-date")
+
+        for deadline in to_process_qs.iterator():
+            sync_deadline_with_google_calendar(deadline, force_update=force_update)
+            self.stdout.write(f" - {deadline.get_google_calendar_sync_status_display()} - {deadline}")
+
     def sync_timur_data(self, **options):
+        force_update = options["force_update"]
         process_all = options["all"]
         process_events = process_all or options["events"]
         process_deadlines = process_all or options["deadlines"]
 
         if process_events:
-            self.stdout.write("Syncing timur events with google calendar")
-            to_process_qs = Event.objects.exclude(
-                google_calendar_sync_status=Event.GoogleCalendarSyncStatus.SUCCESS,
-            )
-            if to_process_qs.count() > 0:
-                for event in to_process_qs.iterator():
-                    sync_event_with_google_calendar(event)
-                    self.stdout.write(f" - {event.get_google_calendar_sync_status_display()} - {event}")
-            else:
-                self.stdout.write(" - All up-to-date")
+            self._sync_timur_events(force_update)
 
         if process_deadlines:
-            self.stdout.write("Syncing timur deadlines with google calendar")
-            to_process_qs = Deadline.objects.exclude(
-                google_calendar_sync_status=Deadline.GoogleCalendarSyncStatus.SUCCESS,
-            )
-            if to_process_qs.count() > 0:
-                for deadline in to_process_qs.iterator():
-                    sync_deadline_with_google_calendar(deadline)
-                    self.stdout.write(f" - {deadline.get_google_calendar_sync_status_display()} - {deadline}")
-            else:
-                self.stdout.write(" - All up-to-date")
+            self._sync_timur_deadlines(force_update)
 
     def handle(self, action: CommandActionType, **options):
         gsc = GoogleServiceAccount()
