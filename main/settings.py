@@ -33,6 +33,7 @@ env = environ.Env(
     DB_PASSWORD=str,
     DB_HOST=str,
     DB_PORT=int,
+    DB_SSLMODE=(str, "prefer"),
     # Redis
     CELERY_REDIS_URL=str,
     DJANGO_CACHE_REDIS_URL=str,
@@ -198,7 +199,10 @@ DATABASES = {
         "NAME": env("DB_NAME"),
         "USER": env("DB_USER"),
         "PASSWORD": env("DB_PASSWORD"),
-        "OPTIONS": {"options": "-c search_path=public"},
+        "OPTIONS": {
+            "options": "-c search_path=public",
+            "sslmode": env("DB_SSLMODE"),
+        },
     },
 }
 
