@@ -113,7 +113,7 @@ APP_DOMAIN = typing.cast("str", env("APP_DOMAIN"))
 APP_FRONTEND_HOST = env("APP_FRONTEND_HOST")
 
 APP_ENVIRONMENT = typing.cast("str", env("APP_ENVIRONMENT")).upper()
-DJANGO_APP_TYPE = env("DJANGO_APP_TYPE")
+DJANGO_APP_TYPE = typing.cast("str", env("DJANGO_APP_TYPE"))
 
 ALLOWED_HOSTS: list[str] = [
     *env.list("ADDITIONAL_ALLOWED_HOST"),  # type: ignore[assignment]
@@ -515,7 +515,7 @@ if DEBUG:
     LOGGING = {
         **LOGGING,
         "formatters": {
-            **LOGGING["formatters"],
+            **LOGGING["formatters"],  # type: ignore[reportGeneralTypeIssues]
             "colored_verbose": {
                 "()": "colorlog.ColoredFormatter",
                 "format": ("%(log_color)s%(asctime)s: %(red)s %(short_name)-s%(reset)s %(blue)s%(message)s %(context)s"),
@@ -523,7 +523,7 @@ if DEBUG:
             },
         },
         "handlers": {
-            **LOGGING["handlers"],
+            **LOGGING["handlers"],  # type: ignore[reportGeneralTypeIssues]
             "colored_console": {
                 "class": "logging.StreamHandler",
                 "formatter": "colored_verbose",
@@ -533,10 +533,10 @@ if DEBUG:
         "loggers": {
             **{
                 key: {
-                    **logger,
+                    **logger,  # type: ignore[reportGeneralTypeIssues]
                     "handlers": ["colored_console"],
                 }
-                for key, logger in LOGGING["loggers"].items()
+                for key, logger in LOGGING["loggers"].items()  # type: ignore[reportAttributeAccessIssue]
             },
         },
         "root": {
