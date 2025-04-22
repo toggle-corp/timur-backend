@@ -87,7 +87,11 @@ class GoogleServiceAccount:
             logger.info("Calendar with ID '%s' has been deleted", calendar_id)
             return True
         except Exception:
-            logger.error("Failed to delete calendar with ID '%s'", calendar_id, exc_info=True)
+            logger.error(
+                "Failed to delete calendar",
+                exc_info=True,
+                extra=log_extra({"calendar ID": calendar_id}),
+            )
         return False
 
     def create_calendar(self):
@@ -129,7 +133,11 @@ class GoogleServiceAccount:
             logger.info("Shared calendar with %s as %s Rule ID: %s", email, role, created_rule.get("id"))
             return True
         except Exception:
-            logger.error("Error sharing calendar with %s as %s", email, role, exc_info=True)
+            logger.error(
+                "Error sharing calendar",
+                extra=log_extra({"email": email, "role": role}),
+                exc_info=True,
+            )
         return False
 
 
@@ -258,10 +266,25 @@ class GoogleCalendar:
                 .execute()
             )
 
+            if updated_event.get("status") == "cancelled":
+                # NOTE: Someone deleted the event from the calendar?
+                self.add_event(timur_obj)
+                return
+
             timur_obj.google_calendar_sync_status = TimurModel.GoogleCalendarSyncStatus.SUCCESS
             timur_obj.google_calendar_html_link = updated_event.get("htmlLink")
             assert timur_obj.google_calendar_html_link == updated_event.get("htmlLink")
             logger.info("Event updated: %s", timur_obj.google_calendar_html_link)
+        except GoogleHttpError as e:
+            logger.error(
+                "Failed to update google calendar event [404]",
+                exc_info=True,
+                extra=log_extra({"event_id": timur_obj.pk}),
+            )
+            # NOTE: Maybe someone delete or calendar was change, trying creating new one (Auto heal)
+            if e.status_code == 404:
+                self.add_event(timur_obj)
+                return
         except Exception:
             timur_obj.google_calendar_sync_status = TimurModel.GoogleCalendarSyncStatus.FAILURE
             logger.error(
@@ -282,4 +305,8 @@ class GoogleCalendar:
             timur_obj.google_calendar_event_id = None
             timur_obj.save(update_fields=("google_calendar_event_id",))
         except GoogleHttpError:
-            logger.error("Failed to delete Event with ID '%s'", timur_obj.google_calendar_event_id, exc_info=True)
+            logger.error(
+                "Failed to delete Event",
+                exc_info=True,
+                extra=log_extra({"event_id": timur_obj.pk, "g_event_id": timur_obj.google_calendar_event_id}),
+            )
