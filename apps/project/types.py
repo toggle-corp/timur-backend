@@ -39,6 +39,7 @@ class DeadlineType(UserResourceTypeMixin):
     id: strawberry.ID
     start_date: strawberry.auto
     end_date: strawberry.auto
+    is_external: strawberry.auto
 
     name = string_field(Deadline.name)
     project_id: strawberry.ID
@@ -47,6 +48,10 @@ class DeadlineType(UserResourceTypeMixin):
     @staticmethod
     def get_queryset(_, queryset: models.QuerySet | None, info: Info):
         return get_queryset_for_model(Deadline, queryset)
+
+    @strawberry_django.field
+    async def display_name(self, root: strawberry.Parent[Deadline], info: Info) -> str:
+        return await info.context.dl.project.load_deadline_display_name.load(root.pk)
 
     @strawberry_django.field
     async def total_days(self, root: strawberry.Parent[Deadline]) -> int:

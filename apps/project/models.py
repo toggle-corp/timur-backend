@@ -23,6 +23,7 @@ class Contractor(UserResource):
 
 class Project(UserResource):
     name = models.CharField(max_length=225)
+    short_name = models.CharField(max_length=10)
     description = models.TextField(blank=True)
     # TODO: Validate image size for optimal performance
     logo = models.ImageField(
@@ -105,6 +106,11 @@ class Deadline(UserResource):
         # TODO(thenav56): Make this async with celery
         delete_deadline_from_google_calendar(self)
         return super().delete(*args, **kwargs)
+
+    @property
+    def display_name(self):
+        # NOTE: Also defined in ./dataloaders.py (load_deadline_display_name)
+        return f"{self.project.short_name}: {self.name}"
 
     def dates_check(self):
         if self.start_date > self.end_date:

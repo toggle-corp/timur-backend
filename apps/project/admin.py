@@ -50,6 +50,7 @@ class DeadlineAdmin(VersionAdmin, UserResourceAdmin):
             *dict.fromkeys(
                 [
                     *readonly_fields,
+                    "display_name",
                     "google_calendar_sync_status",
                     "google_calendar_event_id",
                     "google_calendar_html_link",

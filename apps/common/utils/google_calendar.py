@@ -153,14 +153,16 @@ class GoogleCalendar:
             map_key = (Event, event.type)
             emoji_icon = CALENDAR_EMOJI_MAPPING.get(map_key, CALENDAR_FALLBACK_EMOJI)
             color_id = CALENDAR_COLOR_ID_MAPPING.get(map_key, CALENDAR_FALLBACK_COLOR_ID)
+            name = f"{emoji_icon} {event.name}"
             start_date = event.start_date
         else:
             map_key = (Deadline, event.is_external)
             emoji_icon = CALENDAR_EMOJI_MAPPING.get(map_key, CALENDAR_FALLBACK_EMOJI)
             color_id = CALENDAR_COLOR_ID_MAPPING.get(map_key, CALENDAR_FALLBACK_COLOR_ID)
+
+            name = f"{emoji_icon} {event.display_name}"
             start_date = event.end_date  # NOTE: Range creates noise in the calendar
 
-        name = f"{emoji_icon} {event.name}"
         payload: CalendarEvent = {
             "summary": name,
             "colorId": color_id,
