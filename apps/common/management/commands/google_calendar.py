@@ -28,6 +28,26 @@ CommandActionType = typing.Literal[
 logger = logging.getLogger(__name__)
 
 
+def list_all_events(service: GoogleServiceAccount, calendar_id, time_min: str | None = None):
+    """Generator to yield all events from the calendar."""
+    page_token = None
+    while True:
+        events = (
+            service.service_account.events()
+            .list(
+                calendarId=calendar_id,
+                timeMin=time_min,  # type: ignore[reportArgumentType]
+                pageToken=page_token,  # type: ignore[reportArgumentType]
+                maxResults=2500,
+            )
+            .execute()
+        )
+        yield from events.get("items", [])
+        page_token = events.get("nextPageToken")
+        if not page_token:
+            break
+
+
 class Command(BaseCommand):
     help = "Initialize google calendar"
 
@@ -42,8 +62,7 @@ class Command(BaseCommand):
         subparsers.add_parser("list-colors", help="List calendars colors")
 
         list_events_parser = subparsers.add_parser("list-events", help="List calendars colors")
-        list_events_parser.add_argument("time_min", type=str, help="From (eg: 2024-01-01T10:00:00Z)")
-        list_events_parser.add_argument("--max-results", type=str, default=10)
+        list_events_parser.add_argument("--time-min", type=str, help="From (eg: 2024-01-01T10:00:00Z)", default=None)
 
         list_calendar_access_parser = subparsers.add_parser(
             "list-calendar-access",
@@ -129,20 +148,12 @@ class Command(BaseCommand):
 
     def list_events(self, service: GoogleServiceAccount, **options):
         time_min = options["time_min"]
-        max_results = options["max_results"]
-        # "2024-01-01T10:00:00Z"
-        results = (
-            service.service_account.events()
-            .list(
-                calendarId=settings.GOOGLE_CALENDAR_ID,
-                timeMin=time_min,
-                maxResults=max_results,
-                singleEvents=True,
-                orderBy="startTime",
-            )
-            .execute()
+        google_calendar_events = list_all_events(
+            service,
+            calendar_id=settings.GOOGLE_CALENDAR_ID,
+            time_min=time_min,
         )
-        for result in results.get("items", []):
+        for result in google_calendar_events:
             self.stdout.write(json.dumps(result, indent=2))
 
     def list_colors(self, service: GoogleServiceAccount):
@@ -194,9 +205,10 @@ class Command(BaseCommand):
             self.stdout.write(" - All up-to-date")
             return
 
-        for event in to_process_qs.iterator():
+        total_count = to_process_qs.count()
+        for index, event in enumerate(to_process_qs.iterator(), start=1):
             sync_event_with_google_calendar(event, force_update=force_update)
-            self.stdout.write(f" - {event.get_google_calendar_sync_status_display()} - {event}")
+            self.stdout.write(f" - [{index}/{total_count}]: {event.get_google_calendar_sync_status_display()} - {event}")
 
     def _sync_timur_deadlines(self, force_update):
         self.stdout.write("Syncing timur deadlines with google calendar")
@@ -211,9 +223,14 @@ class Command(BaseCommand):
         if to_process_qs.count() == 0:
             self.stdout.write(" - All up-to-date")
 
-        for deadline in to_process_qs.iterator():
+        total_count = to_process_qs.count()
+        for index, deadline in enumerate(to_process_qs.iterator(), start=1):
             sync_deadline_with_google_calendar(deadline, force_update=force_update)
-            self.stdout.write(f" - {deadline.get_google_calendar_sync_status_display()} - {deadline}")
+            self.stdout.write(
+                f" - [{index}/{total_count}]: "
+                + deadline.get_google_calendar_sync_status_display()
+                + f" - {deadline.display_name}",
+            )
 
     def sync_timur_data(self, **options):
         force_update = options["force_update"]
@@ -227,25 +244,49 @@ class Command(BaseCommand):
         if process_deadlines:
             self._sync_timur_deadlines(force_update)
 
-    def reset_timur_data(self):
-        to_process_event_qs = Event.objects.all()
-        to_process_deadline_qs = Deadline.objects.all()
+    def reset_timur_data(self, service: GoogleServiceAccount):
+        to_process_event_qs = Event.objects.filter(google_calendar_event_id__isnull=False).all()
+        to_process_deadline_qs = Deadline.objects.filter(google_calendar_event_id__isnull=False).all()
+        summary = {
+            "events": to_process_event_qs.count(),
+            "deadlines": to_process_deadline_qs.count(),
+        }
 
-        if self.confirm(f"Are you sure? This will update {to_process_event_qs.count()} events"):
-            resp = to_process_event_qs.update(
-                google_calendar_event_id=None,
-                google_calendar_html_link=None,
-                google_calendar_sync_status=Event.GoogleCalendarSyncStatus.PENDING,
-            )
-            self.stdout.write(f" - Success {resp}")
+        calendar_id = settings.GOOGLE_CALENDAR_ID
+        if not self.confirm(f"Are you sure? This will remove {summary}"):
+            return
 
-        if self.confirm(f"Are you sure? This will update {to_process_deadline_qs.count()} deadlines"):
-            resp = to_process_deadline_qs.update(
-                google_calendar_event_id=None,
-                google_calendar_html_link=None,
-                google_calendar_sync_status=Deadline.GoogleCalendarSyncStatus.PENDING,
-            )
-            self.stdout.write(f" - Success {resp}")
+        self.stdout.write("Deleting events from google calendar")
+        google_calendar_events = list_all_events(service, calendar_id=calendar_id)
+        google_calendar_events_deleted_counts = 0
+        for event in google_calendar_events:
+            event_id = event.get("id")
+            if event_id is None:
+                continue
+
+            try:
+                service.service_account.events().delete(calendarId=calendar_id, eventId=event_id).execute()
+                self.stdout.write(f" - Deleted event: {event.get('summary', 'No Title')}")
+                google_calendar_events_deleted_counts += 1
+            except Exception:
+                logger.warning("Failed to delete event ID %s", event_id, exc_info=True)
+            self.stdout.write(f"Total events delete from google calendar: {google_calendar_events_deleted_counts}")
+
+        # Clean-up the database
+        events_resp = to_process_event_qs.update(
+            google_calendar_event_id=None,
+            google_calendar_html_link=None,
+            google_calendar_sync_status=Event.GoogleCalendarSyncStatus.PENDING,
+        )
+
+        deadline_resp = to_process_deadline_qs.update(
+            google_calendar_event_id=None,
+            google_calendar_html_link=None,
+            google_calendar_sync_status=Deadline.GoogleCalendarSyncStatus.PENDING,
+        )
+
+        self.stdout.write(f" - Success {events_resp}")
+        self.stdout.write(f" - Success {deadline_resp}")
 
     def handle(self, action: CommandActionType, **options):
         gsc = GoogleServiceAccount()
@@ -271,6 +312,6 @@ class Command(BaseCommand):
             case "sync-timur-data":
                 return self.sync_timur_data(**options)
             case "reset-timur-data":
-                return self.reset_timur_data()
+                return self.reset_timur_data(gsc)
             case _:
                 typing.assert_never(action)
