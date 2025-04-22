@@ -147,3 +147,24 @@ jobs:
         env:
           DOCKER_IMAGE_BACKEND: ${{ steps.prep.outputs.tagged_image }}
         run: docker push $DOCKER_IMAGE_BACKEND
+
+  validate_helm:
+    name: Validate Helm
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@main
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: 🐳 Helm dependency
+        run: |
+          yq --indent 0 '.dependencies | map(select(.repository | test("^oci:") | not)) | map(["helm", "repo", "add", .name, .repository] | join(" ")) | .[]' ./helm/Chart.lock | sh --
+          helm dependency build ./helm/
+
+      - name: Helm lint
+        run: helm lint ./helm --values ./helm/linter_values.yaml
+
+      - name: Helm template
+        run: helm template ./helm --values ./helm/linter_values.yaml

@@ -61,6 +61,8 @@ def google_oauth(request):
 
     email = user_data["email"].lower()
     if user := User.objects.filter(email=email).first():
+        if not user.is_active:
+            return HttpResponse("User is inactive. Please contact admin", status=403)
         user.first_name = user_data["given_name"]
         user.last_name = user_data["family_name"]
         user.display_picture = user_data["picture"]
