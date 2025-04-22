@@ -67,6 +67,9 @@ reportMissingImports = true
 reportMissingTypeStubs = false
 venvPath = "."
 venv = ".venv"
+# strictDictionaryInference = true
+# strictListInteference = true
+# strictSetInference = true
 
 [tool.ruff]
 line-length = 125

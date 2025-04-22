@@ -158,14 +158,13 @@ class GoogleCalendar:
             map_key = (Deadline, event.is_external)
             emoji_icon = CALENDAR_EMOJI_MAPPING.get(map_key, CALENDAR_FALLBACK_EMOJI)
             color_id = CALENDAR_COLOR_ID_MAPPING.get(map_key, CALENDAR_FALLBACK_COLOR_ID)
-            start_date = end_date  # NOTE: Range creates noise in the calendar
+            start_date = event.end_date  # NOTE: Range creates noise in the calendar
 
         name = f"{emoji_icon} {event.name}"
-        description = ""
-        return {
+        payload: CalendarEvent = {
             "summary": name,
             "colorId": color_id,
-            "description": description,
+            "description": "",
             # "description": event.description,
             "start": {
                 "date": start_date.isoformat(),
@@ -176,6 +175,9 @@ class GoogleCalendar:
             "reminders": {"useDefault": True},
             # TODO: "eventType": "birthday|default"
         }
+        payload["description"] = json.dumps(payload)
+
+        return payload
 
     # Add an event to Google Calendar
     def add_event(self, timur_obj: Event | Deadline):
