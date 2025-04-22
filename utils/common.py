@@ -3,13 +3,14 @@ import datetime
 import functools
 import logging
 import re
+import typing
 
 # import time
 from asgiref.sync import sync_to_async
-
-# from django.conf import settings
+from django.conf import settings
 from django.db import models
 from django.shortcuts import get_object_or_404
+from django.urls import reverse
 
 # from contextlib import contextmanager
 
@@ -96,3 +97,21 @@ class RuntimeProfile:
         assert self.start is not None
         time_delta = datetime.datetime.now() - self.start
         logger.info("Runtime with <%s>: %s", self.label, str(time_delta))
+
+
+def reverse_admin_panel(
+    obj: models.Model,
+    _type: typing.Literal["change"],
+    absolute=False,
+):
+    model: type[models.Model] = type(obj)
+    args = model._meta.app_label, model._meta.model_name
+    kwargs = {
+        "object_id": obj.pk,
+    }
+    if _type == "change":
+        name = "admin:%s_%s_change"
+    url = reverse(name % args, kwargs=kwargs)
+    if absolute:
+        return f"{settings.APP_DOMAIN}{url}"
+    return url

@@ -1,3 +1,4 @@
+import dataclasses
 import json
 
 import sentry_sdk
@@ -19,22 +20,55 @@ for _logger in IGNORED_LOGGERS:
     ignore_logger(_logger)
 
 
-def init_sentry(app_type, tags: dict | None = None, **config):
-    integrations = [
-        DjangoIntegration(),
-        CeleryIntegration(),
-        RedisIntegration(),
-        StrawberryIntegration(async_execution=True),
-    ]
-    sentry_sdk.init(
-        **config,
-        ignore_errors=IGNORED_ERRORS,
-        integrations=integrations,
-    )
-    with sentry_sdk.configure_scope() as scope:
-        scope.set_tag("app_type", app_type)
-        for tag, value in (tags or {}).items():
-            scope.set_tag(tag, value)
+# TODO: Not tested
+def sentry_before_send(event, hint):
+    # Check if the exception is a GraphQLError
+    if "exception" in event and isinstance(event["exception"], dict):
+        for value in event["exception"].get("values", []):
+            if value.get("type") == "GraphQLError":
+                # Return None to prevent sending the GraphQLError to Sentry
+                return None
+    return event
+
+
+@dataclasses.dataclass
+class SentryConfig:
+    dsn: str
+    release: str | None
+    environment: str
+    send_default_pii: bool
+    traces_sample_rate: float
+    profiles_sample_rate: float
+    debug: bool
+    # Custom configs
+    # TODO: monitor_celery_beat_tasks: bool
+    app_type: str
+    tags: dict[str, str]
+
+    def init_sentry(self):
+        integrations = [
+            DjangoIntegration(),
+            RedisIntegration(),
+            StrawberryIntegration(async_execution=True),
+            CeleryIntegration(),
+            # TODO: CeleryIntegration(monitor_beat_tasks=self.monitor_celery_beat_tasks),
+        ]
+        sentry_sdk.init(
+            ignore_errors=IGNORED_ERRORS,
+            integrations=integrations,
+            dsn=self.dsn,
+            release=self.release,
+            environment=self.environment,
+            send_default_pii=self.send_default_pii,
+            traces_sample_rate=self.traces_sample_rate,
+            profiles_sample_rate=self.profiles_sample_rate,
+            before_send=sentry_before_send,
+            debug=self.debug,
+        )
+        with sentry_sdk.configure_scope() as scope:
+            scope.set_tag("app_type", self.app_type)
+            for tag, value in self.tags.items():
+                scope.set_tag(tag, value)
 
 
 class SentryTransactionMiddlewareHelper:

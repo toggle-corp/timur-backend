@@ -1,3 +1,5 @@
+import typing
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -21,6 +23,7 @@ class Contractor(UserResource):
 
 class Project(UserResource):
     name = models.CharField(max_length=225)
+    short_name = models.CharField(max_length=10)
     description = models.TextField(blank=True)
     # TODO: Validate image size for optimal performance
     logo = models.ImageField(
@@ -59,6 +62,11 @@ class Project(UserResource):
 
 
 class Deadline(UserResource):
+    class GoogleCalendarSyncStatus(models.IntegerChoices):
+        PENDING = 1, "Pending"
+        SUCCESS = 2, "Success"
+        FAILURE = 3, "Failure"
+
     name = models.CharField(max_length=225)
     project = models.ForeignKey(Project, on_delete=models.PROTECT, related_name="deadlines")
     contract = models.ForeignKey(
@@ -70,13 +78,39 @@ class Deadline(UserResource):
     )
 
     is_archived = models.BooleanField(default=False)
+    is_external = models.BooleanField(default=True, help_text=_("This is the deadline for clients"))
     start_date = models.DateField(help_text=_("This will be the date from which we need to start working."))
     end_date = models.DateField(help_text=_("This will be the date on which we need to deliver the work."))
 
+    # Google calendar
+    google_calendar_sync_status = models.PositiveSmallIntegerField(
+        choices=GoogleCalendarSyncStatus.choices,
+        default=GoogleCalendarSyncStatus.PENDING,
+    )
+    google_calendar_event_id = models.CharField(null=True, blank=True)
+    google_calendar_html_link = models.URLField(null=True, blank=True)
+
+    # Type hints
     project_id: int
+    get_google_calendar_sync_status_display: typing.Callable[..., str]
 
     class Meta:  # type: ignore [reportIncompatibleVariableOverride]
         indexes = [NotArchivedFilterIndex]
+
+    def __str__(self):
+        return self.name
+
+    def delete(self, *args, **kwargs):
+        from apps.project.tasks import delete_deadline_from_google_calendar
+
+        # TODO(thenav56): Make this async with celery
+        delete_deadline_from_google_calendar(self)
+        return super().delete(*args, **kwargs)
+
+    @property
+    def display_name(self):
+        # NOTE: Also defined in ./dataloaders.py (load_deadline_display_name)
+        return f"{self.project.short_name}: {self.name}"
 
     def dates_check(self):
         if self.start_date > self.end_date:

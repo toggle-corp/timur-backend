@@ -235,9 +235,11 @@ type DeadlineType implements UserResourceTypeMixin {
   id: ID!
   startDate: Date!
   endDate: Date!
+  isExternal: Boolean!
   projectId: ID!
   contractId: ID
   name: String!
+  displayName: String!
   totalDays: Int!
   usedDays: Int!
   remainingDays: Int! @deprecated(reason: "Use total_days - used_days instead")

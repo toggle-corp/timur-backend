@@ -9,12 +9,15 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 import sys
+import typing
 from pathlib import Path
+from urllib.parse import urlparse
 
 import environ
 from corsheaders.defaults import default_headers
 
-from main import sentry
+from main.logging import log_render_custom_field
+from main.sentry import SentryConfig
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -30,6 +33,7 @@ env = environ.Env(
     DB_PASSWORD=str,
     DB_HOST=str,
     DB_PORT=int,
+    DB_SSLMODE=(str, "prefer"),
     # Redis
     CELERY_REDIS_URL=str,
     DJANGO_CACHE_REDIS_URL=str,
@@ -42,36 +46,35 @@ env = environ.Env(
     DJANGO_STATIC_ROOT=(str, BASE_DIR / "assets/static"),  # Where to store
     DJANGO_MEDIA_ROOT=(str, BASE_DIR / "assets/media"),  # Where to store
     # -- S3
-    DJANGO_USE_S3=(bool, False),
-    MEDIA_FILE_CACHE_URL_TTL=(int, 86400),  # 1 day default
-    TEMP_FILE_DIR=(str, "/tmp/"),
-    AWS_S3_BUCKET_STATIC=str,
-    AWS_S3_BUCKET_MEDIA=str,
-    AWS_S3_QUERYSTRING_EXPIRE=(int, 60 * 60 * 24 * 2),  # Default 2 days
-    # -- -- S3 Credentials - Role is preferred
-    AWS_S3_ACCESS_KEY_ID=(str, None),
-    AWS_S3_SECRET_ACCESS_KEY=(str, None),
-    AWS_S3_ENDPOINT_URL=(str, None),  # Optional
+    AWS_S3_ENABLED=(bool, False),
+    AWS_S3_ENDPOINT_URL=(str, None),
+    AWS_S3_ACCESS_KEY_ID=str,
+    AWS_S3_SECRET_ACCESS_KEY=str,
+    AWS_S3_REGION_NAME=str,
+    AWS_S3_MEDIA_BUCKET_NAME=str,
+    AWS_S3_STATIC_BUCKET_NAME=str,
     # Sentry
-    SENTRY_DSN=(str, None),
+    SENTRY_ENABLED=(str, False),
+    SENTRY_DEBUG=(str, False),
+    SENTRY_DSN=str,
     SENTRY_TRACES_SAMPLE_RATE=(float, 0.2),
     SENTRY_PROFILE_SAMPLE_RATE=(float, 0.2),
     # App Domain
-    APP_DOMAIN=str,  # api.example.com
-    APP_HTTP_PROTOCOL=str,  # http|https
+    APP_DOMAIN=str,  # https://api.example.com
     APP_FRONTEND_HOST=str,  # http://frontend.example.com
-    DJANGO_ALLOWED_HOST=(list, ["*"]),
+    ADDITIONAL_ALLOWED_HOST=(list, []),
     SESSION_COOKIE_DOMAIN=str,
     SESSION_COOKIE_AGE=(int, 1209600),  # seconds (Default: 2 weeks)
     CSRF_COOKIE_DOMAIN=str,
     # Misc
+    TEMP_FILE_DIR=(str, "/tmp/"),
     RELEASE=(str, "develop"),
     APP_ENVIRONMENT=str,  # dev/prod
-    APP_TYPE=str,
+    DJANGO_APP_TYPE=str,
+    APP_LOG_LEVEL=(str, "INFO"),
     DJANGO_TIME_ZONE=(str, "UTC"),
     DOCKER_HOST_IP=(str, None),
-    # Hcaptcha
-    HCAPTCHA_SECRET=(str, "0x0000000000000000000000000000000000000000"),
+    ALLOW_DUMMY_DATA_SCRIPT=(bool, False),  # WARNING
     # Testing
     PYTEST_XDIST_WORKER=(str, None),
     # EMAIL
@@ -86,12 +89,14 @@ env = environ.Env(
     SMTP_EMAIL_USERNAME=str,
     SMTP_EMAIL_PASSWORD=str,
     # Google SSO
-    USE_GOOGLE_OAUTH=(bool, False),
+    GOOGLE_OAUTH_ENABLED=(bool, False),
     GOOGLE_OAUTH_CLIENT_ID=(str, None),
     GOOGLE_OAUTH_SECRET=(str, None),
     GOOGLE_OAUTH_REDIRECT_URL=(str, None),
-    # MISC
-    ALLOW_DUMMY_DATA_SCRIPT=(bool, False),  # WARNING
+    # Google services
+    GOOGLE_CREDENTIALS_B64_GZ=(str, None),  # gzip -cn credential.json | base64 -w 0
+    GOOGLE_CALENDAR_ID=(str, None),
+    GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_EVENT=(bool, False),
 )
 
 # Quick-start development settings - unsuitable for production
@@ -104,15 +109,17 @@ SECRET_KEY = env("DJANGO_SECRET_KEY")
 DEBUG = env("DJANGO_DEBUG")
 ALLOW_DUMMY_DATA_SCRIPT = env("ALLOW_DUMMY_DATA_SCRIPT")
 
-ALLOWED_HOSTS: list[str] = env.list("DJANGO_ALLOWED_HOST")  # type: ignore[assignment]
-
 APP_SITE_NAME = "Timur"
-APP_HTTP_PROTOCOL = env("APP_HTTP_PROTOCOL")
-APP_DOMAIN = env("APP_DOMAIN")
+APP_DOMAIN = typing.cast("str", env("APP_DOMAIN"))
 APP_FRONTEND_HOST = env("APP_FRONTEND_HOST")
 
-APP_ENVIRONMENT: str = env("APP_ENVIRONMENT").upper()  # type: ignore[assignment]
-APP_TYPE = env("APP_TYPE")
+APP_ENVIRONMENT = typing.cast("str", env("APP_ENVIRONMENT")).upper()
+DJANGO_APP_TYPE = typing.cast("str", env("DJANGO_APP_TYPE"))
+
+ALLOWED_HOSTS: list[str] = [
+    *env.list("ADDITIONAL_ALLOWED_HOST"),  # type: ignore[assignment]
+    typing.cast("str", urlparse(APP_DOMAIN).hostname),
+]
 
 # Application definition
 
@@ -195,7 +202,10 @@ DATABASES = {
         "NAME": env("DB_NAME"),
         "USER": env("DB_USER"),
         "PASSWORD": env("DB_PASSWORD"),
-        "OPTIONS": {"options": "-c search_path=public"},
+        "OPTIONS": {
+            "options": "-c search_path=public",
+            "sslmode": env("DB_SSLMODE"),
+        },
     },
 }
 
@@ -254,33 +264,34 @@ STORAGES = {
 }
 
 TEMP_FILE_DIR = env("TEMP_FILE_DIR")
-MEDIA_FILE_CACHE_URL_TTL = env("MEDIA_FILE_CACHE_URL_TTL")
 
-if env("DJANGO_USE_S3"):
-    # AWS S3 Bucket Credentials
-    AWS_S3_BUCKET_STATIC = env("AWS_S3_BUCKET_STATIC")
-    AWS_S3_BUCKET_MEDIA = env("AWS_S3_BUCKET_MEDIA")
-    # If environment variable are not provided, then EC2 Role will be used.
+if env("AWS_S3_ENABLED"):
+    AWS_S3_ENDPOINT_URL = env("AWS_S3_ENDPOINT_URL")
+
     AWS_S3_ACCESS_KEY_ID = env("AWS_S3_ACCESS_KEY_ID")
     AWS_S3_SECRET_ACCESS_KEY = env("AWS_S3_SECRET_ACCESS_KEY")
-    AWS_S3_ENDPOINT_URL = env("AWS_S3_ENDPOINT_URL")
-    AWS_QUERYSTRING_EXPIRE = env("AWS_S3_QUERYSTRING_EXPIRE")
-    AWS_S3_FILE_OVERWRITE = False
-    AWS_S3_SIGNATURE_VERSION = "s3v4"
-    AWS_IS_GZIPPED = True
-    GZIP_CONTENT_TYPES = [
-        "text/css",
-        "text/javascript",
-        "application/javascript",
-        "application/x-javascript",
-        "image/svg+xml",
-        "application/json",
-    ]
-    # Static configuration
-    STORAGES["staticfiles"]["BACKEND"] = "main.storages.S3StaticStorage"
-    # Media configuration
-    STORAGES["default"]["BACKEND"] = "main.storages.S3MediaStorage"
-else:  # File system storage
+    AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME")
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "bucket_name": env("AWS_S3_MEDIA_BUCKET_NAME"),
+                "location": "media/",
+                "file_overwrite": False,
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "bucket_name": env("AWS_S3_STATIC_BUCKET_NAME"),
+                "querystring_auth": False,
+                "location": "static/",
+                "file_overwrite": True,
+            },
+        },
+    }
+else:
     STATIC_ROOT = env("DJANGO_STATIC_ROOT")
     MEDIA_ROOT = env("DJANGO_MEDIA_ROOT")
 
@@ -319,26 +330,24 @@ CORS_ALLOW_HEADERS = (
 )
 
 # Sentry Config
-SENTRY_DSN = env("SENTRY_DSN")
-SENTRY_ENABLED = False
+SENTRY_ENABLED = env("SENTRY_ENABLED")
 
-SENTRY_CONFIG = {
-    "app_type": APP_TYPE,
-    "dsn": SENTRY_DSN,
-    "send_default_pii": True,
-    "release": env("RELEASE"),
-    "environment": APP_ENVIRONMENT,
-    "traces_sample_rate": env("SENTRY_TRACES_SAMPLE_RATE"),
-    "profiles_sample_rate": env("SENTRY_PROFILE_SAMPLE_RATE"),
-    "debug": DEBUG,
-    "tags": {
-        "site": ",".join(set(ALLOWED_HOSTS)),
-    },
-}
+if SENTRY_ENABLED:
+    SENTRY_CONFIG = SentryConfig(
+        dsn=typing.cast("str", env("SENTRY_DSN")),
+        debug=typing.cast("bool", env("SENTRY_DEBUG")),
+        app_type=DJANGO_APP_TYPE,
+        release=typing.cast("str", env("RELEASE")),
+        environment=APP_ENVIRONMENT,
+        send_default_pii=True,
+        traces_sample_rate=typing.cast("float", env("SENTRY_TRACES_SAMPLE_RATE")),
+        profiles_sample_rate=typing.cast("float", env("SENTRY_PROFILE_SAMPLE_RATE")),
+        # Custom configs
+        tags={"site": APP_DOMAIN},
+        # TODO: monitor_celery_beat_tasks=env("SENTRY_MONITOR_CELERY_BEAT_TASKS"),
+    )
+    SENTRY_CONFIG.init_sentry()
 
-if SENTRY_DSN:
-    sentry.init_sentry(**SENTRY_CONFIG)
-    SENTRY_ENABLED = True
 
 # See if we are inside a test environment (pytest)
 TESTING = (
@@ -368,7 +377,7 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 CSP_DEFAULT_SRC = ["'self'"]
 SECURE_REFERRER_POLICY = "same-origin"
-if APP_HTTP_PROTOCOL == "https":
+if APP_DOMAIN.startswith("https"):
     SESSION_COOKIE_NAME = f"__Secure-{SESSION_COOKIE_NAME}"
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
@@ -378,7 +387,7 @@ if APP_HTTP_PROTOCOL == "https":
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     CSRF_TRUSTED_ORIGINS = [
         APP_FRONTEND_HOST,
-        f"{APP_HTTP_PROTOCOL}://{APP_DOMAIN}",
+        APP_DOMAIN,
     ]
 
 # https://docs.djangoproject.com/en/3.2/ref/settings/#std:setting-SESSION_COOKIE_DOMAIN
@@ -386,9 +395,6 @@ SESSION_COOKIE_DOMAIN = env("SESSION_COOKIE_DOMAIN")
 SESSION_COOKIE_AGE = env("SESSION_COOKIE_AGE")
 # https://docs.djangoproject.com/en/3.2/ref/settings/#csrf-cookie-domain
 CSRF_COOKIE_DOMAIN = env("CSRF_COOKIE_DOMAIN")
-
-# https://docs.hcaptcha.com/#integration-testing-test-keys
-HCAPTCHA_SECRET = env("HCAPTCHA_SECRET")
 
 TOKEN_DEFAULT_RESET_TIMEOUT_DAYS = 7
 
@@ -448,13 +454,18 @@ CELERY_ACKS_LATE = True
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 # Google SSO
-USE_GOOGLE_OAUTH = env("USE_GOOGLE_OAUTH")
+GOOGLE_OAUTH_ENABLED = env("GOOGLE_OAUTH_ENABLED")
 GOOGLE_OAUTH_CLIENT_ID = env("GOOGLE_OAUTH_CLIENT_ID")
 GOOGLE_OAUTH_SECRET = env("GOOGLE_OAUTH_SECRET")
 GOOGLE_OAUTH_REDIRECT_URL = env("GOOGLE_OAUTH_REDIRECT_URL")
 # TODO: We need these lines below to allow the Google sign in popup to work.
 SECURE_REFERRER_POLICY = "no-referrer-when-downgrade"
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"
+
+# Google services
+GOOGLE_CREDENTIALS_B64_GZ = env("GOOGLE_CREDENTIALS_B64_GZ")
+GOOGLE_CALENDAR_ID = env("GOOGLE_CALENDAR_ID")
+GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_EVENT = env("GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_EVENT")
 
 # Health check
 REDIS_URL = DJANGO_CACHE_REDIS_URL
@@ -463,3 +474,75 @@ HEALTH_CHECK = {
     "DISK_USAGE_MAX": 80,  # percent
     "MEMORY_MIN": 100,  # in MB
 }
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "render_extra_context": {
+            "()": "django.utils.log.CallbackFilter",
+            "callback": log_render_custom_field,
+        },
+    },
+    "formatters": {
+        "simple": {
+            "format": ("%(asctime)s: - %(short_name)s - %(message)s %(context)s"),
+            "datefmt": "%Y-%m-%dT%H:%M:%S",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+            "filters": ["render_extra_context"],
+        },
+    },
+    "loggers": {
+        **{
+            app: {
+                "level": env("APP_LOG_LEVEL"),
+                "handlers": ["console"],
+                "propagate": False,
+            }
+            for app in ["apps", "main", "utils", "celery", "django"]
+        },
+    },
+    "root": {
+        "level": env("APP_LOG_LEVEL"),
+        "handlers": ["console"],
+    },
+}
+
+if DEBUG:
+    LOGGING = {
+        **LOGGING,
+        "formatters": {
+            **LOGGING["formatters"],  # type: ignore[reportGeneralTypeIssues]
+            "colored_verbose": {
+                "()": "colorlog.ColoredFormatter",
+                "format": ("%(log_color)s%(asctime)s: %(red)s %(short_name)-s%(reset)s %(blue)s%(message)s %(context)s"),
+                "datefmt": "%m/%d %H:%M:%S",
+            },
+        },
+        "handlers": {
+            **LOGGING["handlers"],  # type: ignore[reportGeneralTypeIssues]
+            "colored_console": {
+                "class": "logging.StreamHandler",
+                "formatter": "colored_verbose",
+                "filters": ["render_extra_context"],
+            },
+        },
+        "loggers": {
+            **{
+                key: {
+                    **logger,  # type: ignore[reportGeneralTypeIssues]
+                    "handlers": ["colored_console"],
+                }
+                for key, logger in LOGGING["loggers"].items()  # type: ignore[reportAttributeAccessIssue]
+            },
+        },
+        "root": {
+            "level": env("APP_LOG_LEVEL"),
+            "handlers": ["colored_console"],
+        },
+    }

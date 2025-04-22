@@ -10,7 +10,8 @@ from main.graphql.schema import schema as graphql_schema
 
 admin.site.site_header = "Timur"
 admin.site.index_title = "Django Admin Panel"
-admin.site.site_title = "HTML title from adminsitration"
+admin.site.site_title = "Timur web app"
+admin.site.site_url = settings.APP_FRONTEND_HOST
 
 
 urlpatterns = [
@@ -31,12 +32,13 @@ urlpatterns = [
     path("o/google", google_oauth, name="google_oauth"),
 ]
 
+if settings.GOOGLE_OAUTH_ENABLED:
+    urlpatterns.append(path("dev/sign_in/", dev_sign_in, name="dev-sign-in"))
 
 if settings.DEBUG:
     urlpatterns.extend(
         [
             path("graphiql/", CustomAsyncGraphQLView.as_view(schema=graphql_schema), name="graphiql"),
-            path("dev/sign_in/", dev_sign_in, name="dev-sign-in"),
         ],
     )
 

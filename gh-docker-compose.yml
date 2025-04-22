@@ -24,7 +24,7 @@ services:
     environment:
       CI: "true"
       APP_ENVIRONMENT: CI
-      APP_TYPE: web
+      DJANGO_APP_TYPE: web
       DJANGO_DEBUG: "true"
       DJANGO_SECRET_KEY: RANDOM_KEY
       # -- Domain configurations

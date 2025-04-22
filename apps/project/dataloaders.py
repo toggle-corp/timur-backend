@@ -2,6 +2,8 @@ import typing
 from collections import defaultdict
 
 from asgiref.sync import sync_to_async
+from django.db import models
+from django.db.models.functions import Concat
 from django.utils import timezone
 from django.utils.functional import cached_property
 from strawberry.dataloader import DataLoader
@@ -39,6 +41,24 @@ def load_deadlines(keys: list[int]) -> list[list["DeadlineType"]]:
     return [_map.get(key, []) for key in keys]
 
 
+def load_deadline_display_name(keys: list[int]) -> list[str]:
+    # NOTE: Also defined in ./models.py (Deadline.display_name)
+    qs = (
+        Deadline.objects.filter(id__in=keys)
+        .annotate(
+            display_name=Concat(
+                "project__short_name",
+                models.Value(": "),
+                "name",
+            ),
+        )
+        .values_list("id", "display_name")
+    )
+
+    _map = {_id: display_name for _id, display_name in qs}
+    return [_map.get(key, "N/A") for key in keys]
+
+
 class ProjectDataLoader:
     @cached_property
     def load_client(self):
@@ -55,3 +75,7 @@ class ProjectDataLoader:
     @cached_property
     def load_deadlines(self):
         return DataLoader(load_fn=sync_to_async(load_deadlines))
+
+    @cached_property
+    def load_deadline_display_name(self):
+        return DataLoader(load_fn=sync_to_async(load_deadline_display_name))
