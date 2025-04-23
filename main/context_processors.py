@@ -1,11 +1,11 @@
-from django.conf import settings
+from main import config
 
 
 def app_contexts(request):
     return {
         "request": request,
-        "APP_DOMAIN": settings.APP_DOMAIN,
-        "APP_FRONTEND_HOST": settings.APP_FRONTEND_HOST,
-        "APP_ENVIRONMENT": settings.APP_ENVIRONMENT,
-        "IS_DEBUG": settings.DEBUG,
+        "APP_DOMAIN": config.APP_DOMAIN.geturl(),
+        "APP_FRONTEND_HOST": config.APP_FRONTEND_HOST.geturl(),
+        "APP_ENVIRONMENT": config.APP_ENVIRONMENT,
+        "IS_DEBUG": config.DEBUG,
     }

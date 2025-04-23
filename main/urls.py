@@ -1,17 +1,17 @@
-from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from django.views.decorators.csrf import csrf_exempt
 
 from apps.common.views import dev_sign_in
+from main import config
 from main.graphql.schema import CustomAsyncGraphQLView
 from main.graphql.schema import schema as graphql_schema
 
 admin.site.site_header = "Timur"
 admin.site.index_title = "Django Admin Panel"
 admin.site.site_title = "Timur web app"
-admin.site.site_url = settings.APP_FRONTEND_HOST
+admin.site.site_url = config.APP_FRONTEND_HOST.geturl()
 
 
 urlpatterns = [
@@ -33,7 +33,7 @@ urlpatterns = [
     path("_allauth/", include("allauth.headless.urls")),
 ]
 
-if settings.GOOGLE_SSO_ENABLED:
+if config.GOOGLE_SSO_ENABLED:
     urlpatterns.extend(
         [
             path("dev/sign_in/", dev_sign_in, name="dev-sign-in"),
@@ -41,7 +41,7 @@ if settings.GOOGLE_SSO_ENABLED:
         ],
     )
 
-if settings.DEBUG:
+if config.DEBUG:
     urlpatterns.extend(
         [
             path("graphiql/", CustomAsyncGraphQLView.as_view(schema=graphql_schema), name="graphiql"),
@@ -49,5 +49,5 @@ if settings.DEBUG:
     )
 
     # Static and media file URLs
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(config.MEDIA_URL, document_root=config.MEDIA_ROOT)
+    urlpatterns += static(config.STATIC_URL, document_root=config.STATIC_ROOT)

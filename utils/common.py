@@ -7,10 +7,11 @@ import typing
 
 # import time
 from asgiref.sync import sync_to_async
-from django.conf import settings
 from django.db import models
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
+
+from main import config
 
 # from contextlib import contextmanager
 
@@ -113,5 +114,5 @@ def reverse_admin_panel(
         name = "admin:%s_%s_change"
     url = reverse(name % args, kwargs=kwargs)
     if absolute:
-        return f"{settings.APP_DOMAIN}{url}"
+        return f"{config.APP_DOMAIN.geturl()}{url}"
     return url

@@ -7,13 +7,13 @@ import json
 import logging
 import typing
 
-from django.conf import settings
 from google.oauth2 import service_account
 from googleapiclient.discovery import build as google_build
 from googleapiclient.errors import HttpError as GoogleHttpError
 
 from apps.common.models import Event
 from apps.project.models import Deadline
+from main import config
 from main.logging import log_extra
 from utils.common import reverse_admin_panel
 
@@ -64,7 +64,8 @@ class GoogleServiceAccount:
     @functools.cache
     def _load_service_account():
         logger.info("Loading GOOGLE_CREDENTIALS_B64_GZ")
-        gzipped_bytes = base64.b64decode(settings.GOOGLE_CREDENTIALS_B64_GZ)
+        assert config.GOOGLE_CREDENTIALS_B64_GZ is not None  # TODO: Better error handling
+        gzipped_bytes = base64.b64decode(config.GOOGLE_CREDENTIALS_B64_GZ)
         with gzip.GzipFile(fileobj=io.BytesIO(gzipped_bytes)) as f:
             json_bytes = f.read()
             service_account_key = json.loads(json_bytes.decode("utf-8"))
@@ -96,8 +97,8 @@ class GoogleServiceAccount:
 
     def create_calendar(self):
         calendar = {
-            "summary": f"Timur - {settings.APP_ENVIRONMENT}",
-            "timeZone": settings.TIME_ZONE,
+            "summary": f"Timur - {config.APP_ENVIRONMENT}",
+            "timeZone": config.TIME_ZONE,
         }
         return (
             self.service_account.calendars()
@@ -143,9 +144,9 @@ class GoogleServiceAccount:
 
 class GoogleCalendar:
     def __init__(self):
-        self.calendar_id: str = settings.GOOGLE_CALENDAR_ID
-        if self.calendar_id is None:
+        if config.GOOGLE_CALENDAR_ID is None:
             raise GoogleCalendarInitialisationError("GOOGLE_CALENDAR_ID is not defined")
+        self.calendar_id = config.GOOGLE_CALENDAR_ID
 
         try:
             self.service = GoogleServiceAccount().service_account
@@ -189,7 +190,7 @@ class GoogleCalendar:
             # TODO: "eventType": "birthday|default"
         }
 
-        if settings.GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_EVENT:
+        if config.GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_EVENT:
             description = "\n".join(
                 [
                     description,

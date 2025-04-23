@@ -11,7 +11,9 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 import sys
 import typing
 from pathlib import Path
-from urllib.parse import urlparse
+
+if typing.TYPE_CHECKING:
+    from urllib.parse import ParseResult as UrlParseResult
 
 import environ
 from corsheaders.defaults import default_headers
@@ -26,7 +28,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(
     DJANGO_DEBUG=(bool, False),
     DJANGO_SECRET_KEY=str,
-    DJANGO_CORS_ORIGIN_REGEX_WHITELIST=(list, []),
     # Database
     DB_NAME=str,
     DB_USER=str,
@@ -63,6 +64,7 @@ env = environ.Env(
     APP_DOMAIN=str,  # https://api.example.com
     APP_FRONTEND_HOST=str,  # http://frontend.example.com
     ADDITIONAL_ALLOWED_HOST=(list, []),
+    ADDITIONAL_TRUSTED_ORIGINS=(list, []),  # https://app1.example.com,https://app2.example.com
     SESSION_COOKIE_DOMAIN=str,
     SESSION_COOKIE_AGE=(int, 1209600),  # seconds (Default: 2 weeks)
     CSRF_COOKIE_DOMAIN=str,
@@ -110,15 +112,15 @@ DEBUG = env("DJANGO_DEBUG")
 ALLOW_DUMMY_DATA_SCRIPT = env("ALLOW_DUMMY_DATA_SCRIPT")
 
 APP_SITE_NAME = "Timur"
-APP_DOMAIN = typing.cast("str", env("APP_DOMAIN"))
-APP_FRONTEND_HOST = env("APP_FRONTEND_HOST")
+APP_DOMAIN = typing.cast("UrlParseResult", env.url("APP_DOMAIN"))
+APP_FRONTEND_HOST = typing.cast("UrlParseResult", env.url("APP_FRONTEND_HOST"))
 
 APP_ENVIRONMENT = typing.cast("str", env("APP_ENVIRONMENT")).upper()
 DJANGO_APP_TYPE = typing.cast("str", env("DJANGO_APP_TYPE"))
 
 ALLOWED_HOSTS: list[str] = [
     *env.list("ADDITIONAL_ALLOWED_HOST"),  # type: ignore[assignment]
-    typing.cast("str", urlparse(APP_DOMAIN).hostname),
+    typing.cast("str", APP_DOMAIN.hostname),
 ]
 
 # Application definition
@@ -307,12 +309,14 @@ else:
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+TIMUR_TRUSTED_ORIGINS = [
+    APP_DOMAIN.geturl(),
+    APP_FRONTEND_HOST.geturl(),
+    *typing.cast("list[str]", env("ADDITIONAL_TRUSTED_ORIGINS")),
+]
+
 # CORS
-if not env("DJANGO_CORS_ORIGIN_REGEX_WHITELIST"):
-    CORS_ORIGIN_ALLOW_ALL = True
-else:
-    # Example ^https://[\w-]+\.mapswipe\.org$
-    CORS_ORIGIN_REGEX_WHITELIST = env("DJANGO_CORS_ORIGIN_REGEX_WHITELIST")
+CORS_ALLOWED_ORIGINS = TIMUR_TRUSTED_ORIGINS
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_URLS_REGEX = r"(^/media/.*$)|(^/graphql/$)"
@@ -350,7 +354,7 @@ if SENTRY_ENABLED:
         traces_sample_rate=typing.cast("float", env("SENTRY_TRACES_SAMPLE_RATE")),
         profiles_sample_rate=typing.cast("float", env("SENTRY_PROFILE_SAMPLE_RATE")),
         # Custom configs
-        tags={"site": APP_DOMAIN},
+        tags={"site": APP_DOMAIN.geturl()},
         # TODO: monitor_celery_beat_tasks=env("SENTRY_MONITOR_CELERY_BEAT_TASKS"),
     )
     SENTRY_CONFIG.init_sentry()
@@ -384,7 +388,7 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 CSP_DEFAULT_SRC = ["'self'"]
 SECURE_REFERRER_POLICY = "same-origin"
-if APP_DOMAIN.startswith("https"):
+if APP_DOMAIN.scheme == "https":
     SESSION_COOKIE_NAME = f"__Secure-{SESSION_COOKIE_NAME}"
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
@@ -392,10 +396,8 @@ if APP_DOMAIN.startswith("https"):
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    CSRF_TRUSTED_ORIGINS = [
-        APP_FRONTEND_HOST,
-        APP_DOMAIN,
-    ]
+
+CSRF_TRUSTED_ORIGINS = TIMUR_TRUSTED_ORIGINS
 
 # https://docs.djangoproject.com/en/3.2/ref/settings/#std:setting-SESSION_COOKIE_DOMAIN
 SESSION_COOKIE_DOMAIN = env("SESSION_COOKIE_DOMAIN")
@@ -471,7 +473,7 @@ ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*"]
 ACCOUNT_UNIQUE_EMAIL = True
-LOGIN_REDIRECT_URL = APP_FRONTEND_HOST
+LOGIN_REDIRECT_URL = APP_FRONTEND_HOST.geturl()
 
 # HEADLESS_ONLY = True
 
