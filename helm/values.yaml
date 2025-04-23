@@ -155,7 +155,8 @@ app:
     SENTRY_TRACES_SAMPLE_RATE: "0.2"
     SENTRY_PROFILE_SAMPLE_RATE: "0.2"
     # Google SSO
-    GOOGLE_OAUTH_ENABLED: "false"
+    GOOGLE_SSO_ENABLED: "false"
+    # GOOGLE_SSO_ALLOWED_DOMAINS: togglecorp.com
 
   # NOTE: Check main/settings.py for all available options
   secrets:
@@ -177,7 +178,7 @@ app:
     GOOGLE_CALENDAR_ID: "{{ required \".app.env.GOOGLE_CALENDAR_ID\" nil }}"
     GOOGLE_CREDENTIALS_B64_GZ: "{{ required \".app.env.GOOGLE_CREDENTIALS_B64_GZ\" nil }}"
     # Google SSO
-    GOOGLE_OAUTH_CLIENT_ID:
-    GOOGLE_OAUTH_REDIRECT_URL:
+    # GOOGLE_SSO_CLIENT_ID:
+    # GOOGLE_SSO_SECRET:
     # Misc
     SENTRY_DSN: "{{ required \".app.secrets.SENTRY_DSN\" nil }}"

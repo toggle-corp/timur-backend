@@ -382,6 +382,23 @@ wheels = [
 ]
 
 [[package]]
+name = "django-allauth"
+version = "65.7.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "asgiref" },
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4b/08/8557880768ba4d5966195ee5e57c69d8b9425c62ffb80293e2ad36dffb83/django_allauth-65.7.0.tar.gz", hash = "sha256:eb060692150f39e1529893c2de5f9b46e1dab51153ff6cca7ad72c7c125259ea", size = 1640126 }
+
+[package.optional-dependencies]
+socialaccount = [
+    { name = "pyjwt", extra = ["crypto"] },
+    { name = "requests" },
+    { name = "requests-oauthlib" },
+]
+
+[[package]]
 name = "django-cors-headers"
 version = "4.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -853,6 +870,15 @@ wheels = [
 ]
 
 [[package]]
+name = "oauthlib"
+version = "3.2.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6d/fa/fbf4001037904031639e6bfbfc02badfc7e12f137a8afa254df6c4c8a670/oauthlib-3.2.2.tar.gz", hash = "sha256:9859c40929662bec5d64f34d01c99e093149682a3f38915dc0655d5a633dd918", size = 177352 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7e/80/cab10959dc1faead58dc8384a781dfbf93cb4d33d50988f7a69f1b7c9bbe/oauthlib-3.2.2-py3-none-any.whl", hash = "sha256:8139f29aac13e25d502680e9e19963e83f16838d48a0d71c287fe40e7067fbca", size = 151688 },
+]
+
+[[package]]
 name = "packaging"
 version = "24.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1075,6 +1101,20 @@ wheels = [
 ]
 
 [[package]]
+name = "pyjwt"
+version = "2.10.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e7/46/bd74733ff231675599650d3e47f361794b22ef3e3770998dda30d3b63726/pyjwt-2.10.1.tar.gz", hash = "sha256:3cc5772eb20009233caf06e9d8a0577824723b44e6648ee0a2aedb6cf9381953", size = 87785 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/61/ad/689f02752eeec26aed679477e80e632ef1b682313be70793d798c1d5fc8f/PyJWT-2.10.1-py3-none-any.whl", hash = "sha256:dcdd193e30abefd5debf142f9adfcdd2b58004e644f25406ffaebd50bd98dacb", size = 22997 },
+]
+
+[package.optional-dependencies]
+crypto = [
+    { name = "cryptography" },
+]
+
+[[package]]
 name = "pyparsing"
 version = "3.2.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1208,6 +1248,19 @@ wheels = [
 ]
 
 [[package]]
+name = "requests-oauthlib"
+version = "2.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "oauthlib" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/42/f2/05f29bc3913aea15eb670be136045bf5c5bbf4b99ecb839da9b422bb2c85/requests-oauthlib-2.0.0.tar.gz", hash = "sha256:b3dffaebd884d8cd778494369603a9e7b58d29111bf6b41bdc2dcd87203af4e9", size = 55650 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3b/5d/63d4ae3b9daea098d5d6f5da83984853c1bbacd5dc826764b249fe119d24/requests_oauthlib-2.0.0-py2.py3-none-any.whl", hash = "sha256:7dd8a5c40426b779b0868c404bdef9768deccf22749cde15852df527e6269b36", size = 24179 },
+]
+
+[[package]]
 name = "rsa"
 version = "4.9"
 source = { registry = "https://pypi.org/simple" }
@@ -1315,6 +1368,7 @@ dependencies = [
     { name = "django" },
     { name = "django-admin-autocomplete-filter" },
     { name = "django-admin-rangefilter" },
+    { name = "django-allauth", extra = ["socialaccount"] },
     { name = "django-cors-headers" },
     { name = "django-environ" },
     { name = "django-health-check" },
@@ -1360,6 +1414,7 @@ requires-dist = [
     { name = "django", specifier = ">=4.2,<4.3" },
     { name = "django-admin-autocomplete-filter" },
     { name = "django-admin-rangefilter" },
+    { name = "django-allauth", extras = ["socialaccount"] },
     { name = "django-cors-headers" },
     { name = "django-environ" },
     { name = "django-health-check" },

@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.urls import include, path
 from django.views.decorators.csrf import csrf_exempt
 
-from apps.common.views import dev_sign_in, google_oauth
+from apps.common.views import dev_sign_in
 from main.graphql.schema import CustomAsyncGraphQLView
 from main.graphql.schema import schema as graphql_schema
 
@@ -29,11 +29,17 @@ urlpatterns = [
         ),
         name="graphql",
     ),
-    path("o/google", google_oauth, name="google_oauth"),
+    path("accounts/", include("allauth.urls")),
+    path("_allauth/", include("allauth.headless.urls")),
 ]
 
-if settings.GOOGLE_OAUTH_ENABLED:
-    urlpatterns.append(path("dev/sign_in/", dev_sign_in, name="dev-sign-in"))
+if settings.GOOGLE_SSO_ENABLED:
+    urlpatterns.extend(
+        [
+            path("dev/sign_in/", dev_sign_in, name="dev-sign-in"),
+            path("", dev_sign_in, name="dev-sign-in"),
+        ],
+    )
 
 if settings.DEBUG:
     urlpatterns.extend(
