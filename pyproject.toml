@@ -33,6 +33,7 @@ dependencies = [
     "Pillow",
     "psutil",
     "django-admin-rangefilter",
+    "django-allauth[socialaccount]",
     "python-ulid",
 ]
 

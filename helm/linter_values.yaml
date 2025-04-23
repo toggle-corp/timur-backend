@@ -59,7 +59,7 @@ app:
     # Email
     EMAIL_FROM: "timur.dev.com"
     # Google SSO
-    GOOGLE_OAUTH_ENABLED: "true"
+    GOOGLE_SSO_ENABLED: "true"
 
   secrets:
     DJANGO_SECRET_KEY: "very-strong-django-secret-key"
@@ -69,5 +69,4 @@ app:
     # Sentry
     SENTRY_DSN: https://test-123@sentry.local.com/27
     # Google SSO
-    GOOGLE_OAUTH_CLIENT_ID: my-client-id.apps.googleusercontent.com
-    GOOGLE_OAUTH_REDIRECT_URL: https://timur-api.k8s.local.com/o/google
+    GOOGLE_SSO_CLIENT_ID: my-client-id.apps.googleusercontent.com

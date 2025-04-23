@@ -37,6 +37,9 @@ class User(AbstractUser):
 
     pk: int
 
+    def __str__(self):
+        return self.email or str(self.pk)
+
     def save(self, *args, **kwargs):
         # Make sure email/username are same and lowercase
         self.email = self.email.lower()

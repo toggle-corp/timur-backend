@@ -89,10 +89,10 @@ env = environ.Env(
     SMTP_EMAIL_USERNAME=str,
     SMTP_EMAIL_PASSWORD=str,
     # Google SSO
-    GOOGLE_OAUTH_ENABLED=(bool, False),
-    GOOGLE_OAUTH_CLIENT_ID=(str, None),
-    GOOGLE_OAUTH_SECRET=(str, None),
-    GOOGLE_OAUTH_REDIRECT_URL=(str, None),
+    GOOGLE_SSO_ENABLED=(bool, False),
+    GOOGLE_SSO_ALLOWED_DOMAINS=(str, None),
+    GOOGLE_SSO_CLIENT_ID=str,
+    GOOGLE_SSO_SECRET=str,
     # Google services
     GOOGLE_CREDENTIALS_B64_GZ=(str, None),  # gzip -cn credential.json | base64 -w 0
     GOOGLE_CALENDAR_ID=(str, None),
@@ -138,6 +138,12 @@ INSTALLED_APPS = [
     "storages",
     "corsheaders",
     "rangefilter",  # Django admin date range filter
+    # -- Allauth
+    "allauth",
+    "allauth.account",
+    "allauth.headless",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
     # - Health-check
     "health_check",  # required
     "health_check.db",  # stock Django health checkers
@@ -165,6 +171,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "main.middlewares.sentry_middleware",
+    "allauth.account.middleware.AccountMiddleware",
 ]
 
 ROOT_URLCONF = "main.urls"
@@ -453,11 +460,43 @@ CELERY_EVENT_QUEUE_PREFIX = "timur-celery-"
 CELERY_ACKS_LATE = True
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
 # Google SSO
-GOOGLE_OAUTH_ENABLED = env("GOOGLE_OAUTH_ENABLED")
-GOOGLE_OAUTH_CLIENT_ID = env("GOOGLE_OAUTH_CLIENT_ID")
-GOOGLE_OAUTH_SECRET = env("GOOGLE_OAUTH_SECRET")
-GOOGLE_OAUTH_REDIRECT_URL = env("GOOGLE_OAUTH_REDIRECT_URL")
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*"]
+ACCOUNT_UNIQUE_EMAIL = True
+LOGIN_REDIRECT_URL = APP_FRONTEND_HOST
+
+# HEADLESS_ONLY = True
+
+GOOGLE_SSO_ENABLED = env("GOOGLE_SSO_ENABLED")
+if env("GOOGLE_SSO_ENABLED"):
+    SOCIALACCOUNT_ADAPTER = "main.allauth.SocialAccountAdapter"
+    ACCOUNT_EMAIL_VERIFICATION = "none"
+    SOCIALACCOUNT_QUERY_EMAIL = True
+    SOCIALACCOUNT_AUTO_SIGNUP = True
+    SOCIALACCOUNT_ONLY = True
+
+    SOCIALACCOUNT_PROVIDERS = {
+        "google": {
+            "FETCH_USERINFO": True,
+            "EMAIL_AUTHENTICATION": True,
+            "EMAIL_AUTHENTICATION_AUTO_CONNECT": True,
+            "APP": {
+                "verified_email": env("GOOGLE_SSO_ALLOWED_DOMAINS"),
+                "client_id": env("GOOGLE_SSO_CLIENT_ID"),
+                "secret": env("GOOGLE_SSO_SECRET"),
+                "key": "",
+            },
+        },
+    }
+
 # TODO: We need these lines below to allow the Google sign in popup to work.
 SECURE_REFERRER_POLICY = "no-referrer-when-downgrade"
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"
