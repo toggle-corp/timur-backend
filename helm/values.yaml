@@ -120,10 +120,17 @@ app:
         cpu: "2"
         memory: 1Gi
     jobs:
-      "process_not_done_time_entries":
+      process_not_done_time_entries:
         schedule: "5 0 * * *"  # Every day at 0:5
+        timeZone: "Asia/Kathmandu"
         enabled: true
         command: ["./manage.py", "process_not_done_time_entries"]
+      clearsessions:
+        schedule: "0 0 1 * *"  # once-a-month
+        timeZone: "Asia/Kathmandu"
+        enabled: true
+        command: ["./manage.py", "clearsessions"]
+      # TODO: Add force sync calendar events (Every month)
 
   # NOTE: Check main/settings.py for all available options
   env:

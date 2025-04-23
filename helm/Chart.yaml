@@ -9,5 +9,5 @@ sources:
 dependencies:
   - name: django-app
     alias: app
-    version: 0.1.1-beta
+    version: 0.1.1-2beta
     repository: oci://ghcr.io/toggle-corp/charts
