@@ -2,6 +2,7 @@ import datetime
 
 from django.core.management import BaseCommand
 from django.utils import timezone
+from ulid import ULID
 
 from apps.track.models import TimeEntry
 
@@ -33,6 +34,7 @@ class Command(BaseCommand):
             if existing_qs.exists():
                 continue
             time_entry.pk = None  # Create a new copy
+            time_entry.client_id = str(ULID())
             time_entry.date = today
             time_entry.status = TimeEntry.Status.TODO  # Use todo Status
             # Clear data
