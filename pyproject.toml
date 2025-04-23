@@ -33,6 +33,7 @@ dependencies = [
     "Pillow",
     "psutil",
     "django-admin-rangefilter",
+    "python-ulid",
 ]
 
 [dependency-groups]
