@@ -18,19 +18,19 @@ TIME_ZONE = typing.cast("str", settings.TIME_ZONE)
 
 # SSO
 GOOGLE_SSO_ENABLED = typing.cast("bool", settings.GOOGLE_SSO_ENABLED)
-SOCIALACCOUNT_PROVIDERS = typing.cast("dict | None", settings.SOCIALACCOUNT_PROVIDERS)
+SOCIALACCOUNT_PROVIDERS = typing.cast("dict | None", getattr(settings, "SOCIALACCOUNT_PROVIDERS", None))
 
 
 # Storage
 MEDIA_URL = typing.cast("str", settings.MEDIA_URL)
-MEDIA_ROOT = typing.cast("str | None", settings.MEDIA_ROOT)
+MEDIA_ROOT = typing.cast("str | None", getattr(settings, "MEDIA_ROOT", None))
 STATIC_URL = typing.cast("str", settings.STATIC_URL)
-STATIC_ROOT = typing.cast("str | None", settings.STATIC_ROOT)
+STATIC_ROOT = typing.cast("str | None", getattr(settings, "STATIC_ROOT", None))
 
 # Calendar
 GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_EVENT = typing.cast("bool", settings.GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_EVENT)
-GOOGLE_CALENDAR_ID = typing.cast("str | None", settings.GOOGLE_CALENDAR_ID)
-GOOGLE_CREDENTIALS_B64_GZ = typing.cast("str | None", settings.GOOGLE_CREDENTIALS_B64_GZ)
+GOOGLE_CALENDAR_ID = typing.cast("str | None", getattr(settings, "GOOGLE_CALENDAR_ID", None))
+GOOGLE_CREDENTIALS_B64_GZ = typing.cast("str | None", getattr(settings, "GOOGLE_CREDENTIALS_B64_GZ", None))
 
 # Sentry
 SENTRY_ENABLED = typing.cast("bool", settings.SENTRY_ENABLED)
