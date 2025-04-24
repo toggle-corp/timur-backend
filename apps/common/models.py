@@ -80,13 +80,16 @@ class Event(UserResource):
     get_type_display: typing.Callable[..., str]
     get_google_calendar_sync_status_display: typing.Callable[..., str]
 
+    @typing.override
     def __str__(self):
         return self.name
 
+    @typing.override
     def save(self, *args, **kwargs):
         self.reload_cache()
         return super().save(*args, **kwargs)
 
+    @typing.override
     def delete(self, *args, **kwargs):
         from apps.common.tasks import delete_event_from_google_calendar
 
@@ -106,6 +109,7 @@ class Event(UserResource):
         if self.start_date > self.end_date:
             raise ValidationError(_("Start date can't be greater then End date"))
 
+    @typing.override
     def clean(self):
         super().clean()
         self.dates_check()

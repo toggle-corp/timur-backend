@@ -72,6 +72,7 @@ venv = ".venv"
 strictDictionaryInference = true
 strictListInteference = true
 strictSetInference = true
+reportImplicitOverride = true
 
 [tool.ruff]
 line-length = 125

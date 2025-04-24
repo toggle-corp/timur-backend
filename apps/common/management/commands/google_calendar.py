@@ -66,6 +66,7 @@ class Command(BaseCommand):
         prompt = self.style.NOTICE(f"{message} (y/n): ")
         return input(prompt).strip().lower() == "y"
 
+    @typing.override
     def add_arguments(self, parser):
         subparsers = parser.add_subparsers(dest="action", help="Actions", required=True)
 
@@ -299,6 +300,7 @@ class Command(BaseCommand):
         self.stdout.write(f" - Success {events_resp}")
         self.stdout.write(f" - Success {deadline_resp}")
 
+    @typing.override
     def handle(self, action: CommandActionType, **options):
         gsc = GoogleServiceAccount()
 

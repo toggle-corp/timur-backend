@@ -1,3 +1,5 @@
+import typing
+
 from apps.user.factories import UserFactory
 from main.tests import TestCase
 
@@ -19,6 +21,7 @@ class TestUserQuery(TestCase):
         """
 
     @classmethod
+    @typing.override
     def setUpClass(cls):
         super().setUpClass()
         cls.user = UserFactory.create()

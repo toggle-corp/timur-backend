@@ -1,3 +1,5 @@
+import typing
+
 from apps.project.factories import ClientFactory, ContractorFactory, ProjectFactory
 from apps.track.factories import ContractFactory, TaskFactory, TimeEntryFactory
 from apps.track.models import TimeEntry
@@ -72,6 +74,7 @@ class TestEntryQuery(TestCase):
         """
 
     @classmethod
+    @typing.override
     def setUpClass(cls):
         super().setUpClass()
         cls.user = UserFactory.create()

@@ -1,3 +1,5 @@
+import typing
+
 from admin_auto_filters.filters import AutocompleteFilterFactory
 from django.contrib import admin, messages
 from django.db import models
@@ -31,6 +33,7 @@ class ContractAdmin(VersionAdmin, UserResourceAdmin):
     list_display = ("name", "created_by", "get_project", "is_archived")
     inlines = [ContractTaskInline]
 
+    @typing.override
     def get_queryset(self, request: HttpRequest) -> models.QuerySet[Contract]:
         return super().get_queryset(request).select_related("created_by", "project")
 
@@ -51,6 +54,7 @@ class TaskAdmin(VersionAdmin, UserResourceAdmin):
     autocomplete_fields = ("contract",)
     list_display = ("name", "created_by", "get_project", "get_contract", "is_archived")
 
+    @typing.override
     def get_queryset(self, request: HttpRequest) -> models.QuerySet[Contract]:
         return super().get_queryset(request).select_related("created_by", "contract", "contract__project")
 
@@ -125,6 +129,7 @@ class TimeEntryAdmin(admin.ModelAdmin):
     )
     actions = [flag_as_non_billable, flag_as_billable]
 
+    @typing.override
     def get_queryset(self, request: HttpRequest) -> models.QuerySet[Contract]:
         return super().get_queryset(request).select_related("user", "task", "task__contract", "task__contract__project")
 

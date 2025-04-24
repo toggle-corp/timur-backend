@@ -1,3 +1,5 @@
+import typing
+
 from admin_auto_filters.filters import AutocompleteFilterFactory
 from django.contrib import admin, messages
 from django.utils import timezone
@@ -43,6 +45,7 @@ class DeadlineAdmin(VersionAdmin, UserResourceAdmin):
     )
     actions = [sync_with_google_calendar]
 
+    @typing.override
     def get_readonly_fields(self, *args, **kwargs):
         readonly_fields = super().get_readonly_fields(*args, **kwargs)  # type: ignore[reportAttributeAccessIssue]
         return [
@@ -58,6 +61,7 @@ class DeadlineAdmin(VersionAdmin, UserResourceAdmin):
             ),
         ]
 
+    @typing.override
     def save_model(self, request, obj, form, change):
         obj.google_calendar_sync_status = Deadline.GoogleCalendarSyncStatus.PENDING
         super().save_model(request, obj, form, change)

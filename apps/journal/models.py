@@ -1,4 +1,5 @@
 import datetime
+import typing
 
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -51,6 +52,7 @@ class Journal(models.Model):
             models.Index(fields=["date"]),
         ]
 
+    @typing.override
     def __str__(self):
         return f"{self.user_id}#{self.date}"
 
@@ -78,6 +80,7 @@ class Journal(models.Model):
         ):
             raise ValidationError(_("Provided Leave and Work from home combination is invalid"))
 
+    @typing.override
     def clean(self):
         super().clean()
         self.leave_wfh_check()

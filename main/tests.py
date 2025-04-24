@@ -1,3 +1,4 @@
+import typing
 from datetime import datetime
 from enum import Enum
 
@@ -60,6 +61,7 @@ S3_TEST_STORAGES_CONFIGS = dict(
     CELERY_TASK_ALWAYS_EAGER=True,
 )
 class TestCase(BaseTestCase):
+    @typing.override
     def setUp(self):
         from django.core.cache import cache
 

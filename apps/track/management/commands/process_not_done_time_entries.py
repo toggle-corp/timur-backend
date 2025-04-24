@@ -1,4 +1,5 @@
 import datetime
+import typing
 
 from django.core.management import BaseCommand
 from django.utils import timezone
@@ -45,6 +46,7 @@ class Command(BaseCommand):
             cloned_count += 1
         self.stdout.write(self.style.SUCCESS(f"{cloned_count} DOING cloned"))
 
+    @typing.override
     def handle(self, **_):
         # XXX: Use the system localtime to figure out the today's date
         # NOTE: timezone.now() will provide datetime with UTC

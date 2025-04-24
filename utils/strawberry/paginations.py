@@ -47,6 +47,7 @@ def apply_pagination(pagination, queryset):
 
 
 class CountBeforePaginationMonkeyPatch(StrawberryDjangoPagination):
+    @typing.override
     def get_queryset(
         self,
         queryset: models.QuerySet[Any],
@@ -112,6 +113,7 @@ class StrawberryDjangoCountList(StrawberryDjangoField):
             return type_.__strawberry_django_definition__.model  # type: ignore[reportGeneralTypeIssues]
         return None
 
+    @typing.override
     def get_result(
         self,
         source: models.Model | None,
@@ -121,6 +123,7 @@ class StrawberryDjangoCountList(StrawberryDjangoField):
     ):
         return self.resolver(source, info, args, kwargs)
 
+    @typing.override
     def resolver(
         self,
         source: Any,

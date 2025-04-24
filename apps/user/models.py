@@ -1,4 +1,6 @@
 # from __future__ import annotations
+import typing
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -37,9 +39,11 @@ class User(AbstractUser):
 
     pk: int
 
+    @typing.override
     def __str__(self):
         return self.email or str(self.pk)
 
+    @typing.override
     def save(self, *args, **kwargs):
         # Make sure email/username are same and lowercase
         self.email = self.email.lower()

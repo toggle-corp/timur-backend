@@ -10,6 +10,7 @@ from apps.common.models import NotArchivedFilterIndex, UserResource
 class Client(UserResource):
     name = models.CharField(max_length=225)
 
+    @typing.override
     def __str__(self):
         return self.name
 
@@ -17,6 +18,7 @@ class Client(UserResource):
 class Contractor(UserResource):
     name = models.CharField(max_length=225)
 
+    @typing.override
     def __str__(self):
         return self.name
 
@@ -57,6 +59,7 @@ class Project(UserResource):
     class Meta:  # type: ignore [reportIncompatibleVariableOverride]
         indexes = [NotArchivedFilterIndex]
 
+    @typing.override
     def __str__(self):
         return self.name
 
@@ -97,9 +100,11 @@ class Deadline(UserResource):
     class Meta:  # type: ignore [reportIncompatibleVariableOverride]
         indexes = [NotArchivedFilterIndex]
 
+    @typing.override
     def __str__(self):
         return self.name
 
+    @typing.override
     def delete(self, *args, **kwargs):
         from apps.project.tasks import delete_deadline_from_google_calendar
 
@@ -116,6 +121,7 @@ class Deadline(UserResource):
         if self.start_date > self.end_date:
             raise ValidationError(_("Start date can't be greater then End date"))
 
+    @typing.override
     def clean(self):
         super().clean()
         self.dates_check()

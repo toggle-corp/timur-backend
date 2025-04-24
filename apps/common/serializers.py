@@ -1,3 +1,5 @@
+import typing
+
 from django.core.exceptions import FieldDoesNotExist
 from rest_framework import serializers
 
@@ -12,6 +14,7 @@ class UserResourceSerializer(serializers.ModelSerializer):
     client_id = StringIDField(required=False)
     version_id = serializers.SerializerMethodField()
 
+    @typing.override
     def create(self, validated_data):
         if "created_by" in self.Meta.model._meta._forward_fields_map:  # type: ignore[reportAttributeAccessIssue]
             validated_data["created_by"] = self.context["request"].user
@@ -19,6 +22,7 @@ class UserResourceSerializer(serializers.ModelSerializer):
             validated_data["modified_by"] = self.context["request"].user
         return super().create(validated_data)
 
+    @typing.override
     def update(self, instance, validated_data):
         if "modified_by" in self.Meta.model._meta._forward_fields_map:  # type: ignore[reportAttributeAccessIssue]
             validated_data["modified_by"] = self.context["request"].user
@@ -54,6 +58,7 @@ class TempClientIdMixin(serializers.ModelSerializer):
             # If we don't remove `client_id` from validated_data, then serializer will throw error on update/create
             return validated_data.pop("client_id", None)
 
+    @typing.override
     def create(self, validated_data):
         temp_client_id = self._get_temp_client_id(validated_data)
         instance = super().create(validated_data)
@@ -62,6 +67,7 @@ class TempClientIdMixin(serializers.ModelSerializer):
             local_cache.set(self.get_cache_key(instance, self.context["request"]), temp_client_id, 60)
         return instance
 
+    @typing.override
     def update(self, instance, validated_data):
         temp_client_id = self._get_temp_client_id(validated_data)
         instance = super().update(instance, validated_data)
