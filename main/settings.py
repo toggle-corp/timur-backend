@@ -102,7 +102,7 @@ env = environ.Env(
     # Slack
     SLACK_BOT_ENABLED=(bool, False),
     SLACK_BOT_NAME=(str, "Timur"),
-    SLACK_BOT_ICON=(str, "https://em-content.zobj.net/source/microsoft-teams/337/robot_1f916.png"),
+    SLACK_BOT_ICON=(str, None),
     SLACK_BOT_TOKEN=str,
     SLACK_BOT_CHANNEL=str,
     # Daily Standup

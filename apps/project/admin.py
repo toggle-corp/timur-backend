@@ -43,6 +43,7 @@ class DeadlineAdmin(VersionAdmin, UserResourceAdmin):
         AutocompleteFilterFactory("Project", "project"),
         AutocompleteFilterFactory("Contract", "contract"),
     )
+    autocomplete_fields = ("contract", "project")
     actions = [sync_with_google_calendar]
 
     @typing.override

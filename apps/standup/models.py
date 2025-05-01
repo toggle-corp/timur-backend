@@ -1,3 +1,4 @@
+import textwrap
 import typing
 
 from django.db import models
@@ -21,6 +22,11 @@ class Quote(UserResource):
         if quote and track_last_viewed:
             cls.objects.filter(pk=quote.pk).update(last_viewed=Now())
         return quote
+
+    @typing.override
+    def __str__(self):
+        _text = textwrap.shorten(self.text, width=20, placeholder="...")
+        return f"Quote: {self.author} - {_text}"
 
 
 # TODO: Add created_at, created_by, modified_by, modified_at
