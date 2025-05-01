@@ -44,7 +44,15 @@ if config.GOOGLE_SSO_ENABLED:
 if config.DEBUG:
     urlpatterns.extend(
         [
-            path("graphiql/", CustomAsyncGraphQLView.as_view(schema=graphql_schema), name="graphiql"),
+            path(
+                "graphiql/",
+                csrf_exempt(
+                    CustomAsyncGraphQLView.as_view(
+                        schema=graphql_schema,
+                    ),
+                ),
+                name="graphiql",
+            ),
         ],
     )
 
