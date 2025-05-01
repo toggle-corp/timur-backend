@@ -10,6 +10,7 @@ class UserFactory(DjangoModelFactory):
     first_name = factory.Faker("first_name")
     last_name = factory.Faker("last_name")
     email = factory.Sequence(lambda n: f"{n}@xyz.com")
+    slack_user_id = factory.Sequence(lambda n: f"u-slack-user-id-{n}")
 
     class Meta:  # type: ignore[override]
         model = User
