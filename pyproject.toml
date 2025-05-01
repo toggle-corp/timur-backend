@@ -35,6 +35,7 @@ dependencies = [
     "django-admin-rangefilter",
     "django-allauth[socialaccount]",
     "python-ulid",
+    "slack_sdk",
 ]
 
 [dependency-groups]
