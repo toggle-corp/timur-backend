@@ -121,16 +121,42 @@ app:
         memory: 1Gi
     jobs:
       process_not_done_time_entries:
+        enabled: true
         schedule: "5 0 * * *"  # Every day at 0:5
         timeZone: "Asia/Kathmandu"
-        enabled: true
         command: ["./manage.py", "process_not_done_time_entries"]
       clearsessions:
+        enabled: true
         schedule: "0 0 1 * *"  # once-a-month
         timeZone: "Asia/Kathmandu"
-        enabled: true
         command: ["./manage.py", "clearsessions"]
       # TODO: Add force sync calendar events (Every month)
+      user_sync_slack_users_id:
+        enabled: true
+        schedule: "30 16 * * 1,2,3,4,5"  # Before standup_setup_next_standup
+        timeZone: "Asia/Kathmandu"
+        command: ["./manage.py", "sync_slack_users_id"]
+      # Daily standup - subcommands
+      standup_morning_reminder:
+        enabled: true
+        schedule: "0 8 * * 1,2,3,4,5"
+        timeZone: "Asia/Kathmandu"
+        command: ["./manage.py", "standup", "morning-reminder"]
+      standup_before_standup_reminder:
+        enabled: true
+        schedule: "14 9 * * 1,2,3,4,5"
+        timeZone: "Asia/Kathmandu"
+        command: ["./manage.py", "standup", "before-standup-reminder"]
+      standup_setup_next_standup:
+        enabled: true
+        schedule: "45 16 * * 1,2,3,4,5"
+        timeZone: "Asia/Kathmandu"
+        command: ["./manage.py", "standup", "setup-next-standup"]
+      standup_read_doc_reminder:
+        enabled: true
+        schedule: "55 16 * * 1,2,3,4,5"
+        timeZone: "Asia/Kathmandu"
+        command: ["./manage.py", "standup", "read-doc-reminder"]
 
   # NOTE: Check main/settings.py for all available options
   env:
