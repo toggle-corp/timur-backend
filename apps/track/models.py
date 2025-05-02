@@ -1,3 +1,5 @@
+import typing
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -21,6 +23,7 @@ class Contract(UserResource):
     class Meta:  # type: ignore [reportIncompatibleVariableOverride]
         indexes = [NotArchivedFilterIndex]
 
+    @typing.override
     def __str__(self):
         # NOTE: N+1
         return f"{self.project.name} -> {self.name} ({self.total_estimated_hours} hours)"
@@ -38,6 +41,7 @@ class Task(UserResource):
     class Meta:  # type: ignore [reportIncompatibleVariableOverride]
         indexes = [NotArchivedFilterIndex]
 
+    @typing.override
     def __str__(self):
         return self.name
 
@@ -110,9 +114,11 @@ class TimeEntry(models.Model):
         verbose_name = _("time entry")
         verbose_name_plural = _("time entries")
 
+    @typing.override
     def __str__(self):
         return f"{self.pk} {self.task_id=} {self.type=} {self.status}"
 
+    @typing.override
     def clean(self):
         super().clean()
 

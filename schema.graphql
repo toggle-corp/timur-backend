@@ -176,6 +176,10 @@ type DailyStandUpProjectStatUserType {
 }
 
 type DailyStandUpType {
+  id: ID!
+  date: Date!
+  conductor: UserType
+  fallbackConductor: UserType
   quote: QuoteType
   projectStat(pk: ID!): DailyStandUpProjectStatType
 }
@@ -776,6 +780,7 @@ type UserMeType implements UserBaseType {
   isStaff: Boolean!
   isSuperuser: Boolean!
   myLastWorkingDate: Date!
+  loginExpire: DateTime
 }
 
 type UserMeTypeMutationResponseType {

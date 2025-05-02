@@ -1,6 +1,7 @@
 import dataclasses
 import functools
 import json
+import typing
 from argparse import FileType
 from sys import stdin
 
@@ -64,11 +65,13 @@ def cache_with_args(*cache_args):
 class Command(BaseCommand):
     help = "Generate data for development"
 
+    @typing.override
     def add_arguments(self, parser):
         parser.add_argument("input_file", nargs="?", type=FileType("r"), default=stdin)
         # TODO: Generate time track data
         # TODO: Generate journal data
 
+    @typing.override
     def handle(self, **options):
         if not (settings.DEBUG and settings.ALLOW_DUMMY_DATA_SCRIPT):
             self.stdout.write(

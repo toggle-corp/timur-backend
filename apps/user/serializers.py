@@ -1,3 +1,5 @@
+import typing
+
 from django.contrib.auth import authenticate
 from rest_framework import serializers
 
@@ -13,6 +15,7 @@ class LoginSerializer(serializers.Serializer):
         CustomMaximumLengthValidator().validate(password=password)
         return password
 
+    @typing.override
     def validate(self, attrs):
         # NOTE: authenticate only works for active users
         authenticate_user = authenticate(

@@ -30,6 +30,15 @@ class UserAdmin(DjangoUserAdmin):
                     "last_name",
                     "department",
                     "display_picture",
+                    "slack_user_id",
+                ),
+            },
+        ),
+        (
+            _("Standup"),
+            {
+                "fields": (
+                    "assign_for_standup",
                     "exclude_from_slides",
                 ),
             },

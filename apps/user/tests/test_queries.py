@@ -1,3 +1,5 @@
+import typing
+
 from apps.user.factories import UserFactory
 from main.tests import TestCase
 
@@ -13,12 +15,14 @@ class TestUserQuery(TestCase):
                   firstName
                   lastName
                   displayName
+                  loginExpire
                 }
               }
             }
         """
 
     @classmethod
+    @typing.override
     def setUpClass(cls):
         super().setUpClass()
         cls.user = UserFactory.create()
@@ -38,6 +42,7 @@ class TestUserQuery(TestCase):
         # With authentication -----
         self.force_login(user)
         content = self.query_check(self.Query.ME)
+        assert content["data"]["public"]["me"].pop("loginExpire") is not None
         assert content["data"]["public"]["me"] == dict(
             id=self.gID(user.id),
             email=user.email,

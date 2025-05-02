@@ -1,5 +1,6 @@
 import signal
 import time
+import typing
 from urllib.parse import urljoin
 
 import requests
@@ -104,6 +105,7 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f"Minio is available after {retry_helper.total_time()} seconds"))
 
+    @typing.override
     def add_arguments(self, parser):
         parser.add_argument(
             "--timeout",
@@ -116,6 +118,7 @@ class Command(BaseCommand):
         parser.add_argument("--minio", action="store_true", help="Wait for MinIO (S3) storage to be available")
         parser.add_argument("--all", action="store_true", help="Wait for all to be available")
 
+    @typing.override
     def handle(self, **kwargs):
         timeout = kwargs["timeout"]
         _all = kwargs["all"]

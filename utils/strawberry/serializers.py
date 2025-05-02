@@ -1,3 +1,5 @@
+import typing
+
 from django.db import models
 from rest_framework import serializers
 
@@ -25,6 +27,7 @@ class CustomCharField(serializers.CharField):
     This is match utils/strawberry/types.py::string_field logic
     """
 
+    @typing.override
     def run_validation(self, data=serializers.empty):
         if data is None and self.allow_blank and not self.allow_null:
             data = ""

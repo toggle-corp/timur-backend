@@ -3,15 +3,15 @@ import typing
 
 import strawberry
 import strawberry_django
+from asgiref.sync import sync_to_async
 from django.db import models
-from django.db.models.functions import Now
 
 from apps.common.models import Event
 from apps.common.types import UserResourceTypeMixin
 from apps.journal.enums import JournalLeaveTypeEnum, JournalWorkFromHomeTypeEnum
 from apps.project.models import Project
 from apps.project.types import ProjectType
-from apps.standup.models import Quote
+from apps.standup.models import DailyUserStandup, Quote
 from apps.track.models import TimeEntry
 from apps.user.models import User
 from apps.user.types import UserType
@@ -124,33 +124,53 @@ class DailyStandUpProjectStatType:
         ]
 
 
-@strawberry.type
+@strawberry_django.type(DailyUserStandup)
 class DailyStandUpType:
-    date: strawberry.Private[datetime.date]
+    id: strawberry.ID
+    date: strawberry.auto
 
-    def id(self) -> strawberry.ID:
-        return strawberry.ID(self.date.isoformat())
+    @strawberry_django.field
+    async def conductor(self, standup: strawberry.Parent[DailyUserStandup], info: Info) -> UserType | None:
+        if standup.conductor_id:
+            return await info.context.dl.user.load_user.load(standup.conductor_id)
+        return None
 
-    # TODO: primary_conductor
-    # TODO: secondary_conductor
-
-    @strawberry.field
-    async def quote(self, info: Info) -> QuoteType | None:
-        quote = (
-            await QuoteType.get_queryset(None, None, info).order_by(models.F("last_viewed").asc(nulls_first=True)).afirst()
-        )
-        if quote:
-            await Quote.objects.filter(pk=quote.pk).aupdate(last_viewed=Now())
-            return typing.cast("QuoteType", quote)
+    @strawberry_django.field
+    async def fallback_conductor(self, standup: strawberry.Parent[DailyUserStandup], info: Info) -> UserType | None:
+        if standup.fallback_conductor_id:
+            return await info.context.dl.user.load_user.load(standup.fallback_conductor_id)
         return None
 
     @strawberry.field
-    async def project_stat(self, info: Info, pk: strawberry.ID) -> DailyStandUpProjectStatType | None:
+    async def quote(
+        self,
+        standup: strawberry.Parent[DailyUserStandup],
+    ) -> QuoteType | None:
+        @sync_to_async
+        def _get_quote(standup):
+            return standup.quote
+
+        if standup.quote_id:
+            return await _get_quote(standup)
+
+        # As fallback return a random quote
+        return typing.cast(
+            "QuoteType",
+            await sync_to_async(Quote.get_random_quote)(track_last_viewed=True),
+        )
+
+    @strawberry.field
+    async def project_stat(
+        self,
+        info: Info,
+        standup: strawberry.Parent[DailyUserStandup],
+        pk: strawberry.ID,
+    ) -> DailyStandUpProjectStatType | None:
         project = await ProjectType.get_queryset(None, None, info).filter(pk=pk).afirst()
         if project:
             return DailyStandUpProjectStatType(
-                id=strawberry.ID(f"{project.pk}-{self.date.isoformat()}"),
+                id=strawberry.ID(f"{project.pk}-{standup.date.isoformat()}"),
                 project_obj=project,
-                date=self.date,
+                date=standup.date,
             )
         return None

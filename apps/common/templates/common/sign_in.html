@@ -1,98 +1,82 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Login Page</title>
-    <script src="//accounts.google.com/gsi/client" async></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #121212;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Page</title>
 
-        .container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
+  <link rel="stylesheet" type="text/css" href="{% static "css/sso-login.css" %}"/>
 
-        img {
-            border-radius: 50%;
-            width: 100px;
-            height: 100px;
-            object-fit: cover;
-            margin-top: 10px;
-        }
-
-        p {
-            color: #333;
-            margin: 10px 0;
-        }
-
-        a {
-            color: #007bff;
-            text-decoration: none;
-            font-weight: bold;
-        }
-
-        a:hover {
-            text-decoration: underline;
-        }
-
-        .g_id_signin {
-            margin-top: 20px;
-        }
-    </style>
+  <script src="//accounts.google.com/gsi/client" async></script>
+  <!-- <script src="{% static "js/autoreload-dev.js" %}" async></script> -->
 
 </head>
 <body>
 
 <div class="container">
+  {% if request.user.is_authenticated %}
+    <h1>Timur Backend</h1>
+    <p>
+        Welcome, {{ request.user.display_name }} 🙂
+        <br />
+        Your email is <strong>{{ request.user.email }}</strong>
+    </p>
 
-    {% if request.user.is_authenticated %}
-    <div>
-        <p>Hi {{ request.user.display_name }} 🙂</p>
-        <p>Your email is {{ request.user.email }}</p>
-        </br> Go to the <a href="{{APP_FRONTEND_HOST}}">Timur App</a>
-        {% if request.user.is_staff %}
-        </br> Go to the <a href="{{APP_DOMAIN}}/admin">Admin Panel</a>
-        {% endif %}
-        </br> <a href="{% url 'account_logout' %}">Logout</a>
+    <div class="card-container">
+      <a href="{{APP_FRONTEND_HOST}}" class="card">
+        Timur App
+      </a>
+
+      {% if request.user.is_staff %}
+        <a href="{{APP_DOMAIN}}/admin" class="card">
+          Admin Panel
+        </a>
+      {% endif %}
+
+      <a href="{% url 'account_logout' %}" class="danger-card card">
+          Logout
+      </a>
     </div>
-    {% else %}
-    <div>
-        <p>Hi there 🙂 </p>
-        <p>Click below to sign in with Google</p>
 
-        <div id="g_id_onload"
-             data-client_id="{{ GOOGLE_OAUTH_CLIENT_ID }}"
-             data-context="use"
-             data-ux_mode="popup"
-             data-login_uri="{% url 'google_login_by_token' %}"
-             data-auto_prompt="false">
-        </div>
+  {% else %}
+    <h1>Welcome Back 🙂 to Timur</h1>
+    <p>Click below to sign in with Google</p>
+  {% endif %}
 
-        <div class="g_id_signin"
-             data-type="standard"
-             data-shape="rectangular"
-             data-theme="filled_black"
-             data-text="continue_with"
-             data-size="large"
-             data-logo_alignment="left">
-        </div>
+  {% if login_expire_in_days %}
+    <p class="note {% if login_expire_in_days < login_expire_threshold %}warning{% endif %}">
+      Login session is valid for {{ login_expire_in_days }} day{{ login_expire_in_days|pluralize }}.
+    </p>
+  {% endif %}
 
-        </br> Login using <a href="{{APP_DOMAIN}}/admin">admin panel</a> instead?
-        <p>{{ APP_ENVIRONMENT }}</p>
+  {% if not request.user.is_authenticated or login_expire_in_days < login_expire_threshold %}
 
+    <a href="{{APP_DOMAIN}}/admin" class="card">
+      Sign in with Admin Panel
+    </a>
+
+    <!-- Reference: https://developers.google.com/identity/gsi/web/reference/html-reference --!>
+    <div id="g_id_onload"
+         data-client_id="{{ GOOGLE_OAUTH_CLIENT_ID }}"
+         data-context="use"
+         data-ux_mode="popup"
+         data-login_uri="{% url 'google_login_by_token' %}"
+         data-auto_prompt="false">
     </div>
-    {% endif %}
+
+    <div class="g_id_signin"
+         data-type="standard"
+         data-shape="rectangular"
+         data-theme="filled_black"
+         data-text="signin_with"
+         data-size="large"
+         data-logo_alignment="left">
+    </div>
+
+    <p class="note">{{ APP_ENVIRONMENT }}</p>
+  {% endif %}
 </div>
 
 </body>

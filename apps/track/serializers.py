@@ -1,3 +1,5 @@
+import typing
+
 from rest_framework import serializers
 
 from apps.common.serializers import TempClientIdMixin
@@ -29,6 +31,7 @@ class TimeEntrySerializer(TempClientIdMixin, serializers.ModelSerializer):
         )
 
     # TODO: Lock changes per project
+    @typing.override
     def create(self, validated_data):
         validated_data["user"] = self.context["request"].user
         return super().create(validated_data)

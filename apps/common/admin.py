@@ -22,6 +22,7 @@ class PreventDeleteAdminMixin:
 
 
 class UserResourceAdmin(admin.ModelAdmin):
+    @typing.override
     def get_list_display(self, request):
         list_display = super().get_list_display(request)
         for field in ["created_by", "modified_by"]:
@@ -32,6 +33,7 @@ class UserResourceAdmin(admin.ModelAdmin):
                 ]
         return list_display
 
+    @typing.override
     def get_readonly_fields(self, *args, **kwargs):
         readonly_fields = super().get_readonly_fields(*args, **kwargs)  # type: ignore[reportAttributeAccessIssue]
         return [
@@ -47,12 +49,14 @@ class UserResourceAdmin(admin.ModelAdmin):
             ),
         ]
 
+    @typing.override
     def save_model(self, request, obj, form, change):
         if not change:
             obj.created_by = request.user
         obj.modified_by = request.user
         super().save_model(request, obj, form, change)  # type: ignore[reportAttributeAccessIssue]
 
+    @typing.override
     def save_formset(self, request, form, formset, change) -> None:
         if not issubclass(formset.model, UserResource):
             return super().save_formset(request, form, formset, change)
@@ -68,11 +72,13 @@ class UserResourceAdmin(admin.ModelAdmin):
             instance.save()
         return None
 
+    @typing.override
     def get_queryset(self, request: HttpRequest) -> models.QuerySet[DjangoModel]:
         return super().get_queryset(request).select_related("created_by", "modified_by")
 
 
 class UserResourceTabularInline(admin.TabularInline):
+    @typing.override
     def get_readonly_fields(self, *args, **kwargs):
         readonly_fields = super().get_readonly_fields(*args, **kwargs)  # type: ignore[reportAttributeAccessIssue]
         return [
@@ -107,6 +113,7 @@ class EventAdmin(VersionAdmin, UserResourceAdmin):
     ordering = ("start_date",)
     actions = [sync_with_google_calendar]
 
+    @typing.override
     def get_readonly_fields(self, *args, **kwargs):
         readonly_fields = super().get_readonly_fields(*args, **kwargs)  # type: ignore[reportAttributeAccessIssue]
         return [
@@ -121,6 +128,7 @@ class EventAdmin(VersionAdmin, UserResourceAdmin):
             ),
         ]
 
+    @typing.override
     def save_model(self, request, obj, form, change):
         obj.google_calendar_sync_status = Event.GoogleCalendarSyncStatus.PENDING
         super().save_model(request, obj, form, change)

@@ -2,14 +2,18 @@ import json
 import logging
 import typing
 
-from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from apps.common.models import Event
 from apps.common.tasks import sync_event_with_google_calendar
-from apps.common.utils.google_calendar import GoogleCalendarShareRoleType, GoogleServiceAccount
+from apps.common.utils.google_calendar import (
+    GoogleCalendarInitialisationError,
+    GoogleCalendarShareRoleType,
+    GoogleServiceAccount,
+)
 from apps.project.models import Deadline
 from apps.project.tasks import sync_deadline_with_google_calendar
+from main import config
 
 CommandActionType = typing.Literal[
     "list-calendars",
@@ -51,10 +55,18 @@ def list_all_events(service: GoogleServiceAccount, calendar_id, time_min: str | 
 class Command(BaseCommand):
     help = "Initialize google calendar"
 
+    def __init__(self, *args, **kwargs):
+        if config.GOOGLE_CALENDAR_ID is None:
+            raise GoogleCalendarInitialisationError("GOOGLE_CALENDAR_ID is not defined")
+
+        self.calendar_id = config.GOOGLE_CALENDAR_ID
+        return super().__init__(*args, **kwargs)
+
     def confirm(self, message: str) -> bool:
         prompt = self.style.NOTICE(f"{message} (y/n): ")
         return input(prompt).strip().lower() == "y"
 
+    @typing.override
     def add_arguments(self, parser):
         subparsers = parser.add_subparsers(dest="action", help="Actions", required=True)
 
@@ -101,7 +113,7 @@ class Command(BaseCommand):
         subparsers.add_parser("reset-timur-data", help="List calendars")
 
     def list_calendars(self, service: GoogleServiceAccount):
-        logger.info("Action calendar ID: %s", settings.GOOGLE_CALENDAR_ID)
+        logger.info("Action calendar ID: %s", self.calendar_id)
         for cal in service.list_calendar():
             self.stdout.write(json.dumps(cal, indent=2))
 
@@ -118,7 +130,7 @@ class Command(BaseCommand):
         role = typing.cast("GoogleCalendarShareRoleType", options["role"])
         calendar_id = typing.cast(
             "str",
-            options.get("calendar_id") or settings.GOOGLE_CALENDAR_ID,
+            options.get("calendar_id") or self.calendar_id,
         )
 
         if role == "owner":
@@ -150,7 +162,7 @@ class Command(BaseCommand):
         time_min = options["time_min"]
         google_calendar_events = list_all_events(
             service,
-            calendar_id=settings.GOOGLE_CALENDAR_ID,
+            calendar_id=self.calendar_id,
             time_min=time_min,
         )
         for result in google_calendar_events:
@@ -161,7 +173,7 @@ class Command(BaseCommand):
         self.stdout.write(json.dumps(list(results.items()), indent=2))
 
     def list_calendar_access(self, service: GoogleServiceAccount, **options):
-        calendar_id = options.get("calendar_id") or settings.GOOGLE_CALENDAR_ID
+        calendar_id = options.get("calendar_id") or self.calendar_id
         compact = options.get("compact", False)
 
         results = service.service_account.acl().list(calendarId=calendar_id).execute()
@@ -183,7 +195,7 @@ class Command(BaseCommand):
 
         if self.confirm("Are you sure?"):
             service.service_account.events().delete(
-                calendarId=settings.GOOGLE_CALENDAR_ID,
+                calendarId=self.calendar_id,
                 eventId=event_id,
             ).execute()
 
@@ -252,7 +264,7 @@ class Command(BaseCommand):
             "deadlines": to_process_deadline_qs.count(),
         }
 
-        calendar_id = settings.GOOGLE_CALENDAR_ID
+        calendar_id = self.calendar_id
         if not self.confirm(f"Are you sure? This will remove {summary}"):
             return
 
@@ -288,6 +300,7 @@ class Command(BaseCommand):
         self.stdout.write(f" - Success {events_resp}")
         self.stdout.write(f" - Success {deadline_resp}")
 
+    @typing.override
     def handle(self, action: CommandActionType, **options):
         gsc = GoogleServiceAccount()
 

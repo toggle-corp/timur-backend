@@ -80,13 +80,16 @@ class Event(UserResource):
     get_type_display: typing.Callable[..., str]
     get_google_calendar_sync_status_display: typing.Callable[..., str]
 
+    @typing.override
     def __str__(self):
-        return self.name
+        return f"{self.name} - {self.get_type_display()}"
 
+    @typing.override
     def save(self, *args, **kwargs):
         self.reload_cache()
         return super().save(*args, **kwargs)
 
+    @typing.override
     def delete(self, *args, **kwargs):
         from apps.common.tasks import delete_event_from_google_calendar
 
@@ -106,6 +109,7 @@ class Event(UserResource):
         if self.start_date > self.end_date:
             raise ValidationError(_("Start date can't be greater then End date"))
 
+    @typing.override
     def clean(self):
         super().clean()
         self.dates_check()
@@ -176,6 +180,28 @@ class Event(UserResource):
         offset_count: int | None = None,
     ) -> datetime.date:  # type: ignore[reportReturnType]
         return cls.get_last_working_date(now_date, skip_dates=skip_dates, offset_count=offset_count)
+
+    @classmethod
+    def get_next_working_date(
+        cls,
+        now_date: datetime.date,
+        skip_dates: list[datetime.date] | None = None,
+        offset_count: int | None = None,
+    ) -> datetime.date:  # type: ignore[reportReturnType]
+        # TODO: Add test
+        dates_to_skip = set(cls.get_relative_event_dates())
+        if skip_dates:
+            dates_to_skip.update(skip_dates)
+        found_count = 0
+        for x in range(30):  # Create a 1 month window, Should be enough
+            date = now_date + datetime.timedelta(days=x)
+            if cls.is_weekend(date) or date in dates_to_skip:
+                continue
+            if offset_count is not None and found_count < offset_count:
+                found_count += 1
+                continue
+            return date
+        return timezone.now()  # XXX: Fallback to now
 
     @classmethod
     def get_relative_non_working_events(cls) -> models.QuerySet["Event"]:
