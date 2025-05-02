@@ -3,6 +3,7 @@ limited but with type hint settings.py
 """
 
 import typing
+from dataclasses import dataclass
 
 from django.conf import settings
 
@@ -34,3 +35,36 @@ GOOGLE_CREDENTIALS_B64_GZ = typing.cast("str | None", getattr(settings, "GOOGLE_
 
 # Sentry
 SENTRY_ENABLED = typing.cast("bool", settings.SENTRY_ENABLED)
+
+# Daily Standup
+DAILY_STANDUP_DOCUMENTATION_REF = typing.cast("str | None", settings.DAILY_STANDUP_DOCUMENTATION_REF)
+DAILY_STANDUP_MEET_LINK = typing.cast("str | None", settings.DAILY_STANDUP_MEET_LINK)
+
+
+# Slack
+class Slack:
+    @dataclass
+    class SlackConfigDisabled:
+        enabled: typing.Literal[False]
+
+    @dataclass
+    class SlackConfigEnabled:
+        enabled: typing.Literal[True]
+        token: str
+        channel: str
+        bot_name: str
+        bot_icon: str | None
+
+    SlackConfig = SlackConfigEnabled | SlackConfigDisabled
+
+    @classmethod
+    def load_slack_config(cls) -> SlackConfig:
+        if settings.SLACK_BOT_ENABLED:
+            return cls.SlackConfigEnabled(
+                enabled=True,
+                token=settings.SLACK_BOT_TOKEN,
+                channel=settings.SLACK_BOT_CHANNEL,
+                bot_name=settings.SLACK_BOT_NAME,
+                bot_icon=settings.SLACK_BOT_ICON,
+            )
+        return cls.SlackConfigDisabled(enabled=False)

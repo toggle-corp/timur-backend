@@ -35,6 +35,9 @@ class User(AbstractUser):
     # support for custom teams with members & projects
     exclude_from_slides = models.BooleanField(default=False)
 
+    slack_user_id = models.CharField(max_length=20, null=True, blank=True)
+    assign_for_standup = models.BooleanField(default=True)
+
     objects: CustomUserManager = CustomUserManager()  # type: ignore[reportAssignmentType]
 
     pk: int
@@ -53,3 +56,19 @@ class User(AbstractUser):
             kwargs.pop("force_insert", None)
         self.display_name = self.get_full_name() or f"User#{self.pk}"
         return super().save(*args, **kwargs)
+
+    @classmethod
+    def get_active_user_qs(cls) -> models.QuerySet[typing.Self]:
+        return cls.objects.filter(is_active=True)
+
+    @classmethod
+    def get_users_with_slack_user_id(cls) -> models.QuerySet[typing.Self]:
+        return cls.get_active_user_qs().exclude(
+            models.Q(slack_user_id__isnull=True) | models.Q(slack_user_id=""),
+        )
+
+    @classmethod
+    def get_users_without_slack_user_id(cls) -> models.QuerySet[typing.Self]:
+        return cls.get_active_user_qs().filter(
+            models.Q(slack_user_id__isnull=True) | models.Q(slack_user_id=""),
+        )

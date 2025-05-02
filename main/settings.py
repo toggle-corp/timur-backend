@@ -55,7 +55,7 @@ env = environ.Env(
     AWS_S3_MEDIA_BUCKET_NAME=str,
     AWS_S3_STATIC_BUCKET_NAME=str,
     # Sentry
-    SENTRY_ENABLED=(str, False),
+    SENTRY_ENABLED=(bool, False),
     SENTRY_DEBUG=(str, False),
     SENTRY_DSN=str,
     SENTRY_TRACES_SAMPLE_RATE=(float, 0.2),
@@ -99,6 +99,15 @@ env = environ.Env(
     GOOGLE_CREDENTIALS_B64_GZ=(str, None),  # gzip -cn credential.json | base64 -w 0
     GOOGLE_CALENDAR_ID=(str, None),
     GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_EVENT=(bool, False),
+    # Slack
+    SLACK_BOT_ENABLED=(bool, False),
+    SLACK_BOT_NAME=(str, "Timur"),
+    SLACK_BOT_ICON=(str, None),
+    SLACK_BOT_TOKEN=str,
+    SLACK_BOT_CHANNEL=str,
+    # Daily Standup
+    DAILY_STANDUP_DOCUMENTATION_REF=(str, None),
+    DAILY_STANDUP_MEET_LINK=(str, None),
 )
 
 # Quick-start development settings - unsuitable for production
@@ -516,6 +525,19 @@ HEALTH_CHECK = {
     "MEMORY_MIN": 100,  # in MB
 }
 
+# Slack
+SLACK_BOT_ENABLED = env("SLACK_BOT_ENABLED")
+if SLACK_BOT_ENABLED:
+    SLACK_BOT_NAME = env("SLACK_BOT_NAME")
+    SLACK_BOT_ICON = env("SLACK_BOT_ICON")
+    SLACK_BOT_TOKEN = env("SLACK_BOT_TOKEN")
+    SLACK_BOT_CHANNEL = env("SLACK_BOT_CHANNEL")
+
+# Daily Standup
+DAILY_STANDUP_DOCUMENTATION_REF = env("DAILY_STANDUP_DOCUMENTATION_REF")
+DAILY_STANDUP_MEET_LINK = env("DAILY_STANDUP_MEET_LINK")
+
+# Loggging
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
