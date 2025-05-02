@@ -2,9 +2,11 @@ import datetime
 
 import strawberry
 import strawberry_django
+from asgiref.sync import sync_to_async
 from django.utils import timezone
 
 from apps.common.models import Event
+from apps.common.views import get_login_expire
 from apps.journal.enums import JournalLeaveTypeEnum, JournalWorkFromHomeTypeEnum
 from apps.journal.models import Journal
 from main.graphql.context import Info
@@ -60,3 +62,7 @@ class UserMeType(UserBaseType):
             now_date=timezone.now().date(),
             skip_dates=recent_leaves_dates,
         )
+
+    @strawberry.field
+    async def login_expire(self, info: Info) -> datetime.datetime | None:
+        return await sync_to_async(get_login_expire)(info.context.request)

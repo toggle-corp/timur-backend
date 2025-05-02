@@ -2,8 +2,9 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from django.views.decorators.csrf import csrf_exempt
+from django.views.generic import RedirectView
 
-from apps.common.views import dev_sign_in
+from apps.common.views import sso_sign_in
 from main import config
 from main.graphql.schema import CustomAsyncGraphQLView
 from main.graphql.schema import schema as graphql_schema
@@ -36,8 +37,8 @@ urlpatterns = [
 if config.GOOGLE_SSO_ENABLED:
     urlpatterns.extend(
         [
-            path("dev/sign_in/", dev_sign_in, name="dev-sign-in"),
-            path("", dev_sign_in, name="dev-sign-in"),
+            path("dev/sign_in/", RedirectView.as_view(url="/")),
+            path("", sso_sign_in, name="sso-sign-in"),
         ],
     )
 
