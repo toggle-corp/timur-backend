@@ -3,6 +3,7 @@ import typing
 from unittest import mock
 
 from django.core import management
+from slack_sdk.models.blocks.blocks import Block
 from slack_sdk.web.slack_response import SlackResponse
 
 from apps.common.factories import EventFactory
@@ -78,11 +79,12 @@ class TimurSlackMock(TimurSlack):
     @typing.override
     def send_slack_message(
         self,
-        text: str,
+        text: str | None = None,
+        blocks: str | typing.Sequence[dict | Block] | None = None,
         thread_ts: str | None = None,
     ) -> SlackResponse:
         print(  # noqa: T201
-            {"text": text, "thread_ts": thread_ts},
+            {"text": text, "blocks": blocks, "thread_ts": thread_ts},
         )
         global slack_thread_ts_counter
         slack_thread_ts_counter += 1

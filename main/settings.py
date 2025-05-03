@@ -101,13 +101,17 @@ env = environ.Env(
     GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_EVENT=(bool, False),
     # Slack
     SLACK_BOT_ENABLED=(bool, False),
-    SLACK_BOT_NAME=(str, "Timur"),
+    SLACK_BOT_NAME=(str, None),
     SLACK_BOT_ICON=(str, None),
     SLACK_BOT_TOKEN=str,
     SLACK_BOT_CHANNEL=str,
     # Daily Standup
     DAILY_STANDUP_DOCUMENTATION_REF=(str, None),
     DAILY_STANDUP_MEET_LINK=(str, None),
+    DAILY_STANDUP_GATHER_ROUND_GIF=(
+        str,
+        "https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExaDJ3bzJpc2Y2dDgwMTBoMHA5cGg5NjU5ZmM0ZzlndDdkNzI4MHJuNyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/CIy7Ri74WywvK/giphy.gif",
+    ),
 )
 
 # Quick-start development settings - unsuitable for production
@@ -536,6 +540,7 @@ if SLACK_BOT_ENABLED:
 # Daily Standup
 DAILY_STANDUP_DOCUMENTATION_REF = env("DAILY_STANDUP_DOCUMENTATION_REF")
 DAILY_STANDUP_MEET_LINK = env("DAILY_STANDUP_MEET_LINK")
+DAILY_STANDUP_GATHER_ROUND_GIF = env("DAILY_STANDUP_GATHER_ROUND_GIF")
 
 # Loggging
 LOGGING = {

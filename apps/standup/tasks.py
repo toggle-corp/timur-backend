@@ -18,37 +18,110 @@ class SlackMessage:
     DOC_REF = config.DAILY_STANDUP_DOCUMENTATION_REF or "N/A"
     MEET_LINK = config.DAILY_STANDUP_MEET_LINK or ""
 
-    NOTIFY_TEXT_BEFORE_STANDUP = (
-        f"Hey <!everyone> ☀️ Good morning 😄\nLet’s get ready for our daily standup 🚀🗓️\n\n🔗 Join here: {MEET_LINK}"
-    )
+    @classmethod
+    def get_normal_message(
+        cls,
+        message_type: typing.Literal["before_standup"],
+    ) -> TimurSlack.TimurSlackMessageArgumentType:
+        if message_type == "before_standup":
+            text = (
+                "Hey <!everyone>"
+                "\n"
+                "Good morning :sunny: "
+                "Let’s get ready for our daily standup :rocket:"
+                "\n\n"
+                f":link: Join here: {cls.MEET_LINK}"
+            )
+
+            blocks = [
+                {
+                    "type": "markdown",
+                    "text": ("Hey <!everyone>\nGood morning :sunny: \nLet’s get ready for our daily standup :rocket:"),
+                },
+                {
+                    "type": "image",
+                    "image_url": config.DAILY_STANDUP_GATHER_ROUND_GIF,
+                    "alt_text": "People gathering",
+                },
+                {"type": "divider"},
+                {
+                    "type": "markdown",
+                    "text": f":link: For WFH, Join here: {cls.MEET_LINK}",
+                },
+            ]
+
+            return {
+                "text": text,
+                "blocks": blocks,
+            }
+
+        typing.assert_never()
 
     @classmethod
     def get_message(
         cls,
         daily_standup: DailyUserStandup,
         message_type: "MessageType",
-    ) -> str:
+    ) -> TimurSlack.TimurSlackMessageArgumentType:
+        date = daily_standup.date.strftime("%A, %B %-d, %Y")
         conductor_id = daily_standup.conductor.slack_user_id
         fallback_conductor_id = daily_standup.fallback_conductor.slack_user_id
 
         if message_type == "assign":
-            return (
-                "*Hey <@{conductor_id}>, congratulations!* :tada:"
+            text = (
+                f"*Hey <@{conductor_id}>, congratulations!* :tada:"
                 "\n\n"
-                "You're now in charge of the next *Daily Standup* session."
+                f"You're now leading the next *Daily Standup* session: :calendar: {date}"
                 "\n\n"
-                ":calendar: {date}"
-                "\n\n\n"
-                "> :rotating_light: If <@{conductor_id}> isn't available,"
-                " <@{fallback_conductor_id}> will take the lead."
-            ).format(
-                date=daily_standup.date.strftime("%A, %B %-d, %Y"),
-                conductor_id=conductor_id,
-                fallback_conductor_id=fallback_conductor_id,
+                f":warning: If <@{conductor_id}> is unavailable, <@{fallback_conductor_id}> will take over. :handshake:"
             )
 
+            blocks = [
+                {
+                    "type": "markdown",
+                    "text": (
+                        f"**Hey <@{conductor_id}>, congratulations!** :tada:"
+                        "\n\n"
+                        "You're now leading the next **Daily Standup** session"
+                    ),
+                },
+                {"type": "divider"},
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": (
+                            f"*Date*: {date}"
+                            "\n"
+                            "*Time*: 9:15 - 9:30am"
+                            "\n"
+                            f"*Lead*: <@{conductor_id}>"
+                            "\n"
+                            f"*Acting Lead*: <@{fallback_conductor_id}>"
+                        ),
+                    },
+                    "accessory": {
+                        "type": "image",
+                        "image_url": "https://a.slack-edge.com/80588/img/calendar/calendar-emoji.png",
+                        "alt_text": "calendar thumbnail",
+                    },
+                },
+                {"type": "divider"},
+                {
+                    "type": "markdown",
+                    "text": (
+                        f":information_source: If <@{conductor_id}> is unavailable, <@{fallback_conductor_id}> will take over. :handshake:"  # noqa: E501
+                    ),
+                },
+            ]
+
+            return {
+                "text": text,
+                "blocks": blocks,
+            }
+
         if message_type == "read_doc":
-            return (
+            text = (
                 f"*Hey <@{conductor_id}> (and <@{fallback_conductor_id}>)* :wave:"
                 "\n"
                 f"Please take a moment to review the *{cls.DOC_REF}* mentioned above."
@@ -56,14 +129,24 @@ class SlackMessage:
                 "See you at the next standup at :clock9: *9:00 AM*!"
             )
 
+            return {
+                "text": text,
+                "blocks": TimurSlack.get_basic_block(text),
+            }
+
         if message_type == "morning":
-            return (
+            text = (
                 f"*Hey <@{conductor_id}> (and <@{fallback_conductor_id}>)* :wave:\n"
                 "\n"
                 "Just a friendly early morning reminder! 🌅\n"
                 "\n"
                 "Don't be late! 😄 See you at the standup at :clock9: *9:00 AM*!"
             )
+
+            return {
+                "text": text,
+                "blocks": TimurSlack.get_basic_block(text),
+            }
 
         typing.assert_never()
 
@@ -130,7 +213,7 @@ def setup_next_standup():
 
     if daily_standup.slack_thread_ts is None:
         slack_response = timur_slack.send_slack_message(
-            text=SlackMessage.get_message(daily_standup, "assign"),
+            **SlackMessage.get_message(daily_standup, "assign"),
         )
         daily_standup.slack_thread_ts = slack_response.get("ts")
         daily_standup.save(update_fields=("slack_thread_ts",))
@@ -140,8 +223,10 @@ def _today_standup_slack_message(m_type: typing.Literal["before_standup"] | Slac
     timur_slack = TimurSlack()
     today = timezone.now().date()
 
+    slack_message: TimurSlack.TimurSlackMessageArgumentType
+
     if m_type == "before_standup":
-        slack_message = SlackMessage.NOTIFY_TEXT_BEFORE_STANDUP
+        slack_message = SlackMessage.get_normal_message(m_type)
         slack_thread_ts = None
         if Event.get_next_working_date(now_date=today) != today:
             logger.warning(
@@ -176,7 +261,7 @@ def _today_standup_slack_message(m_type: typing.Literal["before_standup"] | Slac
         slack_message = SlackMessage.get_message(daily_standup, m_type)
         slack_thread_ts = daily_standup.slack_thread_ts
 
-    timur_slack.send_slack_message(text=slack_message, thread_ts=slack_thread_ts)
+    timur_slack.send_slack_message(**slack_message, thread_ts=slack_thread_ts)
 
 
 def read_doc_reminder():

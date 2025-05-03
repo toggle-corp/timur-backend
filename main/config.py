@@ -39,6 +39,7 @@ SENTRY_ENABLED = typing.cast("bool", settings.SENTRY_ENABLED)
 # Daily Standup
 DAILY_STANDUP_DOCUMENTATION_REF = typing.cast("str | None", settings.DAILY_STANDUP_DOCUMENTATION_REF)
 DAILY_STANDUP_MEET_LINK = typing.cast("str | None", settings.DAILY_STANDUP_MEET_LINK)
+DAILY_STANDUP_GATHER_ROUND_GIF = typing.cast("str", settings.DAILY_STANDUP_GATHER_ROUND_GIF)
 
 
 # Slack
@@ -52,7 +53,7 @@ class Slack:
         enabled: typing.Literal[True]
         token: str
         channel: str
-        bot_name: str
+        bot_name: str | None
         bot_icon: str | None
 
     SlackConfig = SlackConfigEnabled | SlackConfigDisabled
