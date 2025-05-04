@@ -8,6 +8,8 @@ from slack_sdk.web.slack_response import SlackResponse
 
 from apps.common.factories import EventFactory
 from apps.common.models import Event
+from apps.journal.factories import JournalFactory
+from apps.journal.models import Journal
 from apps.standup.management.commands.standup import CommandActionType
 from apps.standup.models import DailyUserStandup
 from apps.standup.tasks import (
@@ -101,17 +103,43 @@ class TestStandup(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.user = UserFactory.create()
+        cls.base_date = datetime.datetime(year=2024, month=2, day=1) - datetime.timedelta(days=1)
         ur_kwargs = {"created_by": cls.user, "modified_by": cls.user}
 
-        # Some other users as well
+        # Some users as well
         cls.assignable_users = UserFactory.create_batch(10, assign_for_standup=True)
         cls.unassignable_users = [
             UserFactory.create(is_active=False, assign_for_standup=True),
             *UserFactory.create_batch(5, assign_for_standup=False),
         ]
 
+        # Some users with leaves, wfh as well
+        for days_delta_gap, user in [
+            (5, cls.assignable_users[0]),
+            (10, cls.assignable_users[1]),
+            (20, cls.assignable_users[2]),
+        ]:
+            for index, (leave_type, wfh_type) in enumerate(
+                [
+                    (Journal.LeaveType.FULL, None),
+                    (Journal.LeaveType.FIRST_HALF, None),
+                    (Journal.LeaveType.FIRST_HALF, Journal.WorkFromHomeType.SECOND_HALF),
+                    (None, Journal.WorkFromHomeType.FULL),
+                    (None, Journal.WorkFromHomeType.FIRST_HALF),
+                    (Journal.LeaveType.SECOND_HALF, Journal.WorkFromHomeType.FIRST_HALF),
+                ],
+            ):
+                journal_kwargs = dict(
+                    user=user,
+                    leave_type=leave_type,
+                    wfh_type=wfh_type,
+                )
+                JournalFactory.create(
+                    **journal_kwargs,
+                    date=cls.base_date + datetime.timedelta(days=days_delta_gap * index),
+                )
+
         # Create some events
-        cls.base_date = datetime.datetime(year=2024, month=2, day=1) - datetime.timedelta(days=1)
         cls.events_holidays = [
             EventFactory.create(
                 **ur_kwargs,

@@ -29,6 +29,9 @@ class Quote(UserResource):
         return f"Quote: {self.author} - {_text}"
 
 
+# TODO: Add scheduled/recurring message -> To send to slack
+
+
 # TODO: Add created_at, created_by, modified_by, modified_at
 class DailyUserStandup(models.Model):
     date = models.DateField(unique=True)
