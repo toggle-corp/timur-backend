@@ -124,7 +124,7 @@ class SlackMessage:
             text = (
                 f"*Hey <@{conductor_id}> (and <@{fallback_conductor_id}>)* :wave:"
                 "\n"
-                f"Please take a moment to review the *{cls.DOC_REF}* mentioned above."
+                f"Please take a moment to review the *{cls.DOC_REF}*."
                 "\n\n"
                 "See you at the next standup at :clock9: *9:00 AM*!"
             )
