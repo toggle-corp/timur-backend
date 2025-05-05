@@ -225,7 +225,7 @@ def setup_next_standup():
         daily_standup.conductor, daily_standup.fallback_conductor = _get_next_conductors(daily_standup)
         daily_standup.save(update_fields=("conductor", "fallback_conductor"))
 
-    if daily_standup.quote_id is None and (quote := Quote.get_random_quote(track_last_viewed=True)):
+    if daily_standup.quote_id is None and (quote := Quote.get_random(track_last_viewed=True)):
         daily_standup.quote = quote
         daily_standup.save(update_fields=("quote",))
 

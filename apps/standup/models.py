@@ -15,13 +15,13 @@ class Quote(UserResource):
     last_viewed = models.DateTimeField(null=True, blank=True)
 
     @classmethod
-    def get_random_quote(cls, track_last_viewed=False) -> typing.Self | None:
-        quote = cls.objects.order_by(
+    def get_random(cls, track_last_viewed=False) -> typing.Self | None:
+        obj = cls.objects.order_by(
             models.F("last_viewed").asc(nulls_first=True),
         ).first()
-        if quote and track_last_viewed:
-            cls.objects.filter(pk=quote.pk).update(last_viewed=Now())
-        return quote
+        if obj and track_last_viewed:
+            cls.objects.filter(pk=obj.pk).update(last_viewed=Now())
+        return obj
 
     @typing.override
     def __str__(self):
