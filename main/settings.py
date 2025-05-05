@@ -108,10 +108,6 @@ env = environ.Env(
     # Daily Standup
     DAILY_STANDUP_DOCUMENTATION_REF=(str, None),
     DAILY_STANDUP_MEET_LINK=(str, None),
-    DAILY_STANDUP_GATHER_ROUND_GIF=(
-        str,
-        "https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExaDJ3bzJpc2Y2dDgwMTBoMHA5cGg5NjU5ZmM0ZzlndDdkNzI4MHJuNyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/CIy7Ri74WywvK/giphy.gif",
-    ),
 )
 
 # Quick-start development settings - unsuitable for production
@@ -540,7 +536,6 @@ if SLACK_BOT_ENABLED:
 # Daily Standup
 DAILY_STANDUP_DOCUMENTATION_REF = env("DAILY_STANDUP_DOCUMENTATION_REF")
 DAILY_STANDUP_MEET_LINK = env("DAILY_STANDUP_MEET_LINK")
-DAILY_STANDUP_GATHER_ROUND_GIF = env("DAILY_STANDUP_GATHER_ROUND_GIF")
 
 # Loggging
 LOGGING = {

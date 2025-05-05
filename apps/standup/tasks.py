@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from apps.common.models import Event
 from apps.journal.models import Journal
-from apps.standup.models import DailyUserStandup, Quote
+from apps.standup.models import DailyUserStandup, Quote, StandupGatherAroundMedia
 from apps.user.models import User
 from main import config
 from utils.slack import TimurSlack
@@ -15,15 +15,16 @@ logger = logging.getLogger(__name__)
 
 
 class SlackMessage:
-    type MessageType = typing.Literal["assign", "read_doc", "morning"]
+    type MessageType = typing.Literal["before_standup", "assign", "read_doc", "morning"]
 
     DOC_REF = config.DAILY_STANDUP_DOCUMENTATION_REF or "N/A"
     MEET_LINK = config.DAILY_STANDUP_MEET_LINK or ""
 
     @classmethod
-    def get_normal_message(
+    def get_message(
         cls,
-        message_type: typing.Literal["before_standup"],
+        daily_standup: DailyUserStandup,
+        message_type: "MessageType",
     ) -> TimurSlack.TimurSlackMessageArgumentType:
         if message_type == "before_standup":
             text = (
@@ -35,16 +36,22 @@ class SlackMessage:
                 f":link: Join here: {cls.MEET_LINK}"
             )
 
+            media_block = []
+            if daily_standup.gather_around_media_id:
+                media_block = [
+                    {
+                        "type": "image",
+                        "image_url": daily_standup.gather_around_media.url,
+                        "alt_text": daily_standup.gather_around_media.caption,
+                    },
+                ]
+
             blocks = [
                 {
                     "type": "markdown",
                     "text": ("Hey <!everyone>\nGood morning :sunny: \nLet’s get ready for our daily standup :rocket:"),
                 },
-                {
-                    "type": "image",
-                    "image_url": config.DAILY_STANDUP_GATHER_ROUND_GIF,
-                    "alt_text": "People gathering",
-                },
+                *media_block,
                 {"type": "divider"},
                 {
                     "type": "markdown",
@@ -57,14 +64,6 @@ class SlackMessage:
                 "blocks": blocks,
             }
 
-        typing.assert_never()
-
-    @classmethod
-    def get_message(
-        cls,
-        daily_standup: DailyUserStandup,
-        message_type: "MessageType",
-    ) -> TimurSlack.TimurSlackMessageArgumentType:
         date = daily_standup.date.strftime("%A, %B %-d, %Y")
         conductor_id = daily_standup.conductor.slack_user_id
         fallback_conductor_id = daily_standup.fallback_conductor.slack_user_id
@@ -225,7 +224,7 @@ def setup_next_standup():
         daily_standup.conductor, daily_standup.fallback_conductor = _get_next_conductors(daily_standup)
         daily_standup.save(update_fields=("conductor", "fallback_conductor"))
 
-    if daily_standup.quote_id is None and (quote := Quote.get_random_quote(track_last_viewed=True)):
+    if daily_standup.quote_id is None and (quote := Quote.get_random(track_last_viewed=True)):
         daily_standup.quote = quote
         daily_standup.save(update_fields=("quote",))
 
@@ -237,22 +236,29 @@ def setup_next_standup():
         daily_standup.save(update_fields=("slack_thread_ts",))
 
 
-def _today_standup_slack_message(m_type: typing.Literal["before_standup"] | SlackMessage.MessageType):
+def _today_standup_slack_message(m_type: SlackMessage.MessageType):
     timur_slack = TimurSlack()
     today = timezone.now().date()
 
     slack_message: TimurSlack.TimurSlackMessageArgumentType
 
     if m_type == "before_standup":
-        slack_message = SlackMessage.get_normal_message(m_type)
-        slack_thread_ts = None
-        if Event.get_next_working_date(now_date=today) != today:
+        next_working_day = Event.get_next_working_date(now_date=today)
+        if next_working_day != today:
             logger.warning(
                 "%s: Not working day: %s",
                 m_type,
                 today.strftime("%A, %B %-d, %Y"),
             )
             return
+
+        daily_standup = DailyUserStandup.objects.get_or_create(date=today)[0]
+        if daily_standup.gather_around_media_id is None:
+            daily_standup.gather_around_media = StandupGatherAroundMedia.get_random(track_last_viewed=True)
+            daily_standup.save(update_fields=("gather_around_media",))
+
+        slack_message = SlackMessage.get_message(daily_standup, m_type)
+        slack_thread_ts = None
 
     else:
         if m_type == "read_doc":

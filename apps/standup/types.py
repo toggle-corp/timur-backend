@@ -156,7 +156,7 @@ class DailyStandUpType:
         # As fallback return a random quote
         return typing.cast(
             "QuoteType",
-            await sync_to_async(Quote.get_random_quote)(track_last_viewed=True),
+            await sync_to_async(Quote.get_random)(track_last_viewed=True),
         )
 
     @strawberry.field
