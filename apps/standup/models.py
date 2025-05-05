@@ -29,7 +29,30 @@ class Quote(UserResource):
         return f"Quote: {self.author} - {_text}"
 
 
-# TODO: Add scheduled/recurring message -> To send to slack
+class StandupGatherAroundMedia(UserResource):
+    """
+    Used by ./tasks.py before_standup_reminder
+    """
+
+    url = models.URLField(help_text=_("Gif/Image to show during standup reminder"))
+    caption = models.CharField(help_text=_("A short piece of text that describes the media"))
+    last_viewed = models.DateTimeField(null=True, blank=True)
+
+    class Meta(UserResource.Meta):
+        verbose_name_plural = _("standup gather around media")
+
+    @typing.override
+    def __str__(self):
+        return self.caption
+
+    @classmethod
+    def get_random(cls, track_last_viewed=False) -> typing.Self | None:
+        obj = cls.objects.order_by(
+            models.F("last_viewed").asc(nulls_first=True),
+        ).first()
+        if obj and track_last_viewed:
+            cls.objects.filter(pk=obj.pk).update(last_viewed=Now())
+        return obj
 
 
 # TODO: Add created_at, created_by, modified_by, modified_at
@@ -37,6 +60,7 @@ class DailyUserStandup(models.Model):
     date = models.DateField(unique=True)
 
     quote = models.ForeignKey(Quote, on_delete=models.SET_NULL, null=True, blank=True)
+    gather_around_media = models.ForeignKey(StandupGatherAroundMedia, on_delete=models.SET_NULL, null=True, blank=True)
 
     conductor = models.ForeignKey(
         User,
@@ -59,6 +83,7 @@ class DailyUserStandup(models.Model):
 
     # typing hints
     quote_id: int | None
+    gather_around_media_id: int | None
     conductor_id: int | None
     fallback_conductor_id: int | None
 

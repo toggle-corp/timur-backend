@@ -3,7 +3,7 @@
 import factory
 from factory.django import DjangoModelFactory
 
-from .models import DailyUserStandup, Quote
+from .models import DailyUserStandup, Quote, StandupGatherAroundMedia
 
 
 class DailyUserStandupFactory(DjangoModelFactory):
@@ -17,3 +17,11 @@ class QuoteFactory(DjangoModelFactory):
 
     class Meta:
         model = Quote
+
+
+class StandupGatherAroundMediaFactory(DjangoModelFactory):
+    url = factory.Faker("url")
+    caption = factory.Faker("sentence")
+
+    class Meta:
+        model = StandupGatherAroundMedia

@@ -10,6 +10,7 @@ from apps.common.factories import EventFactory
 from apps.common.models import Event
 from apps.journal.factories import JournalFactory
 from apps.journal.models import Journal
+from apps.standup.factories import QuoteFactory, StandupGatherAroundMediaFactory
 from apps.standup.management.commands.standup import CommandActionType
 from apps.standup.models import DailyUserStandup
 from apps.standup.tasks import (
@@ -113,6 +114,10 @@ class TestStandup(TestCase):
             *UserFactory.create_batch(5, assign_for_standup=False),
         ]
 
+        # Few media and quotes
+        StandupGatherAroundMediaFactory.create_batch(10, **ur_kwargs)
+        QuoteFactory.create_batch(10, **ur_kwargs)
+
         # Some users with leaves, wfh as well
         for days_delta_gap, user in [
             (5, cls.assignable_users[0]),
@@ -191,7 +196,7 @@ class TestStandup(TestCase):
 
         assert DailyUserStandup.objects.filter(conductor__in=self.assignable_users).count() > 0
         assert DailyUserStandup.objects.filter(fallback_conductor__in=self.assignable_users).count() > 0
-        assert DailyUserStandup.objects.count() == 211
+        assert DailyUserStandup.objects.count() == 212
 
         # TODO: Add duplicate checks
 
