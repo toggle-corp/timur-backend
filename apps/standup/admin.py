@@ -10,12 +10,14 @@ from .models import DailyUserStandup, Quote, StandupGatherAroundMedia
 @admin.register(Quote)
 class QuoteAdmin(VersionAdmin, UserResourceAdmin):
     search_fields = ("author", "text")
+    list_filter = ("auto_select",)
     list_display = ("author", "last_viewed")
 
 
 @admin.register(StandupGatherAroundMedia)
 class StandupGatherAroundMediaAdmin(VersionAdmin, UserResourceAdmin):
     search_fields = ("url", "caption")
+    list_filter = ("auto_select",)
     list_display = ("caption", "url_preview", "last_viewed")
 
     @admin.display(description=_("url display"))

@@ -13,12 +13,20 @@ class Quote(UserResource):
     text = models.TextField()
     author = models.CharField(max_length=225)
     last_viewed = models.DateTimeField(null=True, blank=True)
+    auto_select = models.BooleanField(
+        default=True,
+        help_text=_("Exclude from automatic selection. If false, it must be manually assigned to the DailyUserStandup."),
+    )
 
     @classmethod
     def get_random(cls, track_last_viewed=False) -> typing.Self | None:
-        obj = cls.objects.order_by(
-            models.F("last_viewed").asc(nulls_first=True),
-        ).first()
+        obj = (
+            cls.objects.filter(auto_select=True)
+            .order_by(
+                models.F("last_viewed").asc(nulls_first=True),
+            )
+            .first()
+        )
         if obj and track_last_viewed:
             cls.objects.filter(pk=obj.pk).update(last_viewed=Now())
         return obj
@@ -37,6 +45,10 @@ class StandupGatherAroundMedia(UserResource):
     url = models.URLField(help_text=_("Gif/Image to show during standup reminder"))
     caption = models.CharField(help_text=_("A short piece of text that describes the media"))
     last_viewed = models.DateTimeField(null=True, blank=True)
+    auto_select = models.BooleanField(
+        default=True,
+        help_text=_("Exclude from automatic selection. If false, it must be manually assigned to the DailyUserStandup."),
+    )
 
     class Meta(UserResource.Meta):
         verbose_name_plural = _("standup gather around media")
@@ -47,9 +59,13 @@ class StandupGatherAroundMedia(UserResource):
 
     @classmethod
     def get_random(cls, track_last_viewed=False) -> typing.Self | None:
-        obj = cls.objects.order_by(
-            models.F("last_viewed").asc(nulls_first=True),
-        ).first()
+        obj = (
+            cls.objects.filter(auto_select=True)
+            .order_by(
+                models.F("last_viewed").asc(nulls_first=True),
+            )
+            .first()
+        )
         if obj and track_last_viewed:
             cls.objects.filter(pk=obj.pk).update(last_viewed=Now())
         return obj
