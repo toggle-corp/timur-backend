@@ -36,6 +36,7 @@ dependencies = [
     "django-allauth[socialaccount]",
     "python-ulid",
     "slack_sdk",
+    "pyyaml",
 ]
 
 [dependency-groups]

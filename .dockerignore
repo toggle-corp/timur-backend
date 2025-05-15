@@ -131,4 +131,6 @@ dmypy.json
 .idea/
 
 # helm
-./helm
+./helm/charts/
+./helm/.helm-charts/
+./helm/values-local.yaml

@@ -6,9 +6,11 @@ from django.utils import timezone
 from ulid import ULID
 
 from apps.track.models import TimeEntry
+from main.sentry import SentryMonitorConfig, monitor
 
 
 # TODO: Add test cases
+@monitor(SentryMonitorConfig.CronJob.PROCESS_NOT_DONE_TIME_ENTRIES)
 class Command(BaseCommand):
     help = "Move past TODO and clone past DOING to today"
 

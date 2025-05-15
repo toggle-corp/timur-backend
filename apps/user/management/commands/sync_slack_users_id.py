@@ -6,8 +6,10 @@ from django.core.management.base import BaseCommand
 
 from apps.user.models import User
 from apps.user.tasks import sync_slack_users_id
+from main.sentry import SentryMonitorConfig, monitor
 
 
+@monitor(SentryMonitorConfig.CronJob.USER_SYNC_SLACK_USERS_ID)
 class Command(BaseCommand):
     help = "Fetch and store slack user id"
 

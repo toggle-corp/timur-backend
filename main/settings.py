@@ -135,6 +135,7 @@ ALLOWED_HOSTS: list[str] = [
 # Application definition
 
 INSTALLED_APPS = [
+    "apps.common",  # Common (NOTE: Moved to first to override some of existing commands like clearsessions)
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -164,7 +165,6 @@ INSTALLED_APPS = [
     "health_check.contrib.psutil",  # disk and memory utilization; requires psutil
     "health_check.contrib.redis",  # requires Redis broker
     # Internal apps
-    "apps.common",  # Common
     "apps.standup",
     "apps.user",
     "apps.project",

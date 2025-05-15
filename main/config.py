@@ -10,6 +10,8 @@ from django.conf import settings
 if typing.TYPE_CHECKING:
     from urllib.parse import ParseResult as UrlParseResult
 
+    from main.sentry import SentryConfig
+
 
 DEBUG = typing.cast("bool", settings.DEBUG)
 APP_DOMAIN = typing.cast("UrlParseResult", settings.APP_DOMAIN)
@@ -35,6 +37,7 @@ GOOGLE_CREDENTIALS_B64_GZ = typing.cast("str | None", getattr(settings, "GOOGLE_
 
 # Sentry
 SENTRY_ENABLED = typing.cast("bool", settings.SENTRY_ENABLED)
+SENTRY_CONFIG = typing.cast("SentryConfig | None", getattr(settings, "SENTRY_CONFIG", None))
 
 # Daily Standup
 DAILY_STANDUP_DOCUMENTATION_REF = typing.cast("str | None", settings.DAILY_STANDUP_DOCUMENTATION_REF)

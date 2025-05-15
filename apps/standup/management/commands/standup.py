@@ -9,6 +9,7 @@ from apps.standup.tasks import (
     read_doc_reminder,
     setup_next_standup,
 )
+from main.sentry import SentryMonitorConfig, monitor
 
 CommandActionType = typing.Literal[
     "morning-reminder",
@@ -36,12 +37,16 @@ class Command(BaseCommand):
     def handle(self, action: CommandActionType, **_):
         match action:
             case "morning-reminder":
-                return morning_reminder()
+                with monitor(SentryMonitorConfig.CronJob.STANDUP_MORNING_REMINDER):
+                    return morning_reminder()
             case "before-standup-reminder":
-                return before_standup_reminder()
+                with monitor(SentryMonitorConfig.CronJob.STANDUP_BEFORE_STANDUP_REMINDER):
+                    return before_standup_reminder()
             case "setup-next-standup":
-                return setup_next_standup()
+                with monitor(SentryMonitorConfig.CronJob.STANDUP_SETUP_NEXT_STANDUP):
+                    return setup_next_standup()
             case "read-doc-reminder":
-                return read_doc_reminder()
+                with monitor(SentryMonitorConfig.CronJob.STANDUP_READ_DOC_REMINDER):
+                    return read_doc_reminder()
             case _:
                 typing.assert_never(action)
