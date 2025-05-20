@@ -3,6 +3,7 @@ import json
 import logging
 import typing
 from difflib import context_diff
+from functools import lru_cache
 from pathlib import Path
 
 import sentry_sdk
@@ -55,6 +56,7 @@ class SentryConfig:
     release: str | None
     environment: str
     send_default_pii: bool
+    monitor_cron_tasks: bool
     traces_sample_rate: float
     profiles_sample_rate: float
     debug: bool
@@ -239,3 +241,20 @@ class monitor(og_monitor):
             monitor_slug,
             monitor_config,
         )
+
+    @staticmethod
+    @lru_cache(maxsize=1)
+    def is_monitor_enabled():
+        from main.config import SENTRY_CONFIG
+
+        return not (SENTRY_CONFIG is None or not SENTRY_CONFIG.monitor_cron_tasks)
+
+    @typing.override
+    def __enter__(self):
+        if self.is_monitor_enabled():
+            super().__enter__()
+
+    @typing.override
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.is_monitor_enabled():
+            super().__exit__(exc_type, exc_value, traceback)

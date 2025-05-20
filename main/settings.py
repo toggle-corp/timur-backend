@@ -56,6 +56,7 @@ env = environ.Env(
     AWS_S3_STATIC_BUCKET_NAME=str,
     # Sentry
     SENTRY_ENABLED=(bool, False),
+    SENTRY_MONITOR_CRON_TASKS=(bool, True),
     SENTRY_DEBUG=(str, False),
     SENTRY_DSN=str,
     SENTRY_TRACES_SAMPLE_RATE=(float, 0.2),
@@ -360,6 +361,7 @@ if SENTRY_ENABLED:
         release=typing.cast("str", env("RELEASE")),
         environment=APP_ENVIRONMENT,
         send_default_pii=True,
+        monitor_cron_tasks=typing.cast("bool", env("SENTRY_MONITOR_CRON_TASKS")),
         traces_sample_rate=typing.cast("float", env("SENTRY_TRACES_SAMPLE_RATE")),
         profiles_sample_rate=typing.cast("float", env("SENTRY_PROFILE_SAMPLE_RATE")),
         # Custom configs
