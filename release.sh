@@ -10,12 +10,24 @@ if ! command -v typos &>/dev/null; then
   echo "typos is not installed. Run 'cargo install typos-cli' to install it, otherwise the typos won't be fixed"
 fi
 
+if ! command -v semver &>/dev/null; then
+  echo "semver is required to validate the tag."
+fi
+
 version_tag="$1"
 
 if [ -z "$version_tag" ]; then
     echo "Please provide a tag."
     echo "Usage: ./release.sh v[X.Y.Z]"
     exit
+fi
+
+if semver valid "$version_tag" > /dev/null; then
+  echo "Valid SemVer: $version_tag"
+else
+  echo "Invalid SemVer: \"$version_tag\"" >&2
+  echo "Eg: 0.1.1 0.1.1-dev0"
+  exit 1
 fi
 
 # Define your cleanup or final function
