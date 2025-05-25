@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.2](https://github.com/toggle-corp/timur-backend/compare/v0.1.1..v0.1.2) - 2025-05-25
+### Changes:
+
+#### 🚀  Features
+
+- *(release)* Extend release body with helm metadata - ([80d2e09](https://github.com/toggle-corp/timur-backend/commit/80d2e09d801e7fb9af01dc432eebeddfe78ca792))
+- *(release)* Add semver validator in release.sh - ([69c0c87](https://github.com/toggle-corp/timur-backend/commit/69c0c87e89791da43671a9898886d4cbc3003f17))
+
+
 ## [0.1.1] - 2025-05-25
 ### Changes:
 
