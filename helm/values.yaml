@@ -144,7 +144,7 @@ app:
         command: ["./manage.py", "standup", "morning-reminder"]
       standup_before_standup_reminder:
         enabled: true
-        schedule: "14 9 * * 1,2,3,4,5"
+        schedule: "10 9 * * 1,2,3,4,5"
         timeZone: "Asia/Kathmandu"
         command: ["./manage.py", "standup", "before-standup-reminder"]
       standup_setup_next_standup:
