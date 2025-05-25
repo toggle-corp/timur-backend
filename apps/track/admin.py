@@ -5,6 +5,7 @@ from django.contrib import admin, messages
 from django.db import models
 from django.http import HttpRequest
 from django.utils.translation import ngettext
+from djangoql.admin import DjangoQLSearchMixin
 from rangefilter.filters import DateRangeQuickSelectListFilterBuilder
 
 from apps.common.admin import UserResourceAdmin, UserResourceTabularInline, VersionAdmin
@@ -58,7 +59,7 @@ class TaskAdmin(VersionAdmin, UserResourceAdmin):
     def get_queryset(self, request: HttpRequest) -> models.QuerySet[Contract]:
         return super().get_queryset(request).select_related("created_by", "contract", "contract__project")
 
-    @admin.display(ordering="project__name", description="Project")
+    @admin.display(ordering="contract__project__name", description="Project")
     def get_project(self, obj):
         return obj.contract.project.name
 
@@ -99,7 +100,7 @@ def flag_as_billable(modeladmin, request, queryset):
 
 
 @admin.register(TimeEntry)
-class TimeEntryAdmin(admin.ModelAdmin):
+class TimeEntryAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     list_filter = (
         ("date", DateRangeQuickSelectListFilterBuilder()),
         "type",
@@ -133,11 +134,11 @@ class TimeEntryAdmin(admin.ModelAdmin):
     def get_queryset(self, request: HttpRequest) -> models.QuerySet[Contract]:
         return super().get_queryset(request).select_related("user", "task", "task__contract", "task__contract__project")
 
-    @admin.display(ordering="project__name", description="Project")
+    @admin.display(ordering="task__contract__project__name", description="Project")
     def get_project(self, obj):
         return obj.task.contract.project.name
 
-    @admin.display(ordering="contract__name", description="Contract")
+    @admin.display(ordering="task__contract__name", description="Contract")
     def get_contract(self, obj):
         return obj.task.contract.name
 
@@ -145,11 +146,11 @@ class TimeEntryAdmin(admin.ModelAdmin):
     def get_task(self, obj):
         return obj.task.name
 
-    @admin.display(ordering="user__name", description="User")
+    @admin.display(ordering="user__email", description="User")
     def get_user(self, obj):
         return obj.user
 
-    @admin.display(ordering="description_preview", description="Description")
+    @admin.display(description="Description")
     def get_description_preview(self, obj):
         text = obj.description
         if text is None or len(text) < 100:

@@ -151,6 +151,7 @@ INSTALLED_APPS = [
     "storages",
     "corsheaders",
     "rangefilter",  # Django admin date range filter
+    "djangoql",
     # -- Allauth
     "allauth",
     "allauth.account",

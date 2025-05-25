@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
+from djangoql.admin import DjangoQLSearchMixin
 
 from .models import User
 
@@ -29,7 +30,7 @@ class HasSlackUserIdFilter(admin.SimpleListFilter):
 
 
 @admin.register(User)
-class UserAdmin(DjangoUserAdmin):
+class UserAdmin(DjangoQLSearchMixin, DjangoUserAdmin):
     list_display = (
         "email",
         "is_active",
