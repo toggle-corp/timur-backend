@@ -34,6 +34,7 @@ dependencies = [
     "psutil",
     "django-admin-rangefilter",
     "django-allauth[socialaccount]",
+    "djangoql", # Admin panel query search
     "python-ulid",
     "slack_sdk",
     "pyyaml",

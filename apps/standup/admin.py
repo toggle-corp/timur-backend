@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
+from djangoql.admin import DjangoQLSearchMixin
 
 from apps.common.admin import UserResourceAdmin, VersionAdmin
 
@@ -33,7 +34,7 @@ class StandupGatherAroundMediaAdmin(VersionAdmin, UserResourceAdmin):
 
 
 @admin.register(DailyUserStandup)
-class DailyUserStandupAdmin(VersionAdmin):
+class DailyUserStandupAdmin(DjangoQLSearchMixin, VersionAdmin):
     list_filter = ("date",)
     list_display = ("date", "conductor", "fallback_conductor")
     autocomplete_fields = (

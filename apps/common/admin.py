@@ -3,6 +3,7 @@ import typing
 from django.contrib import admin
 from django.db import models
 from django.http import HttpRequest
+from djangoql.admin import DjangoQLSearchMixin
 from reversion.admin import VersionAdmin as OgVersionAdmin
 
 from .models import Event, UserResource
@@ -21,7 +22,7 @@ class PreventDeleteAdminMixin:
         return False
 
 
-class UserResourceAdmin(admin.ModelAdmin):
+class UserResourceAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     @typing.override
     def get_list_display(self, request):
         list_display = super().get_list_display(request)

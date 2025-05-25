@@ -5,6 +5,7 @@ from django.contrib import admin, messages
 from django.db import models
 from django.http import HttpRequest
 from django.utils.translation import ngettext
+from djangoql.admin import DjangoQLSearchMixin
 from rangefilter.filters import DateRangeQuickSelectListFilterBuilder
 
 from apps.common.admin import UserResourceAdmin, UserResourceTabularInline, VersionAdmin
@@ -99,7 +100,7 @@ def flag_as_billable(modeladmin, request, queryset):
 
 
 @admin.register(TimeEntry)
-class TimeEntryAdmin(admin.ModelAdmin):
+class TimeEntryAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     list_filter = (
         ("date", DateRangeQuickSelectListFilterBuilder()),
         "type",
