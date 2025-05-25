@@ -5,10 +5,20 @@ on:
     tags:
       - "v*.*.*"
 
+
+permissions:
+  contents: write
+  packages: write
+
 jobs:
+  helm-publish:
+    name: CI
+    uses: ./.github/workflows/helm-publish.yml
+
   generate-release:
     name: Generate release
     runs-on: ubuntu-22.04
+    needs: helm-publish
 
     steps:
       - name: Checkout
@@ -23,7 +33,7 @@ jobs:
           RELEASE_VERSION=${GITHUB_REF:11}
 
           IS_PRERELEASE=false
-          if [[ "$OTHER_VAR" == *dev* ]]; then
+          if [[ "$RELEASE_VERSION" == *dev* ]]; then
               IS_PRERELEASE=true
           fi
 
@@ -37,19 +47,38 @@ jobs:
         id: git-cliff
         with:
           config: cliff.toml
-          args: -vv --latest --no-exec --github-repo ${{ github.repository }}
+          args: -vv --latest --no-exec --github-repo ${{ github.repository }} --strip all
 
-      - name: Show changelog in summary
+      - name: Changelog content pre-processing
+        id: changelog-pre-process
         shell: bash
         run: |
-          echo "${{ steps.git-cliff.outputs.content }}" >> $GITHUB_STEP_SUMMARY
+          HELM_REPO_URL="${{ needs.helm-publish.outputs.helm_repo_url }}"
+          HELM_CHART="${{ needs.helm-publish.outputs.helm_chart }}"
+          HELM_TARGET_REVISION="${{ needs.helm-publish.outputs.helm_target_revision }}"
+          DOCKER_IMAGE="${{ needs.helm-publish.outputs.docker_image }}"
 
-      # TODO: Add additional content to the release body. like helm & docker image
+          EXTENDEND_CHANGELOG=/tmp/extendend_changelog.md
+          echo "# Changelog" >> $EXTENDEND_CHANGELOG
+          echo "" >> $EXTENDEND_CHANGELOG
+
+          echo "> [!Important]" >> $EXTENDEND_CHANGELOG
+          echo "> Helm Repo URL: **$HELM_REPO_URL**" >> $EXTENDEND_CHANGELOG
+          echo "> Helm Chart: **$HELM_CHART**" >> $EXTENDEND_CHANGELOG
+          echo "> Helm Target Revision: **$HELM_TARGET_REVISION**" >> $EXTENDEND_CHANGELOG
+          echo "> Docker image: **$DOCKER_IMAGE**" >> $EXTENDEND_CHANGELOG
+
+          echo "${{ steps.git-cliff.outputs.content }}" >> $EXTENDEND_CHANGELOG
+
+          echo "extended_changelog_path=${EXTENDEND_CHANGELOG}" >> $GITHUB_OUTPUT
+          cat $EXTENDEND_CHANGELOG >> $GITHUB_STEP_SUMMARY
+
       - name: Create Github Release
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           name: "v${{ steps.release.outputs.release_version }}"
-          body: ${{ steps.git-cliff.outputs.content }}
           prerelease: ${{ steps.release.outputs.is_prerelease }}
+          body: ${{ steps.changelog-pre-process.outputs.extended_changelog }}
+          body_path: ${{ steps.changelog-pre-process.outputs.extended_changelog_path }}
