@@ -63,6 +63,7 @@ class Event(UserResource):
         FAILURE = 3, "Failure"
 
     name = models.CharField(max_length=225)
+    description = models.TextField(blank=True)
     type = models.PositiveSmallIntegerField(choices=Type.choices, default=Type.HOLIDAY)
 
     # Google calendar

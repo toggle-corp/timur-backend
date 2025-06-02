@@ -174,12 +174,17 @@ class GoogleCalendar:
             name = f"{emoji_icon} {event.display_name}"
             start_date = event.end_date  # NOTE: Range creates noise in the calendar
 
-        description = f"Timur admin panel: {reverse_admin_panel(event, _type='change', absolute=True)}"
+        description = ""
+        if event.description:
+            description += event.description + "\n\n"
+
+        admin_panel_edit_url = reverse_admin_panel(event, _type="change", absolute=True)
+        description += f'Need to make changes to this event? <a href="{admin_panel_edit_url}">Click here to update it</a>'
 
         payload: CalendarEvent = {
             "summary": name,
             "colorId": color_id,
-            "description": "",
+            "description": description,
             "start": {
                 "date": start_date.isoformat(),
             },

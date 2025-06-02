@@ -71,6 +71,7 @@ class Deadline(UserResource):
         FAILURE = 3, "Failure"
 
     name = models.CharField(max_length=225)
+    description = models.TextField(blank=True)
     project = models.ForeignKey(Project, on_delete=models.PROTECT, related_name="deadlines")
     contract = models.ForeignKey(
         "track.Contract",
