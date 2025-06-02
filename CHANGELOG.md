@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.3](https://github.com/toggle-corp/timur-backend/compare/v0.1.2..v0.1.3) - 2025-06-02
+### Changes:
+
+#### 🚀  Features
+
+- *(event)* Add description - ([2dfa1fc](https://github.com/toggle-corp/timur-backend/commit/2dfa1fc26d51c6782523a142ba8959633311193b))
+
+### 🍻 Pull Requests (1)
+- (#66) [Feat(event): add description](https://github.com/toggle-corp/timur-backend/pull/66)
+
+
 ## [0.1.2](https://github.com/toggle-corp/timur-backend/compare/v0.1.1..v0.1.2) - 2025-05-25
 ### Changes:
 
