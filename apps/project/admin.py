@@ -3,6 +3,7 @@ import typing
 from admin_auto_filters.filters import AutocompleteFilterFactory
 from django.contrib import admin, messages
 from django.utils import timezone
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 from apps.common.admin import UserResourceAdmin, VersionAdmin
@@ -45,6 +46,7 @@ class DeadlineAdmin(VersionAdmin, UserResourceAdmin):
     )
     autocomplete_fields = ("contract", "project")
     actions = [sync_with_google_calendar]
+    exclude = ("google_calendar_html_link",)
 
     @typing.override
     def get_readonly_fields(self, *args, **kwargs):
@@ -57,17 +59,26 @@ class DeadlineAdmin(VersionAdmin, UserResourceAdmin):
                     "display_name",
                     "google_calendar_sync_status",
                     "google_calendar_event_id",
-                    "google_calendar_html_link",
+                    "google_calendar_html_link_anchor",
                 ],
             ),
         ]
+
+    @admin.display(description="Google calendar")
+    def google_calendar_html_link_anchor(self, obj):
+        if obj.google_calendar_html_link:
+            return format_html(
+                '<a href="{0}" target="_blank">{0}</a>',
+                obj.google_calendar_html_link,
+            )
+        return "-"
 
     @typing.override
     def save_model(self, request, obj, form, change):
         obj.google_calendar_sync_status = Deadline.GoogleCalendarSyncStatus.PENDING
         super().save_model(request, obj, form, change)
 
-        # TODO(thenav56): Make this async with celery
+        # FIXME(thenav56): Make this async with celery
         sync_deadline_with_google_calendar(obj)
 
         if obj.start_date > timezone.now().date():

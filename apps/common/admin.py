@@ -3,6 +3,7 @@ import typing
 from django.contrib import admin
 from django.db import models
 from django.http import HttpRequest
+from django.utils.html import format_html
 from djangoql.admin import DjangoQLSearchMixin
 from reversion.admin import VersionAdmin as OgVersionAdmin
 
@@ -112,6 +113,7 @@ class EventAdmin(VersionAdmin, UserResourceAdmin):
     list_display = ("name", "type", "start_date", "end_date")
     list_filter = ("type", "google_calendar_sync_status")
     ordering = ("start_date",)
+    exclude = ("google_calendar_html_link",)
     actions = [sync_with_google_calendar]
 
     @typing.override
@@ -124,14 +126,23 @@ class EventAdmin(VersionAdmin, UserResourceAdmin):
                     *readonly_fields,
                     "google_calendar_sync_status",
                     "google_calendar_event_id",
-                    "google_calendar_html_link",
+                    "google_calendar_html_link_anchor",
                 ],
             ),
         ]
+
+    @admin.display(description="Google calendar")
+    def google_calendar_html_link_anchor(self, obj):
+        if obj.google_calendar_html_link:
+            return format_html(
+                '<a href="{0}" target="_blank">{0}</a>',
+                obj.google_calendar_html_link,
+            )
+        return "-"
 
     @typing.override
     def save_model(self, request, obj, form, change):
         obj.google_calendar_sync_status = Event.GoogleCalendarSyncStatus.PENDING
         super().save_model(request, obj, form, change)
-        # TODO(thenav56): Make this async with celery
+        # FIXME(thenav56): Make this async with celery
         sync_event_with_google_calendar(obj)
