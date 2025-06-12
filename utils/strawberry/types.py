@@ -1,7 +1,10 @@
+import hashlib
 import json
 import typing
 
+from django.conf import settings
 from django.contrib.gis.geos import GEOSGeometry
+from django.core.cache import cache
 from django.core.files.storage import FileSystemStorage, default_storage
 from django.db import models
 from django.db.models.fields import Field as DjangoBaseField
@@ -9,6 +12,7 @@ from django.db.models.fields import files
 from strawberry_django.fields.types import field_type_map
 
 import strawberry
+from main.caches import CacheKey
 from main.graphql.context import Info
 
 if typing.TYPE_CHECKING:
@@ -93,13 +97,23 @@ class DjangoFileType:
     name: str
     size: int
 
-    @strawberry.field
     @staticmethod
-    def url(root: files.FieldFile, info: Info) -> str:
-        # TODO: Use cache if using S3 URL with signature
+    def _cached_s3_url(root: files.FieldFile) -> str:
+        url_hash = hashlib.sha1((root.name or "").encode("utf-8")).hexdigest()
+        url_hash_key = CacheKey.DJANGO_FILE_S3_KEY_FORMAT.format(url_hash)
+        if url := cache.get(url_hash_key):
+            return url
+
+        url = root.url
+        cache.set(url_hash_key, url, timeout=settings.AWS_S3_CACHED_TTL)
+        return url
+
+    @strawberry.field
+    @classmethod
+    def url(cls, root: files.FieldFile, info: Info) -> str:
         if isinstance(default_storage, FileSystemStorage):
             return info.context.request.build_absolute_uri(root.url)
-        return root.url
+        return cls._cached_s3_url(root)
 
 
 @strawberry.type
