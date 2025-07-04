@@ -153,18 +153,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@main
-
-      - name: Install Helm
-        uses: azure/setup-helm@v4
-
-      - name: 🐳 Helm dependency
-        run: |
-          yq --indent 0 '.dependencies | map(select(.repository | test("^oci:") | not)) | map(["helm", "repo", "add", .name, .repository] | join(" ")) | .[]' ./helm/Chart.lock | sh --
-          helm dependency build ./helm/
-
-      - name: Helm lint
-        run: helm lint ./helm --values ./helm/linter_values.yaml
-
-      - name: Helm template
-        run: helm template ./helm --values ./helm/linter_values.yaml
+      - name: Helm CI checks
+        uses: toggle-corp/github-actions/actions/prep-helm@feature/helm
+        with:
+          chart_directory: ./helm
+          helm_args: "--values ./linter_values.yaml"
