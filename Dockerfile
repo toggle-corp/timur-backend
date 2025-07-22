@@ -1,5 +1,5 @@
 FROM python:3.13-slim-bookworm AS base
-COPY --from=ghcr.io/astral-sh/uv:0.7.2 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.8.2 /uv /uvx /bin/
 
 LABEL maintainer="Togglecorp Dev"
 LABEL org.opencontainers.image.source="https://github.com/toggle-corp/timur-backend"
