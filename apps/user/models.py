@@ -62,6 +62,10 @@ class User(AbstractUser):
         return cls.objects.filter(is_active=True)
 
     @classmethod
+    def get_standup_slide_user_qs(cls) -> models.QuerySet[typing.Self]:
+        return cls.get_active_user_qs().filter(exclude_from_slides=False)
+
+    @classmethod
     def get_users_with_slack_user_id(cls) -> models.QuerySet[typing.Self]:
         return cls.get_active_user_qs().exclude(
             models.Q(slack_user_id__isnull=True) | models.Q(slack_user_id=""),

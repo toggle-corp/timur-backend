@@ -285,6 +285,8 @@ STORAGES = {
 
 TEMP_FILE_DIR = env("TEMP_FILE_DIR")
 
+AWS_S3_CACHED_TTL = 60 * 60 * 24
+
 if env("AWS_S3_ENABLED"):
     AWS_S3_ENDPOINT_URL = env("AWS_S3_ENDPOINT_URL")
 
@@ -299,6 +301,7 @@ if env("AWS_S3_ENABLED"):
                 "bucket_name": env("AWS_S3_MEDIA_BUCKET_NAME"),
                 "location": "media/",
                 "file_overwrite": False,
+                "querystring_expire": AWS_S3_CACHED_TTL + (60 * 60),
             },
         },
         "staticfiles": {

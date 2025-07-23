@@ -108,10 +108,13 @@ class DailyStandUpProjectStatType:
 
         time_entries_user_active_date_map = {user_id: active_date async for user_id, active_date in time_entries_qs}
 
-        users_qs = User.objects.filter(
-            id__in=time_entries_user_active_date_map.keys(),
-            exclude_from_slides=False,
-        ).order_by("display_name")
+        users_qs = (
+            User.get_standup_slide_user_qs()
+            .filter(
+                id__in=time_entries_user_active_date_map.keys(),
+            )
+            .order_by("display_name")
+        )
 
         return [
             DailyStandUpProjectStatUserType(
