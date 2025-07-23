@@ -16,6 +16,9 @@ on:
       docker_image:
         description: "Docker image"
         value: ${{ jobs.ci.outputs.docker_image }}
+  push:
+    branches:
+      - develop
 
 permissions:
   packages: write
