@@ -156,16 +156,20 @@ def _get_next_conductors(daily_standup: DailyUserStandup) -> tuple[User, User]:
     assignable_user_qs = User.get_users_with_slack_user_id().filter(
         ~models.Exists(
             Journal.objects.filter(
+                models.Q(
+                    leave_type__in=[
+                        Journal.LeaveType.FULL,
+                        Journal.LeaveType.FIRST_HALF,
+                    ],
+                )
+                | models.Q(
+                    wfh_type__in=[
+                        Journal.WorkFromHomeType.FULL,
+                        Journal.WorkFromHomeType.FIRST_HALF,
+                    ],
+                ),
                 user=models.OuterRef("id"),
                 date=daily_standup.date,
-                leave_type__in=[
-                    Journal.LeaveType.FULL,
-                    Journal.LeaveType.FIRST_HALF,
-                ],
-                wfh_type__in=[
-                    Journal.WorkFromHomeType.FULL,
-                    Journal.WorkFromHomeType.FIRST_HALF,
-                ],
             ),
         ),
         assign_for_standup=True,
