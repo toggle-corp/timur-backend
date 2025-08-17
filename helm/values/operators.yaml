@@ -1,0 +1,124 @@
+app:
+  extraManifests:
+    dragonflydb-cluster:
+      apiVersion: dragonflydb.io/v1alpha1
+      kind: Dragonfly
+      metadata:
+        name: timur-dragonfly  # NOTE: this will be the service name
+        labels:
+          app.kubernetes.io/name: dragonfly
+      spec:
+        replicas: 2
+        args: ["--dbfilename=mainSnapshot"]  # NOTE: Only maintains 1 last snapshot
+        resources:
+          requests:
+            cpu: "0.1"
+            memory: 256Mi
+          limits:
+            cpu: "1"
+            memory: 500Mi
+        snapshot:
+          cron: "*/5 * * * *"
+          persistentVolumeClaimSpec:
+            # storageClassName: XXX
+            accessModes:
+            - ReadWriteOnce
+            resources:
+              requests:
+                storage: 1Gi
+
+    # Postgres (CNPG)
+    # - Backup Store XXX: Needs a secrets with AWS cred: cnpg-barman-s3-creds
+    cnpg-s3-credential:
+      apiVersion: barmancloud.cnpg.io/v1
+      kind: ObjectStore
+      metadata:
+        name: aws-s3-store
+      spec:
+        retentionPolicy: "30d"
+        configuration:
+          # destinationPath: XXX: "s3://s3-bucket-name/barman/alpha"
+          s3Credentials:
+            accessKeyId:
+              name: cnpg-barman-s3-creds
+              key: ACCESS_KEY_ID
+            secretAccessKey:
+              name: cnpg-barman-s3-creds
+              key: ACCESS_SECRET_KEY
+          wal:
+            compression: gzip
+            maxParallel: 4
+
+    # - Cluster
+    cnpg-cluster:
+      apiVersion: postgresql.cnpg.io/v1
+      kind: Cluster
+      metadata:
+        name: cnpg-pg
+      spec:
+        instances: 3
+        enablePDB: true
+        storage:
+          size: 1Gi
+          # storageClass: XXX
+        monitoring:
+          enablePodMonitor: true
+        backup: {}  # Fix for https://github.com/cloudnative-pg/cloudnative-pg/issues/8276
+        plugins:
+          - enabled: true
+            name: barman-cloud.cloudnative-pg.io
+            isWALArchiver: true
+            parameters:
+              barmanObjectName: aws-s3-store
+
+    # - Backup schedule
+    cnpg-scheduled-backup:
+      apiVersion: postgresql.cnpg.io/v1
+      kind: ScheduledBackup
+      metadata:
+        name: backup-daily
+      spec:
+        cluster:
+          name: cnpg-pg
+        suspend: false  # Pause this backup
+        immediate: true  # Create immediate backup when creating this resource
+        schedule: "0 0 0 * * *"
+        backupOwnerReference: self
+        method: plugin
+        pluginConfiguration:
+          name: barman-cloud.cloudnative-pg.io
+
+  extraEnvVars:
+    # Checkout the resources defined by extraManifests
+    # -- Redis (Dragonfly)
+    - name: CELERY_REDIS_URL
+      value: redis://timur-dragonfly:6379/0
+    - name: DJANGO_CACHE_REDIS_URL
+      value: redis://timur-dragonfly:6379/1
+    # -- Postgres (CNPG)
+    # NOTE: cnpg-pg is the cluster name (See cnpg-cluster)
+    - name: DB_HOST
+      valueFrom:
+        secretKeyRef:
+          name: cnpg-pg-app
+          key: host
+    - name: DB_PORT
+      valueFrom:
+        secretKeyRef:
+          name: cnpg-pg-app
+          key: port
+    - name: DB_NAME
+      valueFrom:
+        secretKeyRef:
+          name: cnpg-pg-app
+          key: dbname
+    - name: DB_USER
+      valueFrom:
+        secretKeyRef:
+          name: cnpg-pg-app
+          key: username
+    - name: DB_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: cnpg-pg-app
+          key: password

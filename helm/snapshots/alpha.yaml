@@ -225,7 +225,7 @@ metadata:
 type: Opaque
 data:
   root-user: "dGltdXI="
-  root-password: "bXktc3Ryb25nLXVzZXItcGFzc3dvcmQ="
+  root-password: "WFla"
 ---
 # Source: timur-backend-helm/charts/app/charts/postgresql/templates/secrets.yaml
 apiVersion: v1
@@ -241,8 +241,7 @@ metadata:
     helm.sh/chart: postgresql-16.4.5
 type: Opaque
 data:
-  postgres-password: "bXktc3Ryb25nLXJvb3QtcGFzc293cmQ="
-  password: "bXktc3Ryb25nLXVzZXItcGFzc293cmQ="
+  postgres-password: "cGctcG9zdGdyZXMtc2VjdXJlLXBhc3N3b3Jk"
   # We don't auto-generate LDAP password when it's not provided as we do for other passwords
 ---
 # Source: timur-backend-helm/charts/app/templates/config/secret.yaml
@@ -252,26 +251,27 @@ metadata:
   name: release-name-app-secret
   labels:
     app: release-name-app
-    environment: Alpha
+    environment: ALPHA
     release: release-name
 type: Opaque
 stringData:
   # secrets
   AWS_S3_ACCESS_KEY_ID: "timur"
   AWS_S3_REGION_NAME: "us-east-1"
-  AWS_S3_SECRET_ACCESS_KEY: "my-strong-user-password"
+  AWS_S3_SECRET_ACCESS_KEY: "XYZ"
   CELERY_REDIS_URL: "redis://timur-redis-master:6379/0"
   DB_HOST: "timur-pg"
-  DB_NAME: "timur"
-  DB_PASSWORD: "my-strong-root-passowrd"
+  DB_NAME: ""
+  DB_PASSWORD: "pg-postgres-secure-password"
   DB_PORT: "5432"
   DB_USER: "postgres"
   DJANGO_CACHE_REDIS_URL: "redis://timur-redis-master:6379/1"
-  DJANGO_SECRET_KEY: "very-strong-django-secret-key"
-  GOOGLE_CALENDAR_ID: "my-calender-id@group.calendar.google.com"
-  GOOGLE_CREDENTIALS_B64_GZ: "GOOGLE_CREDENTIALS_B64_GZ_KEY"
-  GOOGLE_SSO_CLIENT_ID: "my-client-id.apps.googleusercontent.com"
-  SENTRY_DSN: "https://test-123@sentry.local.com/27"
+  DJANGO_SECRET_KEY: "SECURE_DJANGO_SECRET_KEY"
+  GOOGLE_CALENDAR_ID: "long-dynamic-id@group.calendar.google.com"
+  GOOGLE_CREDENTIALS_B64_GZ: "SUPER_SECURE_GOOGLE_CREDENTIALS_B64_GZ"
+  GOOGLE_OAUTH_CLIENT_ID: "another-long-dynamic-id.apps.googleusercontent.com"
+  GOOGLE_OAUTH_REDIRECT_URL: "https://timur-api.example/o/google"
+  SENTRY_DSN: "https://test-123@sentry.example/27"
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/provisioning-configmap.yaml
 apiVersion: v1
@@ -465,27 +465,31 @@ metadata:
   name: release-name-app-env-name
   labels:
     app: release-name-app
-    environment: Alpha
+    environment: ALPHA
     release: release-name
 data:
   # Configs
-  APP_DOMAIN: "https://timur-api.k8s.local.com"
-  APP_ENVIRONMENT: "Alpha"
-  APP_FRONTEND_HOST: "https://timur.k8s.local.com"
-  APP_RELEASE: "test.123"
+  APP_DOMAIN: "https://timur-api.example.com"
+  APP_ENVIRONMENT: "ALPHA"
+  APP_FRONTEND_HOST: "https://timur.example.com"
+  APP_RELEASE: "SET-BY-CICD-TAG"
   AWS_S3_ENABLED: "true"
-  AWS_S3_ENDPOINT_URL: "https://timur-minio.k8s.local.com/"
+  AWS_S3_ENDPOINT_URL: "https://timur-minio.example.com/"
   AWS_S3_MEDIA_BUCKET_NAME: "timur-media"
   AWS_S3_STATIC_BUCKET_NAME: "timur-static"
-  CSRF_COOKIE_DOMAIN: ".k8s.local.com"
+  CSRF_COOKIE_DOMAIN: ".example.com"
+  DAILY_STANDUP_DOCUMENTATION_REF: "<https://notes.example.com/XYX?view|Documentation>"
+  DAILY_STANDUP_MEET_LINK: "https://meet.google.com/XYZ"
   DJANGO_DEBUG: "false"
   DJANGO_TIME_ZONE: "Asia/Kathmandu"
-  EMAIL_FROM: "timur.dev.com"
+  EMAIL_FROM: "timur@example.com"
+  GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_EVENT: "true"
   GOOGLE_SSO_ENABLED: "true"
+  SENTRY_ENABLED: "true"
   SENTRY_PROFILE_SAMPLE_RATE: "0.2"
   SENTRY_TRACES_SAMPLE_RATE: "0.2"
   SESSION_COOKIE_AGE: "2592000"
-  SESSION_COOKIE_DOMAIN: ".k8s.local.com"
+  SESSION_COOKIE_DOMAIN: ".example.com"
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/pvc.yaml
 kind: PersistentVolumeClaim
@@ -504,8 +508,7 @@ spec:
     - "ReadWriteOnce"
   resources:
     requests:
-      storage: "0.5Gi"
-  storageClassName: longhorn
+      storage: "1Gi"
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/service.yaml
 apiVersion: v1
@@ -648,7 +651,7 @@ metadata:
   labels:
     app: release-name-app
     component: api
-    environment: Alpha
+    environment: ALPHA
     release: release-name
 spec:
   type: ClusterIP
@@ -688,7 +691,7 @@ spec:
         app.kubernetes.io/version: 2024.12.18
         helm.sh/chart: minio-14.10.5
       annotations:
-        checksum/credentials-secret: c329f519ddb6527fdcb5cd9b3cf48281c41316429be01371ae76a07a14a5255b
+        checksum/credentials-secret: cd5ea9ebe5ed3533110ba71e8c86dec879d230f36589d7a1ab6f340298401002
     spec:
       
       serviceAccountName: timur-minio
@@ -714,7 +717,7 @@ spec:
         sysctls: []
       containers:
         - name: minio
-          image: docker.io/bitnami/minio:2024.12.18-debian-12-r1
+          image: docker.io/bitnamilegacy/minio:2024.12.18-debian-12-r1
           imagePullPolicy: "IfNotPresent"
           securityContext:
             allowPrivilegeEscalation: false
@@ -817,10 +820,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: release-name-app-api
+  annotations:
+    reloader.stakater.com/auto: "true"
   labels:
     app: release-name-app
     component: api
-    environment: Alpha
+    environment: ALPHA
     release: release-name
 spec:
   replicas: 1
@@ -831,15 +836,15 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/secret: 3623f30c7ec688c894fea6eebc62695308c6975cbf7f5ef3af0f7cb71e6245ed
-        checksum/configmap: 1fdf11f5c8c91cb229278bd41c1dc08ba47b482c6abeccd4cbfb112906ea89e4
+        checksum/secret: ed2f5082810cd487725a01c64ecdeb3d7b9ea3ae8474ddc9a5b571edcc4919d3
+        checksum/configmap: d7d507037663ee59c1338a6aba0229952c2ab23119413fb593d77b6815fdf63e
       labels:
         app: release-name-app
         component: api
     spec:
       containers:
         - name: api
-          image: "ghcr.io/toggle-corp/timur-backend-alpha:test.123"
+          image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
           imagePullPolicy: IfNotPresent
           command:
             - /code/scripts/deploy/run_web.sh
@@ -853,7 +858,7 @@ spec:
               cpu: "2"
               memory: 1Gi
             requests:
-              cpu: "0.1"
+              cpu: "2"
               memory: 0.5Gi
           envFrom:
             - secretRef:
@@ -926,7 +931,7 @@ spec:
       hostIPC: false
       containers:
         - name: postgresql
-          image: docker.io/bitnami/postgresql:17.2.0-debian-12-r8
+          image: docker.io/bitnamilegacy/postgresql:17.2.0-debian-12-r8
           imagePullPolicy: "IfNotPresent"
           securityContext:
             allowPrivilegeEscalation: false
@@ -951,20 +956,11 @@ spec:
             - name: PGDATA
               value: "/bitnami/postgresql/data"
             # Authentication
-            - name: POSTGRES_USER
-              value: "timur"
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: timur-pg
-                  key: password
-            - name: POSTGRES_POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: timur-pg
                   key: postgres-password
-            - name: POSTGRES_DATABASE
-              value: "timur"
             # LDAP
             - name: POSTGRESQL_ENABLE_LDAP
               value: "no"
@@ -998,7 +994,7 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - exec pg_isready -U "timur" -d "dbname=timur" -h 127.0.0.1 -p 5432
+                - exec pg_isready -U "postgres" -h 127.0.0.1 -p 5432
           readinessProbe:
             failureThreshold: 6
             initialDelaySeconds: 5
@@ -1011,8 +1007,7 @@ spec:
                 - -c
                 - -e
                 - |
-                  exec pg_isready -U "timur" -d "dbname=timur" -h 127.0.0.1 -p 5432
-                  [ -f /opt/bitnami/postgresql/tmp/.initialized ] || [ -f /bitnami/postgresql/.initialized ]
+                  exec pg_isready -U "postgres" -h 127.0.0.1 -p 5432
           resources:
             limits:
               cpu: 150m
@@ -1052,8 +1047,7 @@ spec:
           - "ReadWriteOnce"
         resources:
           requests:
-            storage: "1Gi"
-        storageClassName: longhorn
+            storage: "8Gi"
 ---
 # Source: timur-backend-helm/charts/app/charts/redis/templates/master/application.yaml
 apiVersion: apps/v1
@@ -1121,7 +1115,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: redis
-          image: docker.io/bitnami/redis:7.4.2-debian-12-r0
+          image: docker.io/bitnamilegacy/redis:7.4.2-debian-12-r0
           imagePullPolicy: "IfNotPresent"
           securityContext:
             allowPrivilegeEscalation: false
@@ -1229,10 +1223,10 @@ spec:
           - "ReadWriteOnce"
         resources:
           requests:
-            storage: ".5Gi"
-        storageClassName: longhorn
+            storage: ".1Gi"
 ---
 # Source: timur-backend-helm/charts/app/templates/argo-hooks/hook-job.yaml
+# Hook: collect-static
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -1241,11 +1235,18 @@ metadata:
     argocd.argoproj.io/hook: PostSync
 spec:
   template:
+    metadata:
+      annotations:
+        checksum/secret: ed2f5082810cd487725a01c64ecdeb3d7b9ea3ae8474ddc9a5b571edcc4919d3
+        checksum/configmap: d7d507037663ee59c1338a6aba0229952c2ab23119413fb593d77b6815fdf63e
+      labels:
+        app: release-name-app
+        component: argo-hooks
     spec:
       restartPolicy: "Never"
       containers:
         - name: collect-static
-          image: "ghcr.io/toggle-corp/timur-backend-alpha:test.123"
+          image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
           imagePullPolicy: IfNotPresent
           command: 
             - /bin/bash
@@ -1269,6 +1270,7 @@ spec:
               value: "hook"
 ---
 # Source: timur-backend-helm/charts/app/templates/argo-hooks/hook-job.yaml
+# Hook: db-migrate
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -1277,11 +1279,18 @@ metadata:
     argocd.argoproj.io/hook: PostSync
 spec:
   template:
+    metadata:
+      annotations:
+        checksum/secret: ed2f5082810cd487725a01c64ecdeb3d7b9ea3ae8474ddc9a5b571edcc4919d3
+        checksum/configmap: d7d507037663ee59c1338a6aba0229952c2ab23119413fb593d77b6815fdf63e
+      labels:
+        app: release-name-app
+        component: argo-hooks
     spec:
       restartPolicy: "Never"
       containers:
         - name: db-migrate
-          image: "ghcr.io/toggle-corp/timur-backend-alpha:test.123"
+          image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
           imagePullPolicy: IfNotPresent
           command: 
             - /bin/bash
@@ -1305,6 +1314,7 @@ spec:
               value: "hook"
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
+# Job: clearsessions
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -1313,7 +1323,7 @@ metadata:
     app: release-name-app
     component: cronjob
     jobName: clearsessions
-    environment: Alpha
+    environment: ALPHA
     release: release-name
 spec:
   schedule: "0 0 1 * *"
@@ -1323,6 +1333,10 @@ spec:
     spec:
       activeDeadlineSeconds: 7200  # 2 hours default
       template:
+        metadata:
+          labels:
+            app: release-name-app
+            component: cronjob
         spec:
           restartPolicy: "Never"
           containers:
@@ -1330,7 +1344,7 @@ spec:
               command:
                 - ./manage.py
                 - clearsessions
-              image: "ghcr.io/toggle-corp/timur-backend-alpha:test.123"
+              image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
@@ -1349,6 +1363,7 @@ spec:
                   value: "cronjob"
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
+# Job: process_not_done_time_entries
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -1357,7 +1372,7 @@ metadata:
     app: release-name-app
     component: cronjob
     jobName: process_not_done_time_entries
-    environment: Alpha
+    environment: ALPHA
     release: release-name
 spec:
   schedule: "5 0 * * *"
@@ -1367,6 +1382,10 @@ spec:
     spec:
       activeDeadlineSeconds: 7200  # 2 hours default
       template:
+        metadata:
+          labels:
+            app: release-name-app
+            component: cronjob
         spec:
           restartPolicy: "Never"
           containers:
@@ -1374,7 +1393,7 @@ spec:
               command:
                 - ./manage.py
                 - process_not_done_time_entries
-              image: "ghcr.io/toggle-corp/timur-backend-alpha:test.123"
+              image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
@@ -1393,6 +1412,7 @@ spec:
                   value: "cronjob"
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
+# Job: standup_before_standup_reminder
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -1401,7 +1421,7 @@ metadata:
     app: release-name-app
     component: cronjob
     jobName: standup_before_standup_reminder
-    environment: Alpha
+    environment: ALPHA
     release: release-name
 spec:
   schedule: "10 9 * * 1,2,3,4,5"
@@ -1411,6 +1431,10 @@ spec:
     spec:
       activeDeadlineSeconds: 7200  # 2 hours default
       template:
+        metadata:
+          labels:
+            app: release-name-app
+            component: cronjob
         spec:
           restartPolicy: "Never"
           containers:
@@ -1419,7 +1443,7 @@ spec:
                 - ./manage.py
                 - standup
                 - before-standup-reminder
-              image: "ghcr.io/toggle-corp/timur-backend-alpha:test.123"
+              image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
@@ -1438,6 +1462,7 @@ spec:
                   value: "cronjob"
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
+# Job: standup_morning_reminder
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -1446,7 +1471,7 @@ metadata:
     app: release-name-app
     component: cronjob
     jobName: standup_morning_reminder
-    environment: Alpha
+    environment: ALPHA
     release: release-name
 spec:
   schedule: "0 8 * * 1,2,3,4,5"
@@ -1456,6 +1481,10 @@ spec:
     spec:
       activeDeadlineSeconds: 7200  # 2 hours default
       template:
+        metadata:
+          labels:
+            app: release-name-app
+            component: cronjob
         spec:
           restartPolicy: "Never"
           containers:
@@ -1464,7 +1493,7 @@ spec:
                 - ./manage.py
                 - standup
                 - morning-reminder
-              image: "ghcr.io/toggle-corp/timur-backend-alpha:test.123"
+              image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
@@ -1483,6 +1512,7 @@ spec:
                   value: "cronjob"
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
+# Job: standup_read_doc_reminder
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -1491,7 +1521,7 @@ metadata:
     app: release-name-app
     component: cronjob
     jobName: standup_read_doc_reminder
-    environment: Alpha
+    environment: ALPHA
     release: release-name
 spec:
   schedule: "55 16 * * 1,2,3,4,5"
@@ -1501,6 +1531,10 @@ spec:
     spec:
       activeDeadlineSeconds: 7200  # 2 hours default
       template:
+        metadata:
+          labels:
+            app: release-name-app
+            component: cronjob
         spec:
           restartPolicy: "Never"
           containers:
@@ -1509,7 +1543,7 @@ spec:
                 - ./manage.py
                 - standup
                 - read-doc-reminder
-              image: "ghcr.io/toggle-corp/timur-backend-alpha:test.123"
+              image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
@@ -1528,6 +1562,7 @@ spec:
                   value: "cronjob"
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
+# Job: standup_setup_next_standup
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -1536,7 +1571,7 @@ metadata:
     app: release-name-app
     component: cronjob
     jobName: standup_setup_next_standup
-    environment: Alpha
+    environment: ALPHA
     release: release-name
 spec:
   schedule: "45 16 * * 1,2,3,4,5"
@@ -1546,6 +1581,10 @@ spec:
     spec:
       activeDeadlineSeconds: 7200  # 2 hours default
       template:
+        metadata:
+          labels:
+            app: release-name-app
+            component: cronjob
         spec:
           restartPolicy: "Never"
           containers:
@@ -1554,7 +1593,7 @@ spec:
                 - ./manage.py
                 - standup
                 - setup-next-standup
-              image: "ghcr.io/toggle-corp/timur-backend-alpha:test.123"
+              image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
@@ -1573,6 +1612,7 @@ spec:
                   value: "cronjob"
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
+# Job: user_sync_slack_users_id
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -1581,7 +1621,7 @@ metadata:
     app: release-name-app
     component: cronjob
     jobName: user_sync_slack_users_id
-    environment: Alpha
+    environment: ALPHA
     release: release-name
 spec:
   schedule: "30 16 * * 1,2,3,4,5"
@@ -1591,6 +1631,10 @@ spec:
     spec:
       activeDeadlineSeconds: 7200  # 2 hours default
       template:
+        metadata:
+          labels:
+            app: release-name-app
+            component: cronjob
         spec:
           restartPolicy: "Never"
           containers:
@@ -1598,7 +1642,7 @@ spec:
               command:
                 - ./manage.py
                 - sync_slack_users_id
-              image: "ghcr.io/toggle-corp/timur-backend-alpha:test.123"
+              image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
@@ -1631,9 +1675,8 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: 50m
 spec:
-  ingressClassName: "nginx"
   rules:
-    - host: timur-minio.k8s.local.com
+    - host: timur-minio.example.com
       http:
         paths:
           - path: /
@@ -1652,12 +1695,12 @@ metadata:
   labels:
     app: release-name-app
     component: api
-    environment: Alpha
+    environment: ALPHA
     release: release-name
 spec:
   ingressClassName: "nginx"
   rules:
-    - host: "timur-api.k8s.local.com"
+    - host: "timur.example.com"
       http:
         paths:
           - path: /
@@ -1706,7 +1749,7 @@ spec:
       serviceAccountName: timur-minio
       initContainers:
         - name: wait-for-available-minio
-          image: docker.io/bitnami/os-shell:12-debian-12-r35
+          image: docker.io/bitnamilegacy/os-shell:12-debian-12-r35
           imagePullPolicy: "IfNotPresent"
           securityContext:
             allowPrivilegeEscalation: false
@@ -1744,7 +1787,7 @@ spec:
               memory: 128Mi
       containers:
         - name: minio
-          image: docker.io/bitnami/minio:2024.12.18-debian-12-r1
+          image: docker.io/bitnamilegacy/minio:2024.12.18-debian-12-r1
           imagePullPolicy: "IfNotPresent"
           securityContext:
             allowPrivilegeEscalation: false

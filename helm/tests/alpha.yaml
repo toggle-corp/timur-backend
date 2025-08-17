@@ -1,69 +1,44 @@
 app:
-  environment: Alpha
-  # Global Image
-  image:
-    name: ghcr.io/toggle-corp/timur-backend-alpha
-    tag: feature-helm.c1234
+  environment: ALPHA
 
   ingress:
     enabled: true
     className: nginx
-    host: timur-api.example.com
+    host: timur.example.com
 
   redis:
     master:
       persistence:
-        size: .5Gi
-        storageClass: longhorn
+        size: .1Gi
 
   postgresql:
-    enabled: true
     auth:
       postgresPassword: "pg-postgres-secure-password"
-      username: "timur"
-      password: "pg-timur-secure-password"
-      database: "timur"
-    primary:
-      persistence:
-        storageClass: "longhorn"
-        size: 1Gi
 
   minio:
     enabled: true
-    global:
-      defaultStorageClass: longhorn
     apiIngress:
-      enabled: true
-      ingressClassName: nginx
       hostname: timur-minio.example.com
     auth:
-      rootUser: timur
-      rootPassword: minio-timur-secure-password
-    persistence:
-      enabled: true
-      size: 0.5Gi
+      rootPassword: XYZ
 
-  api:
-    resources:
-      requests:
-        cpu: "0.1"
-        memory: 0.5Gi
-
-  argoHook:
-    enabled: false
-
-  # NOTE: Check main/settings.py for all available options
   env:
-    AWS_S3_ENABLED: "true"
-    # App Domain
     APP_DOMAIN: https://timur-api.example.com
     APP_FRONTEND_HOST: https://timur.example.com
+    # App Domain
     SESSION_COOKIE_DOMAIN: .example.com
     CSRF_COOKIE_DOMAIN: .example.com
     # Email
-    EMAIL_FROM: "timur.example.com"
+    EMAIL_FROM: "timur@example.com"
+    # Sentry
+    SENTRY_ENABLED: "true"
     # Google SSO
-    GOOGLE_OAUTH_ENABLED: "true"
+    GOOGLE_SSO_ENABLED: "true"
+    # Calendar
+    GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_EVENT: "true"
+    # Standup
+    DAILY_STANDUP_DOCUMENTATION_REF: "<https://notes.example.com/XYX?view|Documentation>"
+    DAILY_STANDUP_MEET_LINK: "https://meet.google.com/XYZ"
 
   # NOTE: Check main/settings.py for all available options
   secrets:

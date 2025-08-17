@@ -12,7 +12,7 @@ app:
     host:
 
   redis:
-    enabled: true
+    enabled: false
     architecture: standalone
     fullnameOverride: timur-redis
     auth:
@@ -164,47 +164,47 @@ app:
     APP_ENVIRONMENT: "{{ $.Values.environment }}"
     DJANGO_TIME_ZONE: "Asia/Kathmandu"
     DJANGO_DEBUG: "false"
-    # AWS
-    AWS_S3_ENABLED: "false"
-    AWS_S3_ENDPOINT_URL: "https://{{ $.Values.minio.apiIngress.hostname }}/"
-    AWS_S3_MEDIA_BUCKET_NAME: "timur-media"
-    AWS_S3_STATIC_BUCKET_NAME: "timur-static"
     # App Domain
     APP_DOMAIN: "{{ required \".app.env.APP_DOMAIN\" nil }}"
     APP_FRONTEND_HOST: "{{ required \".app.env.APP_FRONTEND_HOST\" nil }}"
     SESSION_COOKIE_DOMAIN: "{{ required \".app.env.SESSION_COOKIE_DOMAIN\" nil }}"
     CSRF_COOKIE_DOMAIN: "{{ required \".app.env.CSRF_COOKIE_DOMAIN\" nil }}"
     SESSION_COOKIE_AGE: "2592000"  # 30 days
-    # Email
+    # -- Email
     EMAIL_FROM: "{{ required \".app.env.EMAIL_FROM\" nil }}"
-    # Sentry
+    # -- Sentry
     SENTRY_TRACES_SAMPLE_RATE: "0.2"
     SENTRY_PROFILE_SAMPLE_RATE: "0.2"
-    # Google SSO
+    # -- Google SSO
     GOOGLE_SSO_ENABLED: "false"
     # GOOGLE_SSO_ALLOWED_DOMAINS: togglecorp.com
+    # -- AWS
+    AWS_S3_ENABLED: "false"
+    # AWS_S3_ENDPOINT_URL:
+    # AWS_S3_MEDIA_BUCKET_NAME:
+    # AWS_S3_STATIC_BUCKET_NAME:
 
   # NOTE: Check main/settings.py for all available options
-  secrets:
-    DJANGO_SECRET_KEY: "{{ required \".app.secrets.DJANGO_SECRET_KEY\" nil }}"
-    # Postgres
-    DB_NAME: "{{ $.Values.postgresql.auth.database }}"
-    DB_USER: "postgres"
-    DB_PASSWORD: "{{ $.Values.postgresql.auth.postgresPassword }}"
-    DB_HOST: "{{ include \"postgresql.v1.primary.fullname\" $.Subcharts.postgresql }}"
-    DB_PORT: "{{ include \"postgresql.v1.service.port\" $.Subcharts.postgresql }}"
-    # Redis
-    CELERY_REDIS_URL: "redis://{{ printf \"%s-master\" (include \"common.names.fullname\" $.Subcharts.redis) }}:6379/0"
-    DJANGO_CACHE_REDIS_URL: "redis://{{ printf \"%s-master\" (include \"common.names.fullname\" $.Subcharts.redis) }}:6379/1"
-    # Minio (S3)
-    AWS_S3_ACCESS_KEY_ID: "{{ required \".app.minio.auth.rootUser\" $.Values.minio.auth.rootUser }}"
-    AWS_S3_SECRET_ACCESS_KEY: "{{ required \".app.minio.auth.rootPassword\" $.Values.minio.auth.rootPassword }}"
-    AWS_S3_REGION_NAME: "us-east-1"
-    # Google calendar
-    GOOGLE_CALENDAR_ID: "{{ required \".app.env.GOOGLE_CALENDAR_ID\" nil }}"
-    GOOGLE_CREDENTIALS_B64_GZ: "{{ required \".app.env.GOOGLE_CREDENTIALS_B64_GZ\" nil }}"
-    # Google SSO
+  secrets: {}
+    # -- Redis
+    # CELERY_REDIS_URL:
+    # DJANGO_CACHE_REDIS_URL:
+    # -- Google calendar
+    # GOOGLE_CALENDAR_ID:
+    # GOOGLE_CREDENTIALS_B64_GZ:
+    # -- Misc
+    # SENTRY_DSN:
+    # DJANGO_SECRET_KEY: "{{ required \".app.secrets.DJANGO_SECRET_KEY\" nil }}"
+    # -- Postgres
+    # DB_NAME:
+    # DB_USER:
+    # DB_PASSWORD:
+    # DB_HOST:
+    # DB_PORT:
+    # -- S3
+    # AWS_S3_ACCESS_KEY_ID:
+    # AWS_S3_SECRET_ACCESS_KEY:
+    # AWS_S3_REGION_NAME:
+    # -- Google SSO
     # GOOGLE_SSO_CLIENT_ID:
     # GOOGLE_SSO_SECRET:
-    # Misc
-    SENTRY_DSN: "{{ required \".app.secrets.SENTRY_DSN\" nil }}"
