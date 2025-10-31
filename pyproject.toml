@@ -108,3 +108,13 @@ extend-select = ["I", "E", "F", "B", "A", "W", "DJ", "AIR", "COM", "INT", "ISC",
 "utils/strawberry/*.py" = ["UP"]
 "/**/tests/*_mock_data.py" = ["E501"]
 "**/snap_test_*.py" = ["E501"]
+
+[tool.coverage.report]
+# https://coverage.readthedocs.io/en/7.10.6/excluding.html#advanced-exclusion
+exclude_also = [
+    "raise NotImplementedError",
+    "if typing.TYPE_CHECKING:",
+]
+partial_branches = [
+    "if typing.TYPE_CHECKING:",
+]
