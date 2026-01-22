@@ -12,6 +12,7 @@ from utils.strawberry.serializers import (
 from .models import TimeEntry
 
 
+# FIXME: Use UserResourceSerializer later instead of TempClientIdMixin
 class TimeEntrySerializer(TempClientIdMixin, serializers.ModelSerializer):
     # Used just for adding description
     duration = TimeDurationField(required=False, allow_null=True)

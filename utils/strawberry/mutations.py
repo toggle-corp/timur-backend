@@ -212,10 +212,19 @@ class BulkBasicMutationResponseType(typing.Generic[ResultTypeVar]):
     results: list[ResultTypeVar] | None = None
 
 
+# FIXME: remove this later
 @strawberry.type
 class BulkMutationResponseType(typing.Generic[ResultTypeVar]):
     errors: list[CustomErrorType] | None = None
     results: list[ResultTypeVar] | None = None
+    deleted: list[ResultTypeVar] | None = None
+
+
+@strawberry.type
+class CudMutationResponseType(typing.Generic[ResultTypeVar]):
+    errors: list[CustomErrorType] | None = None
+    create_items: list[ResultTypeVar] | None = None
+    update_items: list[ResultTypeVar] | None = None
     deleted: list[ResultTypeVar] | None = None
 
 
@@ -363,6 +372,7 @@ class ModelMutation:
             return MutationResponseType(ok=False, errors=errors)
         return MutationResponseType(result=deleted_instance)
 
+    # FIXME: remove this later
     async def handle_bulk_mutation(
         self,
         base_queryset: models.QuerySet,
@@ -416,5 +426,96 @@ class ModelMutation:
             errors=errors,
             # Data
             results=results,
+            deleted=deleted_instances,
+        )
+
+    async def handle_cud_mutation(
+        self,
+        base_queryset: models.QuerySet,
+        create_items: list | None,
+        update_items: list | None,
+        delete_ids: list[strawberry.ID] | None,
+        info: Info,
+        permission,
+        extra_context: dict | None = None,
+    ) -> CudMutationResponseType:
+        if errors := self.check_permissions(info, permission):
+            return CudMutationResponseType(errors=[errors])
+
+        errors = []
+
+        # Delete - First
+        deleted_instances = []
+        delete_qs = base_queryset.filter(client_id__in=delete_ids).order_by("client_id")
+        async for item in delete_qs.all():
+            _errors, _saved_instance = await self.handle_delete(item)
+            if _errors:
+                errors.append(_errors)
+            else:
+                deleted_instances.append(_saved_instance)
+
+        create_results = []
+        # Create
+        for data in create_items or []:
+            _data = process_input_data(data)
+            assert isinstance(_data, dict)
+            _client_id = _data.get("client_id", None)
+            assert _client_id is not None, "client_id should not be None when creating"
+            _errors, _saved_instance = await self.handle_mutation(
+                self.serializer_class,
+                _data,
+                info,
+                extra_context,
+                instance=None,
+                partial=False,
+            )
+            if _errors:
+                errors.append(_errors)
+            else:
+                create_results.append(_saved_instance)
+
+        update_results = []
+        # Update
+        for data in update_items or []:
+            _data = process_input_data(data)
+            assert isinstance(_data, dict)
+            _client_id = _data.get("client_id", None)
+            assert _client_id is not None, "client_id should not be None when updating"
+
+            instance = await base_queryset.filter(client_id=_client_id).afirst()
+            if not instance:
+                errors.append(
+                    CustomErrorType(
+                        dict(
+                            _CustomErrorType(
+                                client_id=_client_id,
+                                field="nonFieldErrors",
+                                messages="Could not update because instance not found",
+                                object_errors=None,
+                                array_errors=None,
+                            ),
+                        ),
+                    ),
+                )
+                continue
+
+            _errors, _saved_instance = await self.handle_mutation(
+                self.serializer_class,
+                _data,
+                info,
+                extra_context,
+                instance=instance,
+                partial=True,
+            )
+            if _errors:
+                errors.append(_errors)
+            else:
+                update_results.append(_saved_instance)
+
+        return CudMutationResponseType(
+            errors=errors,
+            # Data
+            create_items=create_results,
+            update_items=update_results,
             deleted=deleted_instances,
         )
