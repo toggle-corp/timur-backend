@@ -1,0 +1,26 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop
+      - main
+      - master
+      - project/*
+      - chore/*
+    tags:
+      - "**"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    uses: toggle-corp/toggle-django-action/.github/workflows/helm-publish.yml@main
+    with:
+      compose_file: "gh-docker-compose.yml"
+      chart_directory: "./helm"
+      test_target: "/code/scripts/run_tests.sh"
+    secrets: inherit
