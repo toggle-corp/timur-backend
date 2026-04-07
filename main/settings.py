@@ -69,6 +69,9 @@ env = environ.Env(
     SESSION_COOKIE_DOMAIN=str,
     SESSION_COOKIE_AGE=(int, 1209600),  # seconds (Default: 2 weeks)
     CSRF_COOKIE_DOMAIN=str,
+    # Health check
+    HEALTH_CHECK_DISK_USAGE_MAX=(int, 95),  # in percentage
+    HEALTH_CHECK_DISK_MEMORY_MIN=(int, 100),  # in MB
     # Misc
     TEMP_FILE_DIR=(str, "/tmp/"),
     RELEASE=(str, "develop"),
@@ -527,8 +530,8 @@ GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_EVENT = env("GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_E
 REDIS_URL = DJANGO_CACHE_REDIS_URL
 HEALTHCHECK_CACHE_KEY = "alert_hub_healthcheck_key"
 HEALTH_CHECK = {
-    "DISK_USAGE_MAX": 80,  # percent
-    "MEMORY_MIN": 100,  # in MB
+    "DISK_USAGE_MAX": env("HEALTH_CHECK_DISK_USAGE_MAX"),
+    "MEMORY_MIN": env("HEALTH_CHECK_DISK_MEMORY_MIN"),
 }
 
 # Slack
