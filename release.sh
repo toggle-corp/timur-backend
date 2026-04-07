@@ -8,6 +8,7 @@ function release_custom_hook {
     echo "Running custom hook for ${version_tag}"
 
     msg="# managed by release.sh"
+    # TODO: Do we need to do this... this invalidates the docker cache for each new release
     sed -E -i "s/^version = .* $msg$/version = \"${version_tag#v}\"  $msg/" "./pyproject.toml"
     uv sync
     git add ./pyproject.toml ./uv.lock
