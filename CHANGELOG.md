@@ -1,6 +1,29 @@
 # Changelog
 
-## [0.1.4](https://github.com/toggle-corp/timur-backend/compare/v0.1.3..v0.1.4) - 2025-07-24
+## [v0.1.5](https://github.com/toggle-corp/timur-backend/compare/v0.1.4..v0.1.5) - 2026-04-07
+### Changes:
+
+#### 🚀  Features
+
+- Add release using banjo-action - ([7df29c0](https://github.com/toggle-corp/timur-backend/commit/7df29c0e97b9bf0cec4ac676dde9d8cb6607927b))
+- Integrate with banjo-action(+fugit) for github action - ([7b01ddb](https://github.com/toggle-corp/timur-backend/commit/7b01ddb2b08ed8d63c08468c50863de3254fba3d))
+- Add update-snapshots from fugit - ([2a62fa9](https://github.com/toggle-corp/timur-backend/commit/2a62fa924a16a499f84038af3d1dd0657ac5edc2))
+- Add fugit - ([a9cba08](https://github.com/toggle-corp/timur-backend/commit/a9cba082a554e86578f5b9f46714732bbb3f7621))
+- Use 95% for disk usage max - ([06796bd](https://github.com/toggle-corp/timur-backend/commit/06796bd81ed0a1dc735626428db77ffacd1371aa))
+
+#### 🐛 Bug Fixes
+
+- *(lint)* Replace toml with pyproject in pre-commit - ([aa8349a](https://github.com/toggle-corp/timur-backend/commit/aa8349a25d0a17a526bad2324bc5efe7bac6aea1))
+
+#### 📚 Documentation
+
+- Add TODO related to version in pyproject - ([916b03d](https://github.com/toggle-corp/timur-backend/commit/916b03dbed8981060f95f4f89d4f7d417aa5cb1a))
+
+### 🍻 Pull Requests (1)
+- (#82) [Feat: add fugit](https://github.com/toggle-corp/timur-backend/pull/82)
+
+
+## [v0.1.4](https://github.com/toggle-corp/timur-backend/compare/v0.1.3..v0.1.4) - 2025-07-24
 ### Changes:
 
 #### 🚀  Features
@@ -20,7 +43,7 @@
 - (#71) [Chore/july](https://github.com/toggle-corp/timur-backend/pull/71)
 
 
-## [0.1.3](https://github.com/toggle-corp/timur-backend/compare/v0.1.2..v0.1.3) - 2025-06-02
+## [v0.1.3](https://github.com/toggle-corp/timur-backend/compare/v0.1.2..v0.1.3) - 2025-06-02
 ### Changes:
 
 #### 🚀  Features
@@ -31,7 +54,7 @@
 - (#66) [Feat(event): add description](https://github.com/toggle-corp/timur-backend/pull/66)
 
 
-## [0.1.2](https://github.com/toggle-corp/timur-backend/compare/v0.1.1..v0.1.2) - 2025-05-25
+## [v0.1.2](https://github.com/toggle-corp/timur-backend/compare/v0.1.1..v0.1.2) - 2025-05-25
 ### Changes:
 
 #### 🚀  Features
@@ -40,7 +63,7 @@
 - *(release)* Add semver validator in release.sh - ([69c0c87](https://github.com/toggle-corp/timur-backend/commit/69c0c87e89791da43671a9898886d4cbc3003f17))
 
 
-## [0.1.1] - 2025-05-25
+## [v0.1.1] - 2025-05-25
 ### Changes:
 
 #### 🚀  Features
