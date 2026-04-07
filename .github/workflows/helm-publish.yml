@@ -6,11 +6,14 @@ on:
     branches:
       - develop
       - project/*
+    tags:
+      - "v*.*.*"
 
 # TODO: Code climate integration?
+
 jobs:
   _:
-    uses: toggle-corp/banjo-action/.github/workflows/pipeline.yml@v0.1.0-dev0
+    uses: toggle-corp/banjo-action/.github/workflows/pipeline.yml@v0.1.0
     with:
       # Job: Docker
       docker__wait_cmd: "./manage.py wait_for_resources --db --redis"
@@ -24,3 +27,4 @@ jobs:
       # -- Publish
       docker__push: true
       helm__push: true
+      github_release__create: ${{ github.ref_type == 'tag' }}
