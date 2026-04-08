@@ -424,6 +424,7 @@ type PrivateMutation {
   createTimeEntry(data: TimeEntryCreateInput!): TimeEntryTypeMutationResponseType!
   updateTimeEntry(id: ID!, data: TimeEntryUpdateInput!): TimeEntryTypeMutationResponseType!
   bulkTimeEntry(items: [TimeEntryBulkCreateInput!] = [], deleteIds: [ID!] = []): TimeEntryTypeBulkMutationResponseType!
+  cudTimeEntry(createItems: [TimeEntryBulkCreateInput!] = [], updateItems: [TimeEntryBulkUpdateInput!] = [], deleteIds: [ID!] = []): TimeEntryTypeCudMutationResponseType!
   updateJournal(date: Date!, data: JournalUpdateInput!): JournalTypeMutationResponseType!
   id: ID!
 }
@@ -628,6 +629,18 @@ input TimeEntryBulkCreateInput {
   clientId: ID
 }
 
+input TimeEntryBulkUpdateInput {
+  id: ID
+  task: ID
+  date: Date
+  type: TimeEntryTypeEnum
+  description: String
+  status: TimeEntryStatusEnum
+  duration: TimeDuration
+  startTime: Time
+  clientId: ID
+}
+
 input TimeEntryCreateInput {
   task: ID!
   date: Date!
@@ -701,6 +714,13 @@ type TimeEntryTypeCountList {
   offset: Int!
   count: Int!
   items: [TimeEntryType!]!
+}
+
+type TimeEntryTypeCudMutationResponseType {
+  errors: [CustomErrorType!]
+  createItems: [TimeEntryType!]
+  updateItems: [TimeEntryType!]
+  deleted: [TimeEntryType!]
 }
 
 enum TimeEntryTypeEnum {

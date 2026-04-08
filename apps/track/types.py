@@ -54,6 +54,7 @@ class TaskType(UserResourceTypeMixin):
         return await info.context.dl.track.load_contract.load(root.contract_id)
 
 
+# FIXME: Do not extend ClientIdMixin later and define client_id as strawberry.auto
 @strawberry_django.type(TimeEntry)
 class TimeEntryType(ClientIdMixin):
     id: strawberry.ID

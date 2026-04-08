@@ -86,7 +86,7 @@ class TimeEntry(models.Model):
     # NOTE: client_id persisted as ULID, but no validation done on server-side
     #  Uniqueness is required at per-user per-day level
     #  Due to which uniqueness is not something we need to check at DB level
-    client_id = models.CharField(max_length=26, null=True, blank=True)
+    client_id = models.CharField(max_length=26)
 
     start_time = models.TimeField(null=True, blank=True)
     description = models.TextField(blank=True)

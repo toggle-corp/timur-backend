@@ -21,6 +21,7 @@ class TaskFactory(DjangoModelFactory):
 
 class TimeEntryFactory(DjangoModelFactory):
     status = TimeEntry.Status.TODO
+    client_id = factory.Sequence(lambda n: f"client-id-{n}")
 
     class Meta:  # type: ignore[override]
         model = TimeEntry

@@ -184,7 +184,10 @@ class TestCase(BaseTestCase):
     ):
         _left = [self._dict_with_keys(item, ignore_keys=ignore_keys, include_keys=include_keys) for item in left]
         _right = [self._dict_with_keys(item, ignore_keys=ignore_keys, include_keys=include_keys) for item in right]
-        assert _left == _right, messages
+        if messages:
+            assert _left == _right, messages
+        else:
+            assert _left == _right
 
     def no_op(*args, **_): ...
 

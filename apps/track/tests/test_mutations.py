@@ -7,6 +7,7 @@ from apps.user.factories import UserFactory
 from main.tests import TestCase
 
 
+# FIXME: remove this later
 class TestEntryBulkMutation(TestCase):
     class Mutation:
         BULK_TIME_ENTRY = """
@@ -382,3 +383,392 @@ class TestEntryBulkMutation(TestCase):
 
     # TODO: Add mutation to check client_id preserve for TimeEntry
     # TODO: Test createdAt field as well
+
+
+class TestEntryCudMutation(TestCase):
+    class Mutation:
+        CUD_TIME_ENTRY = """
+            fragment TimeEntryTypeResponse on TimeEntryType {
+              id
+              clientId
+              userId
+              date
+              taskId
+              type
+              status
+              duration
+              description
+              startTime
+            }
+
+            mutation MyMutation(
+              $createItems: [TimeEntryBulkCreateInput!],
+              $updateItems: [TimeEntryBulkUpdateInput!],
+              $deleteIds: [ID!],
+            ) {
+              private {
+                cudTimeEntry(
+                  createItems: $createItems,
+                  updateItems: $updateItems,
+                  deleteIds: $deleteIds
+                ) {
+                  errors
+                  createItems {
+                    ...TimeEntryTypeResponse
+                  }
+                  updateItems {
+                    ...TimeEntryTypeResponse
+                  }
+                  deleted {
+                    ...TimeEntryTypeResponse
+                  }
+                }
+              }
+            }
+        """
+
+    @classmethod
+    @typing.override
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = UserFactory.create()
+        cls.user_02 = UserFactory.create()
+
+        cls.ur_kwargs = dict(created_by=cls.user, modified_by=cls.user)
+        cls.client = ClientFactory.create(**cls.ur_kwargs)
+        cls.contractor = ContractorFactory.create(**cls.ur_kwargs)
+
+        cls.project = ProjectFactory.create(
+            project_client=cls.client,
+            contractor=cls.contractor,
+            **cls.ur_kwargs,
+        )
+
+        # Contracts
+        cls.active_contract = ContractFactory.create(project=cls.project, **cls.ur_kwargs)
+        cls.archived_contract = ContractFactory.create(project=cls.project, is_archived=True, **cls.ur_kwargs)
+
+        # Tasks
+        cls.active_tasks = TaskFactory.create_batch(
+            5,
+            **cls.ur_kwargs,
+            contract=cls.active_contract,
+            estimated_hours=10,
+        )
+        cls.archived_tasks = TaskFactory.create_batch(
+            5,
+            **cls.ur_kwargs,
+            contract=cls.active_contract,
+            is_archived=True,
+            estimated_hours=20,
+        )
+
+        cls.common_time_entry_kwargs = dict(
+            task=cls.active_tasks[1],
+            date="2021-01-02",
+            type=TimeEntry.Type.DEVELOPMENT,
+            description="Norm description ",
+            status=TimeEntry.Status.DOING,
+            duration=30,
+            start_time="09:30:00",
+        )
+
+    def _query(self, _data, **kwargs):
+        return self.query_check(
+            self.Mutation.CUD_TIME_ENTRY,
+            variables=_data,
+            **kwargs,
+        )
+
+    def _get_ids(self, items):
+        return [item.pk for item in items]
+
+    def test_cud_time_entry_unauthenticated(self):
+        # Without authentication -----
+        content = self._query({}, assert_errors=True)
+        assert content["data"] is None
+
+    def test_cud_time_entry_create(self):
+        # With authentication -----
+        self.force_login(self.user)
+
+        data = {
+            "createItems": [
+                dict(
+                    task=self.gID(self.active_tasks[0].pk),
+                    date="2021-01-01",
+                    type=self.genum(TimeEntry.Type.DEVELOPMENT),
+                    description="Normal description ",
+                    status=self.genum(TimeEntry.Status.DOING),
+                    duration=30,
+                    startTime="09:30:00",
+                    clientId="client-id-1000",
+                ),
+            ],
+        }
+
+        content = self._query(data)
+        resp_data = content["data"]["private"]["cudTimeEntry"]
+        assert resp_data["errors"] == []
+        assert resp_data["deleted"] == []
+
+        self.assertListDictEqual(
+            resp_data["createItems"],
+            [
+                {
+                    **item,
+                    "taskId": self.gID(item["task"]),
+                    "userId": self.gID(self.user.pk),
+                }
+                for item in data["createItems"]
+            ],
+            ignore_keys=["id", "task"],
+        )
+
+    def test_cud_time_entry_update(self):
+        # With authentication -----
+        self.force_login(self.user)
+        time_entries = TimeEntryFactory.create_batch(5, **self.common_time_entry_kwargs, user=self.user)
+
+        data = {
+            "updateItems": [
+                dict(
+                    id=self.gID(time_entries[0].pk),
+                    task=self.gID(self.active_tasks[0].pk),
+                    date="2021-01-01",
+                    type=self.genum(TimeEntry.Type.DESIGN),
+                    description="Normal description - 0",
+                    status=self.genum(TimeEntry.Status.DOING),
+                    duration=30,
+                    startTime="09:31:00",
+                    clientId=self.gID(time_entries[0].client_id),
+                ),
+                dict(
+                    id=self.gID(time_entries[1].pk),
+                    task=self.gID(self.active_tasks[0].pk),
+                    date="2021-01-02",
+                    type=self.genum(TimeEntry.Type.DEV_OPS),
+                    description="Normal description - 1",
+                    status=self.genum(TimeEntry.Status.DONE),
+                    duration=30,
+                    startTime="09:32:00",
+                    clientId=self.gID(time_entries[0].client_id),
+                ),
+                dict(
+                    id=self.gID(time_entries[2].pk),
+                    task=self.gID(self.active_tasks[0].pk),
+                    type=self.genum(TimeEntry.Type.DEV_OPS),
+                    status=self.genum(TimeEntry.Status.DONE),
+                    date="2021-01-02",
+                    description="Normal description - 2",
+                    clientId=self.gID(time_entries[2].client_id),
+                ),
+            ],
+        }
+
+        default_time_entry_kwargs = {
+            "date": self.common_time_entry_kwargs["date"],
+            "status": self.common_time_entry_kwargs["status"],
+            "startTime": self.common_time_entry_kwargs["start_time"],
+            "duration": 30,  # self.common_time_entry_kwargs["duration"]
+            "userId": self.gID(self.user.pk),
+            "taskId": self.gID(self.active_tasks[0].pk),
+        }
+
+        content = self._query(data)
+        resp_data = content["data"]["private"]["cudTimeEntry"]
+        assert resp_data["errors"] == []
+        assert resp_data["deleted"] == []
+        self.assertListDictEqual(
+            resp_data["updateItems"],
+            [
+                {
+                    **default_time_entry_kwargs,
+                    **item,
+                }
+                for item in data["updateItems"][:3]
+            ],
+            ignore_keys=["task"],
+        )
+
+    def test_cud_time_entry_delete(self):
+        # With authentication -----
+        self.force_login(self.user)
+        time_entries = TimeEntryFactory.create_batch(5, **self.common_time_entry_kwargs, user=self.user)
+        others_time_entries = TimeEntryFactory.create_batch(5, **self.common_time_entry_kwargs, user=self.user_02)
+
+        try_to_deleted = [*time_entries[:4], *others_time_entries]
+        needs_to_be_deleted = time_entries[:4]
+        needs_to_be_preserved = [*time_entries[4:], *others_time_entries]
+        data = {
+            "deleteIds": [time_entry.client_id for time_entry in try_to_deleted],
+        }
+
+        content = self._query(data)
+        resp_data = content["data"]["private"]["cudTimeEntry"]
+        assert resp_data["errors"] == []
+        assert resp_data["createItems"] == []
+        assert resp_data["updateItems"] == []
+        self.assertListDictEqual(
+            resp_data["deleted"],
+            [
+                {
+                    "clientId": self.gID(time_entry.client_id),
+                }
+                for time_entry in needs_to_be_deleted
+            ],
+            include_keys=["clientId"],
+        )
+
+        current_time_entry_ids = set(TimeEntry.objects.values_list("id", flat=True))
+
+        assert current_time_entry_ids.isdisjoint({i.client_id for i in needs_to_be_deleted}), (
+            "Most of the user's time_entry should be deleted"
+        )
+
+        assert set(self._get_ids(needs_to_be_preserved)).issubset(current_time_entry_ids), (
+            "All other user's time_entry should't be deleted"
+        )
+
+    def test_cud_time_entry_mix(self):
+        """
+        This is mix of all of the above cases.
+        NOTE: Will have duplicate piece of code
+        """
+        # With authentication -----
+        self.force_login(self.user)
+        time_entries = TimeEntryFactory.create_batch(5, **self.common_time_entry_kwargs, user=self.user)
+        others_time_entries = TimeEntryFactory.create_batch(5, **self.common_time_entry_kwargs, user=self.user_02)
+
+        # From test_cud_time_entry_delete
+        try_to_deleted = [*time_entries[2:], *others_time_entries]
+        needs_to_be_deleted = time_entries[2:]
+        needs_to_be_preserved = [*time_entries[:2], *others_time_entries]
+
+        data = {
+            # From test_cud_time_entry_delete
+            "deleteIds": [time_entry.client_id for time_entry in try_to_deleted],
+            "createItems": [
+                # From test_cud_time_entry_create
+                dict(
+                    task=self.gID(self.active_tasks[0].pk),
+                    date="2021-01-01",
+                    type=self.genum(TimeEntry.Type.DEVELOPMENT),
+                    description="Normal description - 0",
+                    status=self.genum(TimeEntry.Status.DOING),
+                    duration=25,
+                    startTime="09:30:00",
+                    clientId="client-id-2000",
+                ),
+            ],
+            "updateItems": [
+                # From test_cud_time_entry_update
+                dict(
+                    id=self.gID(time_entries[0].pk),
+                    task=self.gID(self.active_tasks[0].pk),
+                    date="2021-01-01",
+                    type=self.genum(TimeEntry.Type.DESIGN),
+                    description="Normal description - 1",
+                    status=self.genum(TimeEntry.Status.DOING),
+                    duration=25,
+                    startTime="09:31:00",
+                    clientId=self.gID(time_entries[0].client_id),
+                ),
+                dict(
+                    id=self.gID(time_entries[1].pk),
+                    task=self.gID(self.active_tasks[0].pk),
+                    date="2021-01-02",
+                    type=self.genum(TimeEntry.Type.DEV_OPS),
+                    description="Normal description - 2",
+                    status=self.genum(TimeEntry.Status.DOING),
+                    duration=25,
+                    startTime="09:32:00",
+                    clientId=self.gID(time_entries[1].client_id),
+                ),
+                # -- NOTE: This will be deleted and update should fail
+                dict(
+                    id=self.gID(time_entries[2].pk),
+                    task=self.gID(self.active_tasks[0].pk),
+                    type=self.genum(TimeEntry.Type.DEV_OPS),
+                    date="2021-01-02",
+                    description="Normal description - 3",
+                    status=self.genum(TimeEntry.Status.DOING),
+                    clientId=self.gID(time_entries[2].client_id),
+                ),
+            ],
+        }
+
+        # From test_cud_time_entry_update
+        default_time_entry_kwargs = {
+            "date": self.common_time_entry_kwargs["date"],
+            "status": self.common_time_entry_kwargs["status"],
+            "startTime": self.common_time_entry_kwargs["start_time"],
+            "duration": 25,  # self.common_time_entry_kwargs["duration"]
+            "userId": self.gID(self.user.pk),
+            "taskId": self.gID(self.active_tasks[0].pk),
+        }
+
+        self.maxDiff = None
+
+        content = self._query(data)
+        resp_data = content["data"]["private"]["cudTimeEntry"]
+        # NOTE: Check that error is because we are updating deleted entry
+        assert resp_data["errors"] == [
+            {
+                "field": "nonFieldErrors",
+                "client_id": self.gID(time_entries[2].client_id),
+                "messages": "Could not update because instance not found",
+                "object_errors": None,
+                "array_errors": None,
+            },
+        ]
+
+        # Create
+        self.assertListDictEqual(
+            resp_data["createItems"],
+            [
+                {
+                    **default_time_entry_kwargs,
+                    **item,
+                    "taskId": self.gID(item["task"]),
+                }
+                for item in data["createItems"]
+            ],
+            ignore_keys=["id", "task"],
+        )
+
+        # Update -- id should be same
+        self.assertListDictEqual(
+            resp_data["updateItems"][0:2],
+            [
+                {
+                    **default_time_entry_kwargs,
+                    **item,
+                    "taskId": self.gID(item["task"]),
+                }
+                for item in data["updateItems"][0:2]
+            ],
+            ignore_keys=["task"],
+        )
+
+        # Delete
+        self.assertListDictEqual(
+            resp_data["deleted"],
+            [
+                {
+                    "id": self.gID(time_entry.pk),
+                }
+                for time_entry in needs_to_be_deleted
+            ],
+            include_keys=["id"],
+        )
+
+        current_time_entry_ids = set(TimeEntry.objects.values_list("id", flat=True))
+
+        assert current_time_entry_ids.isdisjoint(set(self._get_ids(needs_to_be_deleted))), (
+            "Most of the user's time_entry should be deleted"
+        )
+
+        assert set(self._get_ids(needs_to_be_preserved)).issubset(current_time_entry_ids), (
+            "All other user's time_entry should't be deleted"
+        )
