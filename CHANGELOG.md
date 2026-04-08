@@ -1,5 +1,24 @@
 # Changelog
 
+## [v0.2.0](https://github.com/toggle-corp/timur-backend/compare/v0.1.5..v0.2.0) - 2026-04-08
+### Changes:
+
+#### 🚀  Features
+
+- *(timeentry)* Add a new mutation to support command pattern - ([eae5253](https://github.com/toggle-corp/timur-backend/commit/eae5253500d1c3eb2c6beb0ee8fcf872b70b14bc))
+
+#### 🐛 Bug Fixes
+
+- *(timeentry)* Add default values on factory - ([53b890f](https://github.com/toggle-corp/timur-backend/commit/53b890f53a8de0e2cb1bb336ed6ce48d7c2b0dc7))
+- *(timeentry)* Make client_id mandatory - ([044cd0c](https://github.com/toggle-corp/timur-backend/commit/044cd0c318ca3a0ebfb094a8dc5a8af89ae50c23))
+
+### 🍻 Pull Requests (1)
+- (#79) [Fix(timeentry): make client_id mandatory](https://github.com/toggle-corp/timur-backend/pull/79)
+
+### :tada: New Contributors (1)
+
+- [@tnagorra](https://github.com/tnagorra) made their first contribution
+
 ## [v0.1.5](https://github.com/toggle-corp/timur-backend/compare/v0.1.4..v0.1.5) - 2026-04-07
 ### Changes:
 
