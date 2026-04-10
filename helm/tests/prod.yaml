@@ -1,0 +1,52 @@
+app:
+  environment: PROD
+
+  ingress:
+    enabled: true
+    className: nginx
+    host: timur.example.com
+
+  minio:
+    enabled: true
+    apiIngress:
+      hostname: timur-minio.example.com
+    auth:
+      rootPassword: XYZ
+
+  env:
+    APP_DOMAIN: https://timur-api.example.com
+    APP_FRONTEND_HOST: https://timur.example.com
+    # App Domain
+    SESSION_COOKIE_DOMAIN: .example.com
+    CSRF_COOKIE_DOMAIN: .example.com
+    # Email
+    EMAIL_FROM: "timur@example.com"
+    # Sentry
+    SENTRY_ENABLED: "true"
+    # Google SSO
+    GOOGLE_SSO_ENABLED: "true"
+    # Calendar
+    GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_EVENT: "true"
+    # Standup
+    DAILY_STANDUP_DOCUMENTATION_REF: "<https://notes.example.com/XYX?view|Documentation>"
+    DAILY_STANDUP_MEET_LINK: "https://meet.google.com/XYZ"
+    # AWS
+    AWS_S3_ENABLED: "true"
+
+  extraSecretsName: "my-extra-secrets"
+
+  extraManifests:
+    dragonflydb-cluster:
+      spec:
+        snapshot:
+          persistentVolumeClaimSpec:
+            storageClassName: "local-path"
+    cnpg-s3-credential:
+      spec:
+        configuration:
+          destinationPath: "s3://s3-bucket-name/barman/prod"
+    cnpg-cluster:
+      spec:
+        storage:
+          size: 1Gi
+          storageClass: "local-path"

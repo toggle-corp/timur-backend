@@ -50,61 +50,6 @@ spec:
     - {}
   ingress:
 ---
-# Source: timur-backend-helm/charts/app/charts/postgresql/templates/primary/networkpolicy.yaml
-kind: NetworkPolicy
-apiVersion: networking.k8s.io/v1
-metadata:
-  name: timur-pg
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: postgresql
-    app.kubernetes.io/version: 17.2.0
-    helm.sh/chart: postgresql-16.4.5
-    app.kubernetes.io/component: primary
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/instance: release-name
-      app.kubernetes.io/name: postgresql
-      app.kubernetes.io/component: primary
-  policyTypes:
-    - Ingress
-    - Egress
-  egress:
-    - {}
-  ingress:
-    - ports:
-        - port: 5432
----
-# Source: timur-backend-helm/charts/app/charts/redis/templates/networkpolicy.yaml
-kind: NetworkPolicy
-apiVersion: networking.k8s.io/v1
-metadata:
-  name: timur-redis
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: redis
-    app.kubernetes.io/version: 7.4.2
-    helm.sh/chart: redis-20.6.3
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/instance: release-name
-      app.kubernetes.io/name: redis
-  policyTypes:
-    - Ingress
-    - Egress
-  egress:
-    - {}
-  ingress:
-    # Allow inbound connections
-    - ports:
-        - port: 6379
----
 # Source: timur-backend-helm/charts/app/charts/minio/templates/pdb.yaml
 apiVersion: policy/v1
 kind: PodDisruptionBudget
@@ -124,48 +69,6 @@ spec:
       app.kubernetes.io/instance: release-name
       app.kubernetes.io/name: minio
 ---
-# Source: timur-backend-helm/charts/app/charts/postgresql/templates/primary/pdb.yaml
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: timur-pg
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: postgresql
-    app.kubernetes.io/version: 17.2.0
-    helm.sh/chart: postgresql-16.4.5
-    app.kubernetes.io/component: primary
-spec:
-  maxUnavailable: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/instance: release-name
-      app.kubernetes.io/name: postgresql
-      app.kubernetes.io/component: primary
----
-# Source: timur-backend-helm/charts/app/charts/redis/templates/master/pdb.yaml
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: timur-redis-master
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: redis
-    app.kubernetes.io/version: 7.4.2
-    helm.sh/chart: redis-20.6.3
-    app.kubernetes.io/component: master
-spec:
-  maxUnavailable: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/instance: release-name
-      app.kubernetes.io/name: redis
-      app.kubernetes.io/component: master
----
 # Source: timur-backend-helm/charts/app/charts/minio/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -182,34 +85,6 @@ automountServiceAccountToken: false
 secrets:
   - name: timur-minio
 ---
-# Source: timur-backend-helm/charts/app/charts/postgresql/templates/serviceaccount.yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: timur-pg
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: postgresql
-    app.kubernetes.io/version: 17.2.0
-    helm.sh/chart: postgresql-16.4.5
-automountServiceAccountToken: false
----
-# Source: timur-backend-helm/charts/app/charts/redis/templates/master/serviceaccount.yaml
-apiVersion: v1
-kind: ServiceAccount
-automountServiceAccountToken: false
-metadata:
-  name: timur-redis-master
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: redis
-    app.kubernetes.io/version: 7.4.2
-    helm.sh/chart: redis-20.6.3
----
 # Source: timur-backend-helm/charts/app/charts/minio/templates/secrets.yaml
 apiVersion: v1
 kind: Secret
@@ -225,25 +100,7 @@ metadata:
 type: Opaque
 data:
   root-user: "dGltdXI="
-  root-password: "bWluaW8tdGltdXItc2VjdXJlLXBhc3N3b3Jk"
----
-# Source: timur-backend-helm/charts/app/charts/postgresql/templates/secrets.yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: timur-pg
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: postgresql
-    app.kubernetes.io/version: 17.2.0
-    helm.sh/chart: postgresql-16.4.5
-type: Opaque
-data:
-  postgres-password: "cGctcG9zdGdyZXMtc2VjdXJlLXBhc3N3b3Jk"
-  password: "cGctdGltdXItc2VjdXJlLXBhc3N3b3Jk"
-  # We don't auto-generate LDAP password when it's not provided as we do for other passwords
+  root-password: "WFla"
 ---
 # Source: timur-backend-helm/charts/app/templates/config/secret.yaml
 kind: Secret
@@ -252,27 +109,11 @@ metadata:
   name: release-name-app-secret
   labels:
     app: release-name-app
-    environment: Alpha
+    environment: PROD
     release: release-name
 type: Opaque
 stringData:
   # secrets
-  AWS_S3_ACCESS_KEY_ID: "timur"
-  AWS_S3_REGION_NAME: "us-east-1"
-  AWS_S3_SECRET_ACCESS_KEY: "minio-timur-secure-password"
-  CELERY_REDIS_URL: "redis://timur-redis-master:6379/0"
-  DB_HOST: "timur-pg"
-  DB_NAME: "timur"
-  DB_PASSWORD: "pg-postgres-secure-password"
-  DB_PORT: "5432"
-  DB_USER: "postgres"
-  DJANGO_CACHE_REDIS_URL: "redis://timur-redis-master:6379/1"
-  DJANGO_SECRET_KEY: "SECURE_DJANGO_SECRET_KEY"
-  GOOGLE_CALENDAR_ID: "long-dynamic-id@group.calendar.google.com"
-  GOOGLE_CREDENTIALS_B64_GZ: "SUPER_SECURE_GOOGLE_CREDENTIALS_B64_GZ"
-  GOOGLE_OAUTH_CLIENT_ID: "another-long-dynamic-id.apps.googleusercontent.com"
-  GOOGLE_OAUTH_REDIRECT_URL: "https://timur-api.example/o/google"
-  SENTRY_DSN: "https://test-123@sentry.example/27"
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/provisioning-configmap.yaml
 apiVersion: v1
@@ -289,176 +130,6 @@ metadata:
     app.kubernetes.io/component: minio-provisioning
 data:
 ---
-# Source: timur-backend-helm/charts/app/charts/redis/templates/configmap.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: timur-redis-configuration
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: redis
-    app.kubernetes.io/version: 7.4.2
-    helm.sh/chart: redis-20.6.3
-data:
-  redis.conf: |-
-    # User-supplied common configuration:
-    # Enable AOF https://redis.io/topics/persistence#append-only-file
-    appendonly yes
-    # Disable RDB persistence, AOF persistence already enabled.
-    save ""
-    # End of common configuration
-  master.conf: |-
-    dir /data
-    # User-supplied master configuration:
-    rename-command FLUSHDB ""
-    rename-command FLUSHALL ""
-    # End of master configuration
-  replica.conf: |-
-    dir /data
-    # User-supplied replica configuration:
-    rename-command FLUSHDB ""
-    rename-command FLUSHALL ""
-    # End of replica configuration
----
-# Source: timur-backend-helm/charts/app/charts/redis/templates/health-configmap.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: timur-redis-health
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: redis
-    app.kubernetes.io/version: 7.4.2
-    helm.sh/chart: redis-20.6.3
-data:
-  ping_readiness_local.sh: |-
-    #!/bin/bash
-
-    [[ -f $REDIS_PASSWORD_FILE ]] && export REDIS_PASSWORD="$(< "${REDIS_PASSWORD_FILE}")"
-    [[ -n "$REDIS_PASSWORD" ]] && export REDISCLI_AUTH="$REDIS_PASSWORD"
-    response=$(
-      timeout -s 15 $1 \
-      redis-cli \
-        -h localhost \
-        -p $REDIS_PORT \
-        ping
-    )
-    if [ "$?" -eq "124" ]; then
-      echo "Timed out"
-      exit 1
-    fi
-    if [ "$response" != "PONG" ]; then
-      echo "$response"
-      exit 1
-    fi
-  ping_liveness_local.sh: |-
-    #!/bin/bash
-
-    [[ -f $REDIS_PASSWORD_FILE ]] && export REDIS_PASSWORD="$(< "${REDIS_PASSWORD_FILE}")"
-    [[ -n "$REDIS_PASSWORD" ]] && export REDISCLI_AUTH="$REDIS_PASSWORD"
-    response=$(
-      timeout -s 15 $1 \
-      redis-cli \
-        -h localhost \
-        -p $REDIS_PORT \
-        ping
-    )
-    if [ "$?" -eq "124" ]; then
-      echo "Timed out"
-      exit 1
-    fi
-    responseFirstWord=$(echo $response | head -n1 | awk '{print $1;}')
-    if [ "$response" != "PONG" ] && [ "$responseFirstWord" != "LOADING" ] && [ "$responseFirstWord" != "MASTERDOWN" ]; then
-      echo "$response"
-      exit 1
-    fi
-  ping_readiness_master.sh: |-
-    #!/bin/bash
-
-    [[ -f $REDIS_MASTER_PASSWORD_FILE ]] && export REDIS_MASTER_PASSWORD="$(< "${REDIS_MASTER_PASSWORD_FILE}")"
-    [[ -n "$REDIS_MASTER_PASSWORD" ]] && export REDISCLI_AUTH="$REDIS_MASTER_PASSWORD"
-    response=$(
-      timeout -s 15 $1 \
-      redis-cli \
-        -h $REDIS_MASTER_HOST \
-        -p $REDIS_MASTER_PORT_NUMBER \
-        ping
-    )
-    if [ "$?" -eq "124" ]; then
-      echo "Timed out"
-      exit 1
-    fi
-    if [ "$response" != "PONG" ]; then
-      echo "$response"
-      exit 1
-    fi
-  ping_liveness_master.sh: |-
-    #!/bin/bash
-
-    [[ -f $REDIS_MASTER_PASSWORD_FILE ]] && export REDIS_MASTER_PASSWORD="$(< "${REDIS_MASTER_PASSWORD_FILE}")"
-    [[ -n "$REDIS_MASTER_PASSWORD" ]] && export REDISCLI_AUTH="$REDIS_MASTER_PASSWORD"
-    response=$(
-      timeout -s 15 $1 \
-      redis-cli \
-        -h $REDIS_MASTER_HOST \
-        -p $REDIS_MASTER_PORT_NUMBER \
-        ping
-    )
-    if [ "$?" -eq "124" ]; then
-      echo "Timed out"
-      exit 1
-    fi
-    responseFirstWord=$(echo $response | head -n1 | awk '{print $1;}')
-    if [ "$response" != "PONG" ] && [ "$responseFirstWord" != "LOADING" ]; then
-      echo "$response"
-      exit 1
-    fi
-  ping_readiness_local_and_master.sh: |-
-    script_dir="$(dirname "$0")"
-    exit_status=0
-    "$script_dir/ping_readiness_local.sh" $1 || exit_status=$?
-    "$script_dir/ping_readiness_master.sh" $1 || exit_status=$?
-    exit $exit_status
-  ping_liveness_local_and_master.sh: |-
-    script_dir="$(dirname "$0")"
-    exit_status=0
-    "$script_dir/ping_liveness_local.sh" $1 || exit_status=$?
-    "$script_dir/ping_liveness_master.sh" $1 || exit_status=$?
-    exit $exit_status
----
-# Source: timur-backend-helm/charts/app/charts/redis/templates/scripts-configmap.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: timur-redis-scripts
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: redis
-    app.kubernetes.io/version: 7.4.2
-    helm.sh/chart: redis-20.6.3
-data:
-  start-master.sh: |
-    #!/bin/bash
-
-    [[ -f $REDIS_PASSWORD_FILE ]] && export REDIS_PASSWORD="$(< "${REDIS_PASSWORD_FILE}")"
-    if [[ -f /opt/bitnami/redis/mounted-etc/master.conf ]];then
-        cp /opt/bitnami/redis/mounted-etc/master.conf /opt/bitnami/redis/etc/master.conf
-    fi
-    if [[ -f /opt/bitnami/redis/mounted-etc/redis.conf ]];then
-        cp /opt/bitnami/redis/mounted-etc/redis.conf /opt/bitnami/redis/etc/redis.conf
-    fi
-    ARGS=("--port" "${REDIS_PORT}")
-    ARGS+=("--protected-mode" "no")
-    ARGS+=("--include" "/opt/bitnami/redis/etc/redis.conf")
-    ARGS+=("--include" "/opt/bitnami/redis/etc/master.conf")
-    exec redis-server "${ARGS[@]}"
----
 # Source: timur-backend-helm/charts/app/templates/config/configmap.yaml
 kind: ConfigMap
 apiVersion: v1
@@ -466,24 +137,24 @@ metadata:
   name: release-name-app-env-name
   labels:
     app: release-name-app
-    environment: Alpha
+    environment: PROD
     release: release-name
 data:
   # Configs
   APP_DOMAIN: "https://timur-api.example.com"
-  APP_ENVIRONMENT: "Alpha"
+  APP_ENVIRONMENT: "PROD"
   APP_FRONTEND_HOST: "https://timur.example.com"
-  APP_RELEASE: "feature-helm.c1234"
+  APP_RELEASE: "SET-BY-CICD-TAG"
   AWS_S3_ENABLED: "true"
-  AWS_S3_ENDPOINT_URL: "https://timur-minio.example.com/"
-  AWS_S3_MEDIA_BUCKET_NAME: "timur-media"
-  AWS_S3_STATIC_BUCKET_NAME: "timur-static"
   CSRF_COOKIE_DOMAIN: ".example.com"
+  DAILY_STANDUP_DOCUMENTATION_REF: "<https://notes.example.com/XYX?view|Documentation>"
+  DAILY_STANDUP_MEET_LINK: "https://meet.google.com/XYZ"
   DJANGO_DEBUG: "false"
   DJANGO_TIME_ZONE: "Asia/Kathmandu"
-  EMAIL_FROM: "timur.example.com"
-  GOOGLE_OAUTH_ENABLED: "true"
-  GOOGLE_SSO_ENABLED: "false"
+  EMAIL_FROM: "timur@example.com"
+  GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_EVENT: "true"
+  GOOGLE_SSO_ENABLED: "true"
+  SENTRY_ENABLED: "true"
   SENTRY_PROFILE_SAMPLE_RATE: "0.2"
   SENTRY_TRACES_SAMPLE_RATE: "0.2"
   SESSION_COOKIE_AGE: "2592000"
@@ -506,8 +177,7 @@ spec:
     - "ReadWriteOnce"
   resources:
     requests:
-      storage: "0.5Gi"
-  storageClassName: longhorn
+      storage: "1Gi"
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/service.yaml
 apiVersion: v1
@@ -536,112 +206,6 @@ spec:
     app.kubernetes.io/instance: release-name
     app.kubernetes.io/name: minio
 ---
-# Source: timur-backend-helm/charts/app/charts/postgresql/templates/primary/svc-headless.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: timur-pg-hl
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: postgresql
-    app.kubernetes.io/version: 17.2.0
-    helm.sh/chart: postgresql-16.4.5
-    app.kubernetes.io/component: primary
-  annotations:
-spec:
-  type: ClusterIP
-  clusterIP: None
-  # We want all pods in the StatefulSet to have their addresses published for
-  # the sake of the other Postgresql pods even before they're ready, since they
-  # have to be able to talk to each other in order to become ready.
-  publishNotReadyAddresses: true
-  ports:
-    - name: tcp-postgresql
-      port: 5432
-      targetPort: tcp-postgresql
-  selector:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/name: postgresql
-    app.kubernetes.io/component: primary
----
-# Source: timur-backend-helm/charts/app/charts/postgresql/templates/primary/svc.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: timur-pg
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: postgresql
-    app.kubernetes.io/version: 17.2.0
-    helm.sh/chart: postgresql-16.4.5
-    app.kubernetes.io/component: primary
-spec:
-  type: ClusterIP
-  sessionAffinity: None
-  ports:
-    - name: tcp-postgresql
-      port: 5432
-      targetPort: tcp-postgresql
-      nodePort: null
-  selector:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/name: postgresql
-    app.kubernetes.io/component: primary
----
-# Source: timur-backend-helm/charts/app/charts/redis/templates/headless-svc.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: timur-redis-headless
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: redis
-    app.kubernetes.io/version: 7.4.2
-    helm.sh/chart: redis-20.6.3
-spec:
-  type: ClusterIP
-  clusterIP: None
-  ports:
-    - name: tcp-redis
-      port: 6379
-      targetPort: redis
-  selector:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/name: redis
----
-# Source: timur-backend-helm/charts/app/charts/redis/templates/master/service.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: timur-redis-master
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: redis
-    app.kubernetes.io/version: 7.4.2
-    helm.sh/chart: redis-20.6.3
-    app.kubernetes.io/component: master
-spec:
-  type: ClusterIP
-  internalTrafficPolicy: Cluster
-  sessionAffinity: None
-  ports:
-    - name: tcp-redis
-      port: 6379
-      targetPort: redis
-      nodePort: null
-  selector:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/name: redis
-    app.kubernetes.io/component: master
----
 # Source: timur-backend-helm/charts/app/templates/api/service.yaml
 apiVersion: v1
 kind: Service
@@ -650,7 +214,7 @@ metadata:
   labels:
     app: release-name-app
     component: api
-    environment: Alpha
+    environment: PROD
     release: release-name
 spec:
   type: ClusterIP
@@ -690,7 +254,7 @@ spec:
         app.kubernetes.io/version: 2024.12.18
         helm.sh/chart: minio-14.10.5
       annotations:
-        checksum/credentials-secret: 54cc98f7b9806dd9c039bb4f15ebc3999e1be3a70b985731bd6ee3b9f26711cf
+        checksum/credentials-secret: cd5ea9ebe5ed3533110ba71e8c86dec879d230f36589d7a1ab6f340298401002
     spec:
       
       serviceAccountName: timur-minio
@@ -716,7 +280,7 @@ spec:
         sysctls: []
       containers:
         - name: minio
-          image: docker.io/bitnami/minio:2024.12.18-debian-12-r1
+          image: docker.io/bitnamilegacy/minio:2024.12.18-debian-12-r1
           imagePullPolicy: "IfNotPresent"
           securityContext:
             allowPrivilegeEscalation: false
@@ -819,10 +383,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: release-name-app-api
+  annotations:
+    reloader.stakater.com/auto: "true"
   labels:
     app: release-name-app
     component: api
-    environment: Alpha
+    environment: PROD
     release: release-name
 spec:
   replicas: 1
@@ -833,15 +399,15 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/secret: 8253a90ba572dcd1ccfafabcc961246c632fa5e619d53335e94e80d8fac1feba
-        checksum/configmap: 2a87485393b1f64893903ddc1e0bca01984a5b84a9384d58af48ceb96e84b526
+        checksum/secret: b0ee38fa1e4ebc47efef9d6643669d5ef1be602075cc8ee46004222c0ea6a070
+        checksum/configmap: b1653d36b264a57bde68a9685da23b44ab31bcc6fd7810886308f78c78e8a90b
       labels:
         app: release-name-app
         component: api
     spec:
       containers:
         - name: api
-          image: "ghcr.io/toggle-corp/timur-backend-alpha:feature-helm.c1234"
+          image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
           imagePullPolicy: IfNotPresent
           command:
             - /code/scripts/deploy/run_web.sh
@@ -855,386 +421,200 @@ spec:
               cpu: "2"
               memory: 1Gi
             requests:
-              cpu: "0.1"
+              cpu: "2"
               memory: 0.5Gi
           envFrom:
             - secretRef:
                 name: release-name-app-secret
+            - secretRef:
+                name: my-extra-secrets
             - configMapRef:
                 name: release-name-app-env-name
           env:
             - name: DJANGO_APP_TYPE
               value: "web"
----
-# Source: timur-backend-helm/charts/app/charts/postgresql/templates/primary/statefulset.yaml
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: timur-pg
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: postgresql
-    app.kubernetes.io/version: 17.2.0
-    helm.sh/chart: postgresql-16.4.5
-    app.kubernetes.io/component: primary
-spec:
-  replicas: 1
-  serviceName: timur-pg-hl
-  updateStrategy:
-    rollingUpdate: {}
-    type: RollingUpdate
-  selector:
-    matchLabels:
-      app.kubernetes.io/instance: release-name
-      app.kubernetes.io/name: postgresql
-      app.kubernetes.io/component: primary
-  template:
-    metadata:
-      name: timur-pg
-      labels:
-        app.kubernetes.io/instance: release-name
-        app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/name: postgresql
-        app.kubernetes.io/version: 17.2.0
-        helm.sh/chart: postgresql-16.4.5
-        app.kubernetes.io/component: primary
-    spec:
-      serviceAccountName: timur-pg
-      
-      automountServiceAccountToken: false
-      affinity:
-        podAffinity:
-          
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - podAffinityTerm:
-                labelSelector:
-                  matchLabels:
-                    app.kubernetes.io/instance: release-name
-                    app.kubernetes.io/name: postgresql
-                    app.kubernetes.io/component: primary
-                topologyKey: kubernetes.io/hostname
-              weight: 1
-        nodeAffinity:
-          
-      securityContext:
-        fsGroup: 1001
-        fsGroupChangePolicy: Always
-        supplementalGroups: []
-        sysctls: []
-      hostNetwork: false
-      hostIPC: false
-      containers:
-        - name: postgresql
-          image: docker.io/bitnami/postgresql:17.2.0-debian-12-r8
-          imagePullPolicy: "IfNotPresent"
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            privileged: false
-            readOnlyRootFilesystem: true
-            runAsGroup: 1001
-            runAsNonRoot: true
-            runAsUser: 1001
-            seLinuxOptions: {}
-            seccompProfile:
-              type: RuntimeDefault
-          env:
-            - name: BITNAMI_DEBUG
-              value: "false"
-            - name: POSTGRESQL_PORT_NUMBER
-              value: "5432"
-            - name: POSTGRESQL_VOLUME_DIR
-              value: "/bitnami/postgresql"
-            - name: PGDATA
-              value: "/bitnami/postgresql/data"
-            # Authentication
-            - name: POSTGRES_USER
-              value: "timur"
-            - name: POSTGRES_PASSWORD
+            - name: CELERY_REDIS_URL
+              value: redis://timur-dragonfly:6379/0
+            - name: DJANGO_CACHE_REDIS_URL
+              value: redis://timur-dragonfly:6379/1
+            - name: DB_HOST
               valueFrom:
                 secretKeyRef:
-                  name: timur-pg
+                  key: host
+                  name: cnpg-pg-app
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  key: port
+                  name: cnpg-pg-app
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  key: dbname
+                  name: cnpg-pg-app
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  key: username
+                  name: cnpg-pg-app
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
                   key: password
-            - name: POSTGRES_POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: timur-pg
-                  key: postgres-password
-            - name: POSTGRES_DATABASE
-              value: "timur"
-            # LDAP
-            - name: POSTGRESQL_ENABLE_LDAP
-              value: "no"
-            # TLS
-            - name: POSTGRESQL_ENABLE_TLS
-              value: "no"
-            # Audit
-            - name: POSTGRESQL_LOG_HOSTNAME
-              value: "false"
-            - name: POSTGRESQL_LOG_CONNECTIONS
-              value: "false"
-            - name: POSTGRESQL_LOG_DISCONNECTIONS
-              value: "false"
-            - name: POSTGRESQL_PGAUDIT_LOG_CATALOG
-              value: "off"
-            # Others
-            - name: POSTGRESQL_CLIENT_MIN_MESSAGES
-              value: "error"
-            - name: POSTGRESQL_SHARED_PRELOAD_LIBRARIES
-              value: "pgaudit"
-          ports:
-            - name: tcp-postgresql
-              containerPort: 5432
-          livenessProbe:
-            failureThreshold: 6
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 5
-            exec:
-              command:
-                - /bin/sh
-                - -c
-                - exec pg_isready -U "timur" -d "dbname=timur" -h 127.0.0.1 -p 5432
-          readinessProbe:
-            failureThreshold: 6
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 5
-            exec:
-              command:
-                - /bin/sh
-                - -c
-                - -e
-                - |
-                  exec pg_isready -U "timur" -d "dbname=timur" -h 127.0.0.1 -p 5432
-                  [ -f /opt/bitnami/postgresql/tmp/.initialized ] || [ -f /bitnami/postgresql/.initialized ]
-          resources:
-            limits:
-              cpu: 150m
-              ephemeral-storage: 2Gi
-              memory: 192Mi
-            requests:
-              cpu: 100m
-              ephemeral-storage: 50Mi
-              memory: 128Mi
-          volumeMounts:
-            - name: empty-dir
-              mountPath: /tmp
-              subPath: tmp-dir
-            - name: empty-dir
-              mountPath: /opt/bitnami/postgresql/conf
-              subPath: app-conf-dir
-            - name: empty-dir
-              mountPath: /opt/bitnami/postgresql/tmp
-              subPath: app-tmp-dir
-            - name: dshm
-              mountPath: /dev/shm
-            - name: data
-              mountPath: /bitnami/postgresql
-      volumes:
-        - name: empty-dir
-          emptyDir: {}
-        - name: dshm
-          emptyDir:
-            medium: Memory
-  volumeClaimTemplates:
-    - apiVersion: v1
-      kind: PersistentVolumeClaim
-      metadata:
-        name: data
-      spec:
-        accessModes:
-          - "ReadWriteOnce"
-        resources:
-          requests:
-            storage: "1Gi"
-        storageClassName: longhorn
+                  name: cnpg-pg-app
 ---
-# Source: timur-backend-helm/charts/app/charts/redis/templates/master/application.yaml
-apiVersion: apps/v1
-kind: StatefulSet
+# Source: timur-backend-helm/charts/app/templates/argo-hooks/hook-job.yaml
+# Hook: collect-static
+apiVersion: batch/v1
+kind: Job
 metadata:
-  name: timur-redis-master
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: redis
-    app.kubernetes.io/version: 7.4.2
-    helm.sh/chart: redis-20.6.3
-    app.kubernetes.io/component: master
+  name: release-name-app-collect-static
+  annotations:
+    argocd.argoproj.io/hook: PostSync
 spec:
-  replicas: 1
-  revisionHistoryLimit: 10
-  selector:
-    matchLabels:
-      app.kubernetes.io/instance: release-name
-      app.kubernetes.io/name: redis
-      app.kubernetes.io/component: master
-  serviceName: timur-redis-headless
-  updateStrategy:
-    type: RollingUpdate
   template:
     metadata:
-      labels:
-        app.kubernetes.io/instance: release-name
-        app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/name: redis
-        app.kubernetes.io/version: 7.4.2
-        helm.sh/chart: redis-20.6.3
-        app.kubernetes.io/component: master
       annotations:
-        checksum/configmap: 86bcc953bb473748a3d3dc60b7c11f34e60c93519234d4c37f42e22ada559d47
-        checksum/health: aff24913d801436ea469d8d374b2ddb3ec4c43ee7ab24663d5f8ff1a1b6991a9
-        checksum/scripts: 43cdf68c28f3abe25ce017a82f74dbf2437d1900fd69df51a55a3edf6193d141
-        checksum/secret: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+        checksum/secret: b0ee38fa1e4ebc47efef9d6643669d5ef1be602075cc8ee46004222c0ea6a070
+        checksum/configmap: b1653d36b264a57bde68a9685da23b44ab31bcc6fd7810886308f78c78e8a90b
+      labels:
+        app: release-name-app
+        component: argo-hooks
     spec:
-      
-      securityContext:
-        fsGroup: 1001
-        fsGroupChangePolicy: Always
-        supplementalGroups: []
-        sysctls: []
-      serviceAccountName: timur-redis-master
-      automountServiceAccountToken: false
-      affinity:
-        podAffinity:
-          
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - podAffinityTerm:
-                labelSelector:
-                  matchLabels:
-                    app.kubernetes.io/instance: release-name
-                    app.kubernetes.io/name: redis
-                    app.kubernetes.io/component: master
-                topologyKey: kubernetes.io/hostname
-              weight: 1
-        nodeAffinity:
-          
-      enableServiceLinks: true
-      terminationGracePeriodSeconds: 30
+      restartPolicy: "Never"
       containers:
-        - name: redis
-          image: docker.io/bitnami/redis:7.4.2-debian-12-r0
-          imagePullPolicy: "IfNotPresent"
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            readOnlyRootFilesystem: true
-            runAsGroup: 1001
-            runAsNonRoot: true
-            runAsUser: 1001
-            seLinuxOptions: {}
-            seccompProfile:
-              type: RuntimeDefault
-          command:
+        - name: collect-static
+          image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
+          imagePullPolicy: IfNotPresent
+          command: 
             - /bin/bash
-          args:
             - -c
-            - /opt/bitnami/scripts/start-scripts/start-master.sh
-          env:
-            - name: BITNAMI_DEBUG
-              value: "false"
-            - name: REDIS_REPLICATION_MODE
-              value: master
-            - name: ALLOW_EMPTY_PASSWORD
-              value: "yes"
-            - name: REDIS_TLS_ENABLED
-              value: "no"
-            - name: REDIS_PORT
-              value: "6379"
-          ports:
-            - name: redis
-              containerPort: 6379
-          livenessProbe:
-            initialDelaySeconds: 20
-            periodSeconds: 5
-            # One second longer than command timeout should prevent generation of zombie processes.
-            timeoutSeconds: 6
-            successThreshold: 1
-            failureThreshold: 5
-            exec:
-              command:
-                - sh
-                - -c
-                - /health/ping_liveness_local.sh 5
-          readinessProbe:
-            initialDelaySeconds: 20
-            periodSeconds: 5
-            timeoutSeconds: 2
-            successThreshold: 1
-            failureThreshold: 5
-            exec:
-              command:
-                - sh
-                - -c
-                - /health/ping_readiness_local.sh 1
+          args: 
+            - ./manage.py wait_for_resources --minio && ./manage.py collectstatic --noinput
           resources:
             limits:
-              cpu: 150m
-              ephemeral-storage: 2Gi
-              memory: 192Mi
+              cpu: "4"
+              memory: 2Gi
             requests:
-              cpu: 100m
-              ephemeral-storage: 50Mi
-              memory: 128Mi
-          volumeMounts:
-            - name: start-scripts
-              mountPath: /opt/bitnami/scripts/start-scripts
-            - name: health
-              mountPath: /health
-            - name: redis-data
-              mountPath: /data
-            - name: config
-              mountPath: /opt/bitnami/redis/mounted-etc
-            - name: empty-dir
-              mountPath: /opt/bitnami/redis/etc/
-              subPath: app-conf-dir
-            - name: empty-dir
-              mountPath: /tmp
-              subPath: tmp-dir
-      volumes:
-        - name: start-scripts
-          configMap:
-            name: timur-redis-scripts
-            defaultMode: 0755
-        - name: health
-          configMap:
-            name: timur-redis-health
-            defaultMode: 0755
-        - name: config
-          configMap:
-            name: timur-redis-configuration
-        - name: empty-dir
-          emptyDir: {}
-  volumeClaimTemplates:
-    - apiVersion: v1
-      kind: PersistentVolumeClaim
-      metadata:
-        name: redis-data
-        labels:
-          app.kubernetes.io/instance: release-name
-          app.kubernetes.io/name: redis
-          app.kubernetes.io/component: master
-      spec:
-        accessModes:
-          - "ReadWriteOnce"
-        resources:
-          requests:
-            storage: ".5Gi"
-        storageClassName: longhorn
+              cpu: "0.1"
+              memory: 1Gi
+          envFrom:
+            - secretRef:
+                name: release-name-app-secret
+            - secretRef:
+                name: my-extra-secrets
+            - configMapRef:
+                name: release-name-app-env-name
+          env:
+            - name: DJANGO_APP_TYPE
+              value: "hook"
+            - name: CELERY_REDIS_URL
+              value: redis://timur-dragonfly:6379/0
+            - name: DJANGO_CACHE_REDIS_URL
+              value: redis://timur-dragonfly:6379/1
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  key: host
+                  name: cnpg-pg-app
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  key: port
+                  name: cnpg-pg-app
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  key: dbname
+                  name: cnpg-pg-app
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  key: username
+                  name: cnpg-pg-app
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: password
+                  name: cnpg-pg-app
+---
+# Source: timur-backend-helm/charts/app/templates/argo-hooks/hook-job.yaml
+# Hook: db-migrate
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: release-name-app-db-migrate-
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+spec:
+  template:
+    metadata:
+      annotations:
+        checksum/secret: b0ee38fa1e4ebc47efef9d6643669d5ef1be602075cc8ee46004222c0ea6a070
+        checksum/configmap: b1653d36b264a57bde68a9685da23b44ab31bcc6fd7810886308f78c78e8a90b
+      labels:
+        app: release-name-app
+        component: argo-hooks
+    spec:
+      restartPolicy: "Never"
+      containers:
+        - name: db-migrate
+          image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
+          imagePullPolicy: IfNotPresent
+          command: 
+            - /bin/bash
+            - -c
+          args: 
+            - ./manage.py wait_for_resources --db && ./manage.py migrate
+          resources:
+            limits:
+              cpu: "4"
+              memory: 2Gi
+            requests:
+              cpu: "0.1"
+              memory: 1Gi
+          envFrom:
+            - secretRef:
+                name: release-name-app-secret
+            - secretRef:
+                name: my-extra-secrets
+            - configMapRef:
+                name: release-name-app-env-name
+          env:
+            - name: DJANGO_APP_TYPE
+              value: "hook"
+            - name: CELERY_REDIS_URL
+              value: redis://timur-dragonfly:6379/0
+            - name: DJANGO_CACHE_REDIS_URL
+              value: redis://timur-dragonfly:6379/1
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  key: host
+                  name: cnpg-pg-app
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  key: port
+                  name: cnpg-pg-app
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  key: dbname
+                  name: cnpg-pg-app
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  key: username
+                  name: cnpg-pg-app
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: password
+                  name: cnpg-pg-app
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
+# Job: clearsessions
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -1243,7 +623,7 @@ metadata:
     app: release-name-app
     component: cronjob
     jobName: clearsessions
-    environment: Alpha
+    environment: PROD
     release: release-name
 spec:
   schedule: "0 0 1 * *"
@@ -1253,6 +633,10 @@ spec:
     spec:
       activeDeadlineSeconds: 7200  # 2 hours default
       template:
+        metadata:
+          labels:
+            app: release-name-app
+            component: cronjob
         spec:
           restartPolicy: "Never"
           containers:
@@ -1260,7 +644,7 @@ spec:
               command:
                 - ./manage.py
                 - clearsessions
-              image: "ghcr.io/toggle-corp/timur-backend-alpha:feature-helm.c1234"
+              image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
@@ -1272,13 +656,45 @@ spec:
               envFrom:
                 - secretRef:
                     name: release-name-app-secret
+                - secretRef:
+                    name: my-extra-secrets
                 - configMapRef:
                     name: release-name-app-env-name
               env:
                 - name: DJANGO_APP_TYPE
                   value: "cronjob"
+                - name: CELERY_REDIS_URL
+                  value: redis://timur-dragonfly:6379/0
+                - name: DJANGO_CACHE_REDIS_URL
+                  value: redis://timur-dragonfly:6379/1
+                - name: DB_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      key: host
+                      name: cnpg-pg-app
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      key: port
+                      name: cnpg-pg-app
+                - name: DB_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      key: dbname
+                      name: cnpg-pg-app
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: cnpg-pg-app
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      key: password
+                      name: cnpg-pg-app
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
+# Job: process_not_done_time_entries
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -1287,7 +703,7 @@ metadata:
     app: release-name-app
     component: cronjob
     jobName: process_not_done_time_entries
-    environment: Alpha
+    environment: PROD
     release: release-name
 spec:
   schedule: "5 0 * * *"
@@ -1297,6 +713,10 @@ spec:
     spec:
       activeDeadlineSeconds: 7200  # 2 hours default
       template:
+        metadata:
+          labels:
+            app: release-name-app
+            component: cronjob
         spec:
           restartPolicy: "Never"
           containers:
@@ -1304,7 +724,7 @@ spec:
               command:
                 - ./manage.py
                 - process_not_done_time_entries
-              image: "ghcr.io/toggle-corp/timur-backend-alpha:feature-helm.c1234"
+              image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
@@ -1316,13 +736,45 @@ spec:
               envFrom:
                 - secretRef:
                     name: release-name-app-secret
+                - secretRef:
+                    name: my-extra-secrets
                 - configMapRef:
                     name: release-name-app-env-name
               env:
                 - name: DJANGO_APP_TYPE
                   value: "cronjob"
+                - name: CELERY_REDIS_URL
+                  value: redis://timur-dragonfly:6379/0
+                - name: DJANGO_CACHE_REDIS_URL
+                  value: redis://timur-dragonfly:6379/1
+                - name: DB_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      key: host
+                      name: cnpg-pg-app
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      key: port
+                      name: cnpg-pg-app
+                - name: DB_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      key: dbname
+                      name: cnpg-pg-app
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: cnpg-pg-app
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      key: password
+                      name: cnpg-pg-app
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
+# Job: standup_before_standup_reminder
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -1331,7 +783,7 @@ metadata:
     app: release-name-app
     component: cronjob
     jobName: standup_before_standup_reminder
-    environment: Alpha
+    environment: PROD
     release: release-name
 spec:
   schedule: "10 9 * * 1,2,3,4,5"
@@ -1341,6 +793,10 @@ spec:
     spec:
       activeDeadlineSeconds: 7200  # 2 hours default
       template:
+        metadata:
+          labels:
+            app: release-name-app
+            component: cronjob
         spec:
           restartPolicy: "Never"
           containers:
@@ -1349,7 +805,7 @@ spec:
                 - ./manage.py
                 - standup
                 - before-standup-reminder
-              image: "ghcr.io/toggle-corp/timur-backend-alpha:feature-helm.c1234"
+              image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
@@ -1361,13 +817,45 @@ spec:
               envFrom:
                 - secretRef:
                     name: release-name-app-secret
+                - secretRef:
+                    name: my-extra-secrets
                 - configMapRef:
                     name: release-name-app-env-name
               env:
                 - name: DJANGO_APP_TYPE
                   value: "cronjob"
+                - name: CELERY_REDIS_URL
+                  value: redis://timur-dragonfly:6379/0
+                - name: DJANGO_CACHE_REDIS_URL
+                  value: redis://timur-dragonfly:6379/1
+                - name: DB_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      key: host
+                      name: cnpg-pg-app
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      key: port
+                      name: cnpg-pg-app
+                - name: DB_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      key: dbname
+                      name: cnpg-pg-app
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: cnpg-pg-app
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      key: password
+                      name: cnpg-pg-app
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
+# Job: standup_morning_reminder
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -1376,7 +864,7 @@ metadata:
     app: release-name-app
     component: cronjob
     jobName: standup_morning_reminder
-    environment: Alpha
+    environment: PROD
     release: release-name
 spec:
   schedule: "0 8 * * 1,2,3,4,5"
@@ -1386,6 +874,10 @@ spec:
     spec:
       activeDeadlineSeconds: 7200  # 2 hours default
       template:
+        metadata:
+          labels:
+            app: release-name-app
+            component: cronjob
         spec:
           restartPolicy: "Never"
           containers:
@@ -1394,7 +886,7 @@ spec:
                 - ./manage.py
                 - standup
                 - morning-reminder
-              image: "ghcr.io/toggle-corp/timur-backend-alpha:feature-helm.c1234"
+              image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
@@ -1406,13 +898,45 @@ spec:
               envFrom:
                 - secretRef:
                     name: release-name-app-secret
+                - secretRef:
+                    name: my-extra-secrets
                 - configMapRef:
                     name: release-name-app-env-name
               env:
                 - name: DJANGO_APP_TYPE
                   value: "cronjob"
+                - name: CELERY_REDIS_URL
+                  value: redis://timur-dragonfly:6379/0
+                - name: DJANGO_CACHE_REDIS_URL
+                  value: redis://timur-dragonfly:6379/1
+                - name: DB_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      key: host
+                      name: cnpg-pg-app
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      key: port
+                      name: cnpg-pg-app
+                - name: DB_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      key: dbname
+                      name: cnpg-pg-app
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: cnpg-pg-app
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      key: password
+                      name: cnpg-pg-app
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
+# Job: standup_read_doc_reminder
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -1421,7 +945,7 @@ metadata:
     app: release-name-app
     component: cronjob
     jobName: standup_read_doc_reminder
-    environment: Alpha
+    environment: PROD
     release: release-name
 spec:
   schedule: "55 16 * * 1,2,3,4,5"
@@ -1431,6 +955,10 @@ spec:
     spec:
       activeDeadlineSeconds: 7200  # 2 hours default
       template:
+        metadata:
+          labels:
+            app: release-name-app
+            component: cronjob
         spec:
           restartPolicy: "Never"
           containers:
@@ -1439,7 +967,7 @@ spec:
                 - ./manage.py
                 - standup
                 - read-doc-reminder
-              image: "ghcr.io/toggle-corp/timur-backend-alpha:feature-helm.c1234"
+              image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
@@ -1451,13 +979,45 @@ spec:
               envFrom:
                 - secretRef:
                     name: release-name-app-secret
+                - secretRef:
+                    name: my-extra-secrets
                 - configMapRef:
                     name: release-name-app-env-name
               env:
                 - name: DJANGO_APP_TYPE
                   value: "cronjob"
+                - name: CELERY_REDIS_URL
+                  value: redis://timur-dragonfly:6379/0
+                - name: DJANGO_CACHE_REDIS_URL
+                  value: redis://timur-dragonfly:6379/1
+                - name: DB_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      key: host
+                      name: cnpg-pg-app
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      key: port
+                      name: cnpg-pg-app
+                - name: DB_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      key: dbname
+                      name: cnpg-pg-app
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: cnpg-pg-app
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      key: password
+                      name: cnpg-pg-app
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
+# Job: standup_setup_next_standup
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -1466,7 +1026,7 @@ metadata:
     app: release-name-app
     component: cronjob
     jobName: standup_setup_next_standup
-    environment: Alpha
+    environment: PROD
     release: release-name
 spec:
   schedule: "45 16 * * 1,2,3,4,5"
@@ -1476,6 +1036,10 @@ spec:
     spec:
       activeDeadlineSeconds: 7200  # 2 hours default
       template:
+        metadata:
+          labels:
+            app: release-name-app
+            component: cronjob
         spec:
           restartPolicy: "Never"
           containers:
@@ -1484,7 +1048,7 @@ spec:
                 - ./manage.py
                 - standup
                 - setup-next-standup
-              image: "ghcr.io/toggle-corp/timur-backend-alpha:feature-helm.c1234"
+              image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
@@ -1496,13 +1060,45 @@ spec:
               envFrom:
                 - secretRef:
                     name: release-name-app-secret
+                - secretRef:
+                    name: my-extra-secrets
                 - configMapRef:
                     name: release-name-app-env-name
               env:
                 - name: DJANGO_APP_TYPE
                   value: "cronjob"
+                - name: CELERY_REDIS_URL
+                  value: redis://timur-dragonfly:6379/0
+                - name: DJANGO_CACHE_REDIS_URL
+                  value: redis://timur-dragonfly:6379/1
+                - name: DB_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      key: host
+                      name: cnpg-pg-app
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      key: port
+                      name: cnpg-pg-app
+                - name: DB_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      key: dbname
+                      name: cnpg-pg-app
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: cnpg-pg-app
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      key: password
+                      name: cnpg-pg-app
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
+# Job: user_sync_slack_users_id
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -1511,7 +1107,7 @@ metadata:
     app: release-name-app
     component: cronjob
     jobName: user_sync_slack_users_id
-    environment: Alpha
+    environment: PROD
     release: release-name
 spec:
   schedule: "30 16 * * 1,2,3,4,5"
@@ -1521,6 +1117,10 @@ spec:
     spec:
       activeDeadlineSeconds: 7200  # 2 hours default
       template:
+        metadata:
+          labels:
+            app: release-name-app
+            component: cronjob
         spec:
           restartPolicy: "Never"
           containers:
@@ -1528,7 +1128,7 @@ spec:
               command:
                 - ./manage.py
                 - sync_slack_users_id
-              image: "ghcr.io/toggle-corp/timur-backend-alpha:feature-helm.c1234"
+              image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
@@ -1540,11 +1140,42 @@ spec:
               envFrom:
                 - secretRef:
                     name: release-name-app-secret
+                - secretRef:
+                    name: my-extra-secrets
                 - configMapRef:
                     name: release-name-app-env-name
               env:
                 - name: DJANGO_APP_TYPE
                   value: "cronjob"
+                - name: CELERY_REDIS_URL
+                  value: redis://timur-dragonfly:6379/0
+                - name: DJANGO_CACHE_REDIS_URL
+                  value: redis://timur-dragonfly:6379/1
+                - name: DB_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      key: host
+                      name: cnpg-pg-app
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      key: port
+                      name: cnpg-pg-app
+                - name: DB_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      key: dbname
+                      name: cnpg-pg-app
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: cnpg-pg-app
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      key: password
+                      name: cnpg-pg-app
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/api-ingress.yaml
 apiVersion: networking.k8s.io/v1
@@ -1561,7 +1192,6 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: 50m
 spec:
-  ingressClassName: "nginx"
   rules:
     - host: timur-minio.example.com
       http:
@@ -1582,12 +1212,12 @@ metadata:
   labels:
     app: release-name-app
     component: api
-    environment: Alpha
+    environment: PROD
     release: release-name
 spec:
   ingressClassName: "nginx"
   rules:
-    - host: "timur-api.example.com"
+    - host: "timur.example.com"
       http:
         paths:
           - path: /
@@ -1597,6 +1227,95 @@ spec:
                 name: release-name-app-api
                 port:
                   number: 80
+---
+# Source: timur-backend-helm/charts/app/templates/extraManifests.yaml
+# Manifest: cnpg-cluster
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: cnpg-pg
+spec:
+  backup: {}
+  enablePDB: true
+  instances: 3
+  monitoring:
+    enablePodMonitor: true
+  plugins:
+  - enabled: true
+    isWALArchiver: true
+    name: barman-cloud.cloudnative-pg.io
+    parameters:
+      barmanObjectName: aws-s3-store
+  storage:
+    size: 1Gi
+    storageClass: local-path
+---
+# Source: timur-backend-helm/charts/app/templates/extraManifests.yaml
+# Manifest: dragonflydb-cluster
+apiVersion: dragonflydb.io/v1alpha1
+kind: Dragonfly
+metadata:
+  labels:
+    app.kubernetes.io/name: dragonfly
+  name: timur-dragonfly
+spec:
+  args:
+  - --dbfilename=mainSnapshot
+  replicas: 2
+  resources:
+    limits:
+      cpu: "1"
+      memory: 500Mi
+    requests:
+      cpu: "0.1"
+      memory: 256Mi
+  snapshot:
+    cron: '*/5 * * * *'
+    persistentVolumeClaimSpec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+      storageClassName: local-path
+---
+# Source: timur-backend-helm/charts/app/templates/extraManifests.yaml
+# Manifest: cnpg-s3-credential
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: aws-s3-store
+spec:
+  configuration:
+    destinationPath: s3://s3-bucket-name/barman/prod
+    s3Credentials:
+      accessKeyId:
+        key: ACCESS_KEY_ID
+        name: cnpg-barman-s3-creds
+      secretAccessKey:
+        key: ACCESS_SECRET_KEY
+        name: cnpg-barman-s3-creds
+    wal:
+      compression: gzip
+      maxParallel: 4
+  retentionPolicy: 30d
+---
+# Source: timur-backend-helm/charts/app/templates/extraManifests.yaml
+# Manifest: cnpg-scheduled-backup
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: backup-daily
+spec:
+  backupOwnerReference: self
+  cluster:
+    name: cnpg-pg
+  immediate: true
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io
+  schedule: 0 0 0 * * *
+  suspend: false
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/provisioning-job.yaml
 apiVersion: batch/v1
@@ -1636,7 +1355,7 @@ spec:
       serviceAccountName: timur-minio
       initContainers:
         - name: wait-for-available-minio
-          image: docker.io/bitnami/os-shell:12-debian-12-r35
+          image: docker.io/bitnamilegacy/os-shell:12-debian-12-r35
           imagePullPolicy: "IfNotPresent"
           securityContext:
             allowPrivilegeEscalation: false
@@ -1674,7 +1393,7 @@ spec:
               memory: 128Mi
       containers:
         - name: minio
-          image: docker.io/bitnami/minio:2024.12.18-debian-12-r1
+          image: docker.io/bitnamilegacy/minio:2024.12.18-debian-12-r1
           imagePullPolicy: "IfNotPresent"
           securityContext:
             allowPrivilegeEscalation: false

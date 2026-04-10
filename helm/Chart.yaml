@@ -7,7 +7,7 @@ sources:
   - https://github.com/toggle-corp/timur-backend
 
 dependencies:
-  - name: django-app
+  - name: banjo-helm
     alias: app
-    version: 0.1.2
-    repository: oci://ghcr.io/toggle-corp/charts
+    version: 0.2.8
+    repository: oci://ghcr.io/toggle-corp

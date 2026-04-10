@@ -1,2 +1,5 @@
 .helm-charts/
+tests/
+snapshots/
+tests.yaml
 values-local.yaml
