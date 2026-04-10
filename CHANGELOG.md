@@ -1,5 +1,25 @@
 # Changelog
 
+## [v0.2.1](https://github.com/toggle-corp/timur-backend/compare/v0.2.0..v0.2.1) - 2026-04-10
+### Changes:
+
+#### 🚀  Features
+
+- Switch to banjo-helm - ([c41c0c9](https://github.com/toggle-corp/timur-backend/commit/c41c0c967b8b4760df2f7729f6f60e5b519b6a09))
+
+#### ⚙️ Miscellaneous Tasks
+
+- *(lint)* Remove redundant flake8 - ([99313cd](https://github.com/toggle-corp/timur-backend/commit/99313cd2352011a60ee8660ab62969c8328272ef))
+- *(test)* Update coverage exclude config - ([adb971c](https://github.com/toggle-corp/timur-backend/commit/adb971c1cb07f60e58ccd124671e9cc58111fe51))
+
+#### Dosc
+
+- Add WIP doc for slack bot - ([ebd8636](https://github.com/toggle-corp/timur-backend/commit/ebd86362810067995e63caaaae26a8817ce5edc5))
+
+### 🍻 Pull Requests (1)
+- (#75) [Chore(lint): remove redundant flake8](https://github.com/toggle-corp/timur-backend/pull/75)
+
+
 ## [v0.2.0](https://github.com/toggle-corp/timur-backend/compare/v0.1.5..v0.2.0) - 2026-04-08
 ### Changes:
 
