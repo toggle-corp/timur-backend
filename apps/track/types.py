@@ -1,8 +1,12 @@
+import datetime
+from typing import Optional
+
 import strawberry
 import strawberry_django
 from django.db import models
 
 from apps.common.types import ClientIdMixin, UserResourceTypeMixin
+from apps.journal.enums import JournalLeaveTypeEnum, JournalWorkFromHomeTypeEnum
 from apps.project.types import ProjectType
 from apps.user.types import UserType
 from main.graphql.context import Info
@@ -11,6 +15,16 @@ from utils.strawberry.enums import enum_display_field, enum_field
 from utils.strawberry.types import TimeDuration, string_field
 
 from .models import Contract, Task, TimeEntry
+
+
+@strawberry.type
+class DailyHoursType:
+    date: datetime.date
+    total_minutes: int
+    target_minutes: int
+    is_holiday: bool
+    leave_type: Optional[JournalLeaveTypeEnum]
+    wfh_type: Optional[JournalWorkFromHomeTypeEnum]
 
 
 @strawberry_django.type(Contract)

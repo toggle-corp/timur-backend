@@ -2,6 +2,7 @@ import datetime
 
 import strawberry
 import strawberry_django
+from django.db.models import Sum
 from strawberry_django.filters import apply as apply_filters
 
 from main.graphql.context import Info
@@ -11,7 +12,7 @@ from utils.strawberry.paginations import CountList, pagination_field
 # from .enums import TimeEntryDateFilterEnum
 from .filters import ContractFilter, TaskFilter, TimeEntryFilter
 from .orders import ContractOrder, TaskOrder, TimeEntryOrder
-from .types import ContractType, TaskType, TimeEntryType
+from .types import ContractType, DailyHoursType, TaskType, TimeEntryType
 
 # from django.db import models
 
@@ -90,6 +91,76 @@ class PrivateQuery:
         if count > 3000:  # TODO: Is this fine?
             raise Exception(f"Try using filters. To much data to return (Row count: {count})")
         return [time_entry async for time_entry in queryset]
+
+    @strawberry_django.field(
+        description="Return total recorded minutes and target minutes per day for the current user within the given date range.",
+    )
+    async def hours_per_day(
+        self,
+        info: Info,
+        date_gte: datetime.date,
+        date_lte: datetime.date,
+    ) -> list[DailyHoursType]:
+        from apps.common.models import Event
+        from apps.journal.models import Journal
+        from .models import TimeEntry
+
+        # Recorded minutes per date
+        qs = (
+            TimeEntry.objects.filter(
+                user=info.context.request.user,
+                date__gte=date_gte,
+                date__lte=date_lte,
+            )
+            .values("date")
+            .annotate(total_minutes=Sum("duration"))
+            .order_by("date")
+        )
+        recorded: dict[datetime.date, int] = {}
+        async for row in qs:
+            recorded[row["date"]] = row["total_minutes"] or 0
+
+        # Holiday / non-working event dates (cached)
+        from asgiref.sync import sync_to_async
+        holiday_dates = set(await sync_to_async(Event.get_relative_event_dates)())
+
+        # User journal entries (leave + wfh) in range
+        journal_qs = Journal.objects.filter(
+            user=info.context.request.user,
+            date__gte=date_gte,
+            date__lte=date_lte,
+        ).values("date", "leave_type", "wfh_type")
+        journal_map: dict[datetime.date, dict] = {}
+        async for row in journal_qs:
+            journal_map[row["date"]] = row
+
+        # Build one entry per day in the range
+        result = []
+        total_days = (date_lte - date_gte).days + 1
+        for offset in range(total_days):
+            date = date_gte + datetime.timedelta(days=offset)
+            journal = journal_map.get(date, {})
+            leave_type = journal.get("leave_type")
+            wfh_type = journal.get("wfh_type")
+            is_holiday = not Event.is_weekend(date) and date in holiday_dates
+
+            if Event.is_weekend(date) or date in holiday_dates:
+                target = 0
+            elif leave_type == Journal.LeaveType.FULL:
+                target = 0
+            elif leave_type in (Journal.LeaveType.FIRST_HALF, Journal.LeaveType.SECOND_HALF):
+                target = 240
+            else:
+                target = 480
+            result.append(DailyHoursType(
+                date=date,
+                total_minutes=recorded.get(date, 0),
+                target_minutes=target,
+                is_holiday=is_holiday,
+                leave_type=leave_type,
+                wfh_type=wfh_type,
+            ))
+        return result
 
     # Single ----------------------------
     @strawberry_django.field

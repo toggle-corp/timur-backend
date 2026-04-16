@@ -157,6 +157,15 @@ type ContractorTypeCountList {
 """A generic type to return error messages"""
 scalar CustomErrorType
 
+type DailyHoursType {
+  date: Date!
+  totalMinutes: Int!
+  targetMinutes: Int!
+  isHoliday: Boolean!
+  leaveType: JournalLeaveTypeEnum
+  wfhType: JournalWorkFromHomeTypeEnum
+}
+
 type DailyStandUpProjectStatType {
   id: ID!
   lastWorkingDate: Date!
@@ -265,11 +274,11 @@ input EventFilter {
   id: IDBaseFilterLookup
   startDate: DateDateFilterLookup
   endDate: DateDateFilterLookup
-  types: [EventTypeEnum!]!
   AND: EventFilter
   OR: EventFilter
   NOT: EventFilter
   DISTINCT: Boolean
+  types: [EventTypeEnum!]
 }
 
 input EventOrder {
@@ -451,6 +460,11 @@ type PrivateQuery {
   allActiveTasks: [TaskType!]!
   myTimeEntries(date: Date!): [TimeEntryType!]!
   allTimeEntries(filters: TimeEntryFilter!): [TimeEntryType!]!
+
+  """
+  Return total recorded minutes and target minutes per day for the current user within the given date range.
+  """
+  hoursPerDay(dateGte: Date!, dateLte: Date!): [DailyHoursType!]!
   contract(pk: ID!): ContractType
   task(pk: ID!): TaskType
   journal(date: Date!): JournalType
