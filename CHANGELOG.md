@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.2.2](https://github.com/toggle-corp/timur-backend/compare/v0.2.1..v0.2.2) - 2026-05-03
+### Changes:
+
+#### 🚀  Features
+
+- Add new time entry types: Review and Annotation - ([d6675f7](https://github.com/toggle-corp/timur-backend/commit/d6675f792526296575ffb2af9947cb8b9faf66a0))
+
+
 ## [v0.2.1](https://github.com/toggle-corp/timur-backend/compare/v0.2.0..v0.2.1) - 2026-04-10
 ### Changes:
 
