@@ -726,6 +726,7 @@ type TimeEntryTypeCudMutationResponseType {
 enum TimeEntryTypeEnum {
   DOCUMENTATION
   RESEARCH
+  REVIEW
   DESIGN
   OPERATION
   PROJECT_MANAGEMENT
@@ -736,6 +737,7 @@ enum TimeEntryTypeEnum {
   INTERNAL_DISCUSSION
   EXTERNAL_MEETING
   INTERNAL_MEETING
+  ANNOTATION
 }
 
 type TimeEntryTypeMutationResponseType {

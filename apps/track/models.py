@@ -54,6 +54,7 @@ class TimeEntry(models.Model):
         # Generic
         DOCUMENTATION = 6, _("Documentation")
         RESEARCH = 11, _("Research")
+        REVIEW = 13, _("Review")
         DESIGN = 1, _("Design")
         OPERATION = 9, _("Operations")
         PROJECT_MANAGEMENT = 10, _("Project Management")
@@ -70,6 +71,9 @@ class TimeEntry(models.Model):
         # - Meeting
         EXTERNAL_MEETING = 7, _("Meeting External")
         INTERNAL_MEETING = 8, _("Meeting Internal")
+
+        # Analysts
+        ANNOTATION = 14, _("Annotation")
 
     class Status(models.IntegerChoices):
         DOING = 1, _("DOING")
