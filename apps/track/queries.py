@@ -93,7 +93,7 @@ class PrivateQuery:
         return [time_entry async for time_entry in queryset]
 
     @strawberry_django.field(
-        description="Return total recorded minutes and target minutes per day for the current user within the given date range.",
+        description="Return total minutes and target minutes per day for the user within the given date range.",
     )
     async def hours_per_day(
         self,
@@ -103,6 +103,7 @@ class PrivateQuery:
     ) -> list[DailyHoursType]:
         from apps.common.models import Event
         from apps.journal.models import Journal
+
         from .models import TimeEntry
 
         # Recorded minutes per date
@@ -122,6 +123,7 @@ class PrivateQuery:
 
         # Holiday / non-working event dates (cached)
         from asgiref.sync import sync_to_async
+
         holiday_dates = set(await sync_to_async(Event.get_relative_event_dates)())
 
         # User journal entries (leave + wfh) in range
@@ -144,22 +146,22 @@ class PrivateQuery:
             wfh_type = journal.get("wfh_type")
             is_holiday = not Event.is_weekend(date) and date in holiday_dates
 
-            if Event.is_weekend(date) or date in holiday_dates:
-                target = 0
-            elif leave_type == Journal.LeaveType.FULL:
+            if Event.is_weekend(date) or date in holiday_dates or leave_type == Journal.LeaveType.FULL:
                 target = 0
             elif leave_type in (Journal.LeaveType.FIRST_HALF, Journal.LeaveType.SECOND_HALF):
                 target = 240
             else:
                 target = 480
-            result.append(DailyHoursType(
-                date=date,
-                total_minutes=recorded.get(date, 0),
-                target_minutes=target,
-                is_holiday=is_holiday,
-                leave_type=leave_type,
-                wfh_type=wfh_type,
-            ))
+            result.append(
+                DailyHoursType(
+                    date=date,
+                    total_minutes=recorded.get(date, 0),
+                    target_minutes=target,
+                    is_holiday=is_holiday,
+                    leave_type=leave_type,
+                    wfh_type=wfh_type,
+                ),
+            )
         return result
 
     # Single ----------------------------

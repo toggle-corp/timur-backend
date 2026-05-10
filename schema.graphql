@@ -164,6 +164,7 @@ type DailyHoursType {
   isHoliday: Boolean!
   leaveType: JournalLeaveTypeEnum
   wfhType: JournalWorkFromHomeTypeEnum
+  id: ID!
 }
 
 type DailyStandUpProjectStatType {
@@ -500,6 +501,7 @@ type ProjectType implements UserResourceTypeMixin {
   projectClientId: ID!
   contractorId: ID!
   name: String!
+  shortName: String!
   description: String
   projectClient: ClientType!
   contractor: ContractorType!

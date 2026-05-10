@@ -1,5 +1,4 @@
 import datetime
-from typing import Optional
 
 import strawberry
 import strawberry_django
@@ -23,8 +22,12 @@ class DailyHoursType:
     total_minutes: int
     target_minutes: int
     is_holiday: bool
-    leave_type: Optional[JournalLeaveTypeEnum]
-    wfh_type: Optional[JournalWorkFromHomeTypeEnum]
+    leave_type: JournalLeaveTypeEnum | None  # type: ignore[reportInvalidTypeForm]
+    wfh_type: JournalWorkFromHomeTypeEnum | None  # type: ignore[reportInvalidTypeForm]
+
+    @strawberry.field
+    def id(self) -> strawberry.ID:
+        return strawberry.ID(self.date.isoformat())
 
 
 @strawberry_django.type(Contract)
