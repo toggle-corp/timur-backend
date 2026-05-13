@@ -241,6 +241,16 @@ input DateRangeLookup {
 """Date with time (isoformat)"""
 scalar DateTime
 
+input DeadlineFilter {
+  id: IDBaseFilterLookup
+  endDate: DateDateFilterLookup
+  isArchived: BoolBaseFilterLookup
+  AND: DeadlineFilter
+  OR: DeadlineFilter
+  NOT: DeadlineFilter
+  DISTINCT: Boolean
+}
+
 type DeadlineType implements UserResourceTypeMixin {
   createdAt: DateTime!
   modifiedAt: DateTime!
@@ -446,7 +456,7 @@ type PrivateQuery {
   contractors(filters: ContractorFilter, order: ContractorOrder, pagination: OffsetPaginationInput): ContractorTypeCountList!
   projects(filters: ProjectFilter, order: ProjectOrder, pagination: OffsetPaginationInput): ProjectTypeCountList!
   allProjects: [ProjectType!]!
-  allDeadlines: [DeadlineType!]!
+  allDeadlines(filters: DeadlineFilter!): [DeadlineType!]!
   client(pk: ID!): ClientType
   contractor(pk: ID!): ContractorType
   project(pk: ID!): ProjectType
