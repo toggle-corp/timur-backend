@@ -17,7 +17,7 @@ from .models import Contract, Task, TimeEntry
 
 
 @strawberry.type
-class DailyHoursType:
+class DailySummaryType:
     date: datetime.date
     total_minutes: int
     target_minutes: int

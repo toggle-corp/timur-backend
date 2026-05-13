@@ -12,7 +12,7 @@ from utils.strawberry.paginations import CountList, pagination_field
 # from .enums import TimeEntryDateFilterEnum
 from .filters import ContractFilter, TaskFilter, TimeEntryFilter
 from .orders import ContractOrder, TaskOrder, TimeEntryOrder
-from .types import ContractType, DailyHoursType, TaskType, TimeEntryType
+from .types import ContractType, DailySummaryType, TaskType, TimeEntryType
 
 # from django.db import models
 
@@ -95,12 +95,12 @@ class PrivateQuery:
     @strawberry_django.field(
         description="Return total minutes and target minutes per day for the user within the given date range.",
     )
-    async def hours_per_day(
+    async def daily_summary(
         self,
         info: Info,
         date_gte: datetime.date,
         date_lte: datetime.date,
-    ) -> list[DailyHoursType]:
+    ) -> list[DailySummaryType]:
         from apps.common.models import Event
         from apps.journal.models import Journal
 
@@ -153,7 +153,7 @@ class PrivateQuery:
             else:
                 target = 480
             result.append(
-                DailyHoursType(
+                DailySummaryType(
                     date=date,
                     total_minutes=recorded.get(date, 0),
                     target_minutes=target,

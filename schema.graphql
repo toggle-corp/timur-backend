@@ -157,16 +157,6 @@ type ContractorTypeCountList {
 """A generic type to return error messages"""
 scalar CustomErrorType
 
-type DailyHoursType {
-  date: Date!
-  totalMinutes: Int!
-  targetMinutes: Int!
-  isHoliday: Boolean!
-  leaveType: JournalLeaveTypeEnum
-  wfhType: JournalWorkFromHomeTypeEnum
-  id: ID!
-}
-
 type DailyStandUpProjectStatType {
   id: ID!
   lastWorkingDate: Date!
@@ -192,6 +182,16 @@ type DailyStandUpType {
   fallbackConductor: UserType
   quote: QuoteType
   projectStat(pk: ID!): DailyStandUpProjectStatType
+}
+
+type DailySummaryType {
+  date: Date!
+  totalMinutes: Int!
+  targetMinutes: Int!
+  isHoliday: Boolean!
+  leaveType: JournalLeaveTypeEnum
+  wfhType: JournalWorkFromHomeTypeEnum
+  id: ID!
 }
 
 """Date (isoformat)"""
@@ -473,9 +473,9 @@ type PrivateQuery {
   allTimeEntries(filters: TimeEntryFilter!): [TimeEntryType!]!
 
   """
-  Return total recorded minutes and target minutes per day for the current user within the given date range.
+  Return total minutes and target minutes per day for the user within the given date range.
   """
-  hoursPerDay(dateGte: Date!, dateLte: Date!): [DailyHoursType!]!
+  dailySummary(dateGte: Date!, dateLte: Date!): [DailySummaryType!]!
   contract(pk: ID!): ContractType
   task(pk: ID!): TaskType
   journal(date: Date!): JournalType
