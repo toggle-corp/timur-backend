@@ -2,7 +2,8 @@ import datetime
 
 import strawberry
 import strawberry_django
-from django.db.models import Sum
+from django.db.models import IntegerField, Sum, Value
+from django.db.models.functions import Coalesce
 from strawberry_django.filters import apply as apply_filters
 
 from main.graphql.context import Info
@@ -114,17 +115,15 @@ class PrivateQuery:
                 date__lte=date_lte,
             )
             .values("date")
-            .annotate(total_minutes=Sum("duration"))
+            .annotate(total_minutes=Coalesce(Sum("duration"), Value(0), output_field=IntegerField()))
             .order_by("date")
         )
-        recorded: dict[datetime.date, int] = {}
+        recorded_map: dict[datetime.date, int] = {}
         async for row in qs:
-            recorded[row["date"]] = row["total_minutes"] or 0
+            recorded_map[row["date"]] = row["total_minutes"]
 
         # Holiday / non-working event dates (cached)
-        from asgiref.sync import sync_to_async
-
-        holiday_dates = set(await sync_to_async(Event.get_relative_event_dates)())
+        non_working_dates = set(await Event.aget_relative_event_dates())
 
         # User journal entries (leave + wfh) in range
         journal_qs = Journal.objects.filter(
@@ -137,25 +136,28 @@ class PrivateQuery:
             journal_map[row["date"]] = row
 
         # Build one entry per day in the range
-        result = []
+        result: list[DailySummaryType] = []
+
         total_days = (date_lte - date_gte).days + 1
         for offset in range(total_days):
             date = date_gte + datetime.timedelta(days=offset)
             journal = journal_map.get(date, {})
             leave_type = journal.get("leave_type")
             wfh_type = journal.get("wfh_type")
-            is_holiday = not Event.is_weekend(date) and date in holiday_dates
+            is_weekend = Event.is_weekend(date)
+            is_holiday = not is_weekend and date in non_working_dates
 
-            if Event.is_weekend(date) or date in holiday_dates or leave_type == Journal.LeaveType.FULL:
+            if is_weekend or is_holiday or leave_type == Journal.LeaveType.FULL:
                 target = 0
             elif leave_type in (Journal.LeaveType.FIRST_HALF, Journal.LeaveType.SECOND_HALF):
-                target = 240
+                target = int(3.5 * 60)
             else:
-                target = 480
+                target = 7 * 60
+
             result.append(
                 DailySummaryType(
                     date=date,
-                    total_minutes=recorded.get(date, 0),
+                    total_minutes=recorded_map.get(date, 0),
                     target_minutes=target,
                     is_holiday=is_holiday,
                     leave_type=leave_type,
