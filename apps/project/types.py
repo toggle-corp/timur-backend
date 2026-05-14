@@ -78,6 +78,7 @@ class ProjectType(UserResourceTypeMixin):
     contractor_id: strawberry.ID
 
     name = string_field(Project.name)
+    short_name = string_field(Project.short_name)
     description = string_field(Project.description)
 
     @staticmethod

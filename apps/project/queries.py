@@ -1,10 +1,11 @@
 import strawberry
 import strawberry_django
+from strawberry_django.filters import apply as apply_filters
 
 from main.graphql.context import Info
 from utils.strawberry.paginations import CountList, pagination_field
 
-from .filters import ClientFilter, ContractorFilter, ProjectFilter
+from .filters import ClientFilter, ContractorFilter, DeadlineFilter, ProjectFilter
 from .orders import ClientOrder, ContractorOrder, ProjectOrder
 from .types import ClientType, ContractorType, DeadlineType, ProjectType
 
@@ -37,8 +38,11 @@ class PrivateQuery:
         return [project async for project in qs]
 
     @strawberry_django.field
-    async def all_deadlines(self, info: Info) -> list[DeadlineType]:
-        qs = DeadlineType.get_queryset(None, None, info).filter(is_archived=False).all()
+    async def all_deadlines(self, info: Info, filters: DeadlineFilter) -> list[DeadlineType]:
+        qs = DeadlineType.get_queryset(None, None, info)
+        if filters.is_archived is strawberry.UNSET:
+            qs = qs.filter(is_archived=False)
+        qs = apply_filters(filters, qs, info, None)
         return [deadline async for deadline in qs]
 
     # Single ----------------------------
