@@ -26,6 +26,7 @@ spec:
     - ports:
         - port: 9001
         - port: 9000
+
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/provisioning-networkpolicy.yaml
 kind: NetworkPolicy
@@ -49,6 +50,7 @@ spec:
   egress:
     - {}
   ingress:
+
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/pdb.yaml
 apiVersion: policy/v1
@@ -68,6 +70,7 @@ spec:
     matchLabels:
       app.kubernetes.io/instance: release-name
       app.kubernetes.io/name: minio
+
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/serviceaccount.yaml
 apiVersion: v1
@@ -84,6 +87,7 @@ metadata:
 automountServiceAccountToken: false
 secrets:
   - name: timur-minio
+
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/secrets.yaml
 apiVersion: v1
@@ -101,6 +105,7 @@ type: Opaque
 data:
   root-user: "dGltdXI="
   root-password: "WFla"
+
 ---
 # Source: timur-backend-helm/charts/app/templates/config/secret.yaml
 kind: Secret
@@ -114,6 +119,7 @@ metadata:
 type: Opaque
 stringData:
   # secrets
+
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/provisioning-configmap.yaml
 apiVersion: v1
@@ -129,6 +135,7 @@ metadata:
     helm.sh/chart: minio-14.10.5
     app.kubernetes.io/component: minio-provisioning
 data:
+
 ---
 # Source: timur-backend-helm/charts/app/templates/config/configmap.yaml
 kind: ConfigMap
@@ -159,6 +166,7 @@ data:
   SENTRY_TRACES_SAMPLE_RATE: "0.2"
   SESSION_COOKIE_AGE: "2592000"
   SESSION_COOKIE_DOMAIN: ".example.com"
+
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/pvc.yaml
 kind: PersistentVolumeClaim
@@ -178,6 +186,8 @@ spec:
   resources:
     requests:
       storage: "1Gi"
+  
+
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/service.yaml
 apiVersion: v1
@@ -205,6 +215,7 @@ spec:
   selector:
     app.kubernetes.io/instance: release-name
     app.kubernetes.io/name: minio
+
 ---
 # Source: timur-backend-helm/charts/app/templates/api/service.yaml
 apiVersion: v1
@@ -225,6 +236,7 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 80
+
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/standalone/deployment.yaml
 apiVersion: apps/v1
@@ -377,6 +389,7 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: timur-minio
+
 ---
 # Source: timur-backend-helm/charts/app/templates/api/deployment.yaml
 apiVersion: apps/v1
@@ -462,6 +475,7 @@ spec:
                 secretKeyRef:
                   key: password
                   name: cnpg-pg-app
+
 ---
 # Source: timur-backend-helm/charts/app/templates/argo-hooks/hook-job.yaml
 # Hook: collect-static
@@ -612,6 +626,7 @@ spec:
                 secretKeyRef:
                   key: password
                   name: cnpg-pg-app
+
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
 # Job: clearsessions
@@ -1176,6 +1191,7 @@ spec:
                     secretKeyRef:
                       key: password
                       name: cnpg-pg-app
+
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/api-ingress.yaml
 apiVersion: networking.k8s.io/v1
@@ -1203,6 +1219,7 @@ spec:
                 name: timur-minio
                 port:
                   name: minio-api
+
 ---
 # Source: timur-backend-helm/charts/app/templates/api/ingress.yaml
 apiVersion: networking.k8s.io/v1
@@ -1227,6 +1244,7 @@ spec:
                 name: release-name-app-api
                 port:
                   number: 80
+
 ---
 # Source: timur-backend-helm/charts/app/templates/extraManifests.yaml
 # Manifest: cnpg-cluster
@@ -1278,6 +1296,7 @@ spec:
         requests:
           storage: 1Gi
       storageClassName: local-path
+
 ---
 # Source: timur-backend-helm/charts/app/templates/extraManifests.yaml
 # Manifest: cnpg-s3-credential
@@ -1531,3 +1550,4 @@ spec:
         - name: minio-provisioning
           configMap:
             name: timur-minio-provisioning
+

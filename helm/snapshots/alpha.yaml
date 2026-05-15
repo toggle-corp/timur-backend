@@ -26,6 +26,7 @@ spec:
     - ports:
         - port: 9001
         - port: 9000
+
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/provisioning-networkpolicy.yaml
 kind: NetworkPolicy
@@ -49,6 +50,7 @@ spec:
   egress:
     - {}
   ingress:
+
 ---
 # Source: timur-backend-helm/charts/app/charts/postgresql/templates/primary/networkpolicy.yaml
 kind: NetworkPolicy
@@ -77,6 +79,7 @@ spec:
   ingress:
     - ports:
         - port: 5432
+
 ---
 # Source: timur-backend-helm/charts/app/charts/redis/templates/networkpolicy.yaml
 kind: NetworkPolicy
@@ -104,6 +107,7 @@ spec:
     # Allow inbound connections
     - ports:
         - port: 6379
+
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/pdb.yaml
 apiVersion: policy/v1
@@ -123,6 +127,7 @@ spec:
     matchLabels:
       app.kubernetes.io/instance: release-name
       app.kubernetes.io/name: minio
+
 ---
 # Source: timur-backend-helm/charts/app/charts/postgresql/templates/primary/pdb.yaml
 apiVersion: policy/v1
@@ -144,6 +149,7 @@ spec:
       app.kubernetes.io/instance: release-name
       app.kubernetes.io/name: postgresql
       app.kubernetes.io/component: primary
+
 ---
 # Source: timur-backend-helm/charts/app/charts/redis/templates/master/pdb.yaml
 apiVersion: policy/v1
@@ -165,6 +171,7 @@ spec:
       app.kubernetes.io/instance: release-name
       app.kubernetes.io/name: redis
       app.kubernetes.io/component: master
+
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/serviceaccount.yaml
 apiVersion: v1
@@ -181,6 +188,7 @@ metadata:
 automountServiceAccountToken: false
 secrets:
   - name: timur-minio
+
 ---
 # Source: timur-backend-helm/charts/app/charts/postgresql/templates/serviceaccount.yaml
 apiVersion: v1
@@ -195,6 +203,7 @@ metadata:
     app.kubernetes.io/version: 17.2.0
     helm.sh/chart: postgresql-16.4.5
 automountServiceAccountToken: false
+
 ---
 # Source: timur-backend-helm/charts/app/charts/redis/templates/master/serviceaccount.yaml
 apiVersion: v1
@@ -209,6 +218,7 @@ metadata:
     app.kubernetes.io/name: redis
     app.kubernetes.io/version: 7.4.2
     helm.sh/chart: redis-20.6.3
+
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/secrets.yaml
 apiVersion: v1
@@ -226,6 +236,7 @@ type: Opaque
 data:
   root-user: "dGltdXI="
   root-password: "WFla"
+
 ---
 # Source: timur-backend-helm/charts/app/charts/postgresql/templates/secrets.yaml
 apiVersion: v1
@@ -243,6 +254,7 @@ type: Opaque
 data:
   postgres-password: "cGctcG9zdGdyZXMtc2VjdXJlLXBhc3N3b3Jk"
   # We don't auto-generate LDAP password when it's not provided as we do for other passwords
+
 ---
 # Source: timur-backend-helm/charts/app/templates/config/secret.yaml
 kind: Secret
@@ -272,6 +284,7 @@ stringData:
   GOOGLE_OAUTH_CLIENT_ID: "another-long-dynamic-id.apps.googleusercontent.com"
   GOOGLE_OAUTH_REDIRECT_URL: "https://timur-api.example/o/google"
   SENTRY_DSN: "https://test-123@sentry.example/27"
+
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/provisioning-configmap.yaml
 apiVersion: v1
@@ -287,6 +300,7 @@ metadata:
     helm.sh/chart: minio-14.10.5
     app.kubernetes.io/component: minio-provisioning
 data:
+
 ---
 # Source: timur-backend-helm/charts/app/charts/redis/templates/configmap.yaml
 apiVersion: v1
@@ -320,6 +334,7 @@ data:
     rename-command FLUSHDB ""
     rename-command FLUSHALL ""
     # End of replica configuration
+
 ---
 # Source: timur-backend-helm/charts/app/charts/redis/templates/health-configmap.yaml
 apiVersion: v1
@@ -428,6 +443,7 @@ data:
     "$script_dir/ping_liveness_local.sh" $1 || exit_status=$?
     "$script_dir/ping_liveness_master.sh" $1 || exit_status=$?
     exit $exit_status
+
 ---
 # Source: timur-backend-helm/charts/app/charts/redis/templates/scripts-configmap.yaml
 apiVersion: v1
@@ -490,6 +506,7 @@ data:
   SENTRY_TRACES_SAMPLE_RATE: "0.2"
   SESSION_COOKIE_AGE: "2592000"
   SESSION_COOKIE_DOMAIN: ".example.com"
+
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/pvc.yaml
 kind: PersistentVolumeClaim
@@ -509,6 +526,8 @@ spec:
   resources:
     requests:
       storage: "1Gi"
+  
+
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/service.yaml
 apiVersion: v1
@@ -536,6 +555,7 @@ spec:
   selector:
     app.kubernetes.io/instance: release-name
     app.kubernetes.io/name: minio
+
 ---
 # Source: timur-backend-helm/charts/app/charts/postgresql/templates/primary/svc-headless.yaml
 apiVersion: v1
@@ -566,6 +586,7 @@ spec:
     app.kubernetes.io/instance: release-name
     app.kubernetes.io/name: postgresql
     app.kubernetes.io/component: primary
+
 ---
 # Source: timur-backend-helm/charts/app/charts/postgresql/templates/primary/svc.yaml
 apiVersion: v1
@@ -592,6 +613,7 @@ spec:
     app.kubernetes.io/instance: release-name
     app.kubernetes.io/name: postgresql
     app.kubernetes.io/component: primary
+
 ---
 # Source: timur-backend-helm/charts/app/charts/redis/templates/headless-svc.yaml
 apiVersion: v1
@@ -615,6 +637,7 @@ spec:
   selector:
     app.kubernetes.io/instance: release-name
     app.kubernetes.io/name: redis
+
 ---
 # Source: timur-backend-helm/charts/app/charts/redis/templates/master/service.yaml
 apiVersion: v1
@@ -642,6 +665,7 @@ spec:
     app.kubernetes.io/instance: release-name
     app.kubernetes.io/name: redis
     app.kubernetes.io/component: master
+
 ---
 # Source: timur-backend-helm/charts/app/templates/api/service.yaml
 apiVersion: v1
@@ -662,6 +686,7 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 80
+
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/standalone/deployment.yaml
 apiVersion: apps/v1
@@ -814,6 +839,7 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: timur-minio
+
 ---
 # Source: timur-backend-helm/charts/app/templates/api/deployment.yaml
 apiVersion: apps/v1
@@ -868,6 +894,7 @@ spec:
           env:
             - name: DJANGO_APP_TYPE
               value: "web"
+
 ---
 # Source: timur-backend-helm/charts/app/charts/postgresql/templates/primary/statefulset.yaml
 apiVersion: apps/v1
@@ -1048,6 +1075,8 @@ spec:
         resources:
           requests:
             storage: "8Gi"
+        
+
 ---
 # Source: timur-backend-helm/charts/app/charts/redis/templates/master/application.yaml
 apiVersion: apps/v1
@@ -1224,6 +1253,8 @@ spec:
         resources:
           requests:
             storage: ".1Gi"
+        
+
 ---
 # Source: timur-backend-helm/charts/app/templates/argo-hooks/hook-job.yaml
 # Hook: collect-static
@@ -1312,6 +1343,7 @@ spec:
           env:
             - name: DJANGO_APP_TYPE
               value: "hook"
+
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
 # Job: clearsessions
@@ -1659,6 +1691,7 @@ spec:
               env:
                 - name: DJANGO_APP_TYPE
                   value: "cronjob"
+
 ---
 # Source: timur-backend-helm/charts/app/charts/minio/templates/api-ingress.yaml
 apiVersion: networking.k8s.io/v1
@@ -1686,6 +1719,7 @@ spec:
                 name: timur-minio
                 port:
                   name: minio-api
+
 ---
 # Source: timur-backend-helm/charts/app/templates/api/ingress.yaml
 apiVersion: networking.k8s.io/v1
@@ -1925,3 +1959,4 @@ spec:
         - name: minio-provisioning
           configMap:
             name: timur-minio-provisioning
+
