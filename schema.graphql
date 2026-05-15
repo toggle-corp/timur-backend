@@ -184,6 +184,16 @@ type DailyStandUpType {
   projectStat(pk: ID!): DailyStandUpProjectStatType
 }
 
+type DailySummaryType {
+  date: Date!
+  totalMinutes: Int!
+  targetMinutes: Int!
+  isHoliday: Boolean!
+  leaveType: JournalLeaveTypeEnum
+  wfhType: JournalWorkFromHomeTypeEnum
+  id: ID!
+}
+
 """Date (isoformat)"""
 scalar Date
 
@@ -231,6 +241,16 @@ input DateRangeLookup {
 """Date with time (isoformat)"""
 scalar DateTime
 
+input DeadlineFilter {
+  id: IDBaseFilterLookup
+  endDate: DateDateFilterLookup
+  isArchived: BoolBaseFilterLookup
+  AND: DeadlineFilter
+  OR: DeadlineFilter
+  NOT: DeadlineFilter
+  DISTINCT: Boolean
+}
+
 type DeadlineType implements UserResourceTypeMixin {
   createdAt: DateTime!
   modifiedAt: DateTime!
@@ -265,11 +285,11 @@ input EventFilter {
   id: IDBaseFilterLookup
   startDate: DateDateFilterLookup
   endDate: DateDateFilterLookup
-  types: [EventTypeEnum!]!
   AND: EventFilter
   OR: EventFilter
   NOT: EventFilter
   DISTINCT: Boolean
+  types: [EventTypeEnum!]
 }
 
 input EventOrder {
@@ -436,7 +456,7 @@ type PrivateQuery {
   contractors(filters: ContractorFilter, order: ContractorOrder, pagination: OffsetPaginationInput): ContractorTypeCountList!
   projects(filters: ProjectFilter, order: ProjectOrder, pagination: OffsetPaginationInput): ProjectTypeCountList!
   allProjects: [ProjectType!]!
-  allDeadlines: [DeadlineType!]!
+  allDeadlines(filters: DeadlineFilter = null): [DeadlineType!]!
   client(pk: ID!): ClientType
   contractor(pk: ID!): ContractorType
   project(pk: ID!): ProjectType
@@ -451,6 +471,11 @@ type PrivateQuery {
   allActiveTasks: [TaskType!]!
   myTimeEntries(date: Date!): [TimeEntryType!]!
   allTimeEntries(filters: TimeEntryFilter!): [TimeEntryType!]!
+
+  """
+  Return total minutes and target minutes per day for the user within the given date range.
+  """
+  dailySummary(dateGte: Date!, dateLte: Date!): [DailySummaryType!]!
   contract(pk: ID!): ContractType
   task(pk: ID!): TaskType
   journal(date: Date!): JournalType
@@ -486,6 +511,7 @@ type ProjectType implements UserResourceTypeMixin {
   projectClientId: ID!
   contractorId: ID!
   name: String!
+  shortName: String!
   description: String
   projectClient: ClientType!
   contractor: ContractorType!
