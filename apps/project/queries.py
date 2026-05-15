@@ -38,11 +38,13 @@ class PrivateQuery:
         return [project async for project in qs]
 
     @strawberry_django.field
-    async def all_deadlines(self, info: Info, filters: DeadlineFilter) -> list[DeadlineType]:
+    async def all_deadlines(self, info: Info, filters: DeadlineFilter | None = None) -> list[DeadlineType]:
+        # NOTE: filters is temporarily optional
         qs = DeadlineType.get_queryset(None, None, info)
-        if filters.is_archived is strawberry.UNSET:
+        if filters is None or filters.is_archived is strawberry.UNSET:
             qs = qs.filter(is_archived=False)
-        qs = apply_filters(filters, qs, info, None)
+        if filters is not None:
+            qs = apply_filters(filters, qs, info, None)
         return [deadline async for deadline in qs]
 
     # Single ----------------------------

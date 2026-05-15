@@ -456,7 +456,7 @@ type PrivateQuery {
   contractors(filters: ContractorFilter, order: ContractorOrder, pagination: OffsetPaginationInput): ContractorTypeCountList!
   projects(filters: ProjectFilter, order: ProjectOrder, pagination: OffsetPaginationInput): ProjectTypeCountList!
   allProjects: [ProjectType!]!
-  allDeadlines(filters: DeadlineFilter!): [DeadlineType!]!
+  allDeadlines(filters: DeadlineFilter = null): [DeadlineType!]!
   client(pk: ID!): ClientType
   contractor(pk: ID!): ContractorType
   project(pk: ID!): ProjectType
