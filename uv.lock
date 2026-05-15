@@ -1406,7 +1406,7 @@ wheels = [
 
 [[package]]
 name = "timur-backend"
-version = "0.2.2"
+version = "0.2.3"
 source = { virtual = "." }
 dependencies = [
     { name = "aws-sns-message-validator" },

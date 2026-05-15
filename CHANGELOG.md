@@ -1,5 +1,32 @@
 # Changelog
 
+## [v0.2.3](https://github.com/toggle-corp/timur-backend/compare/v0.2.2..v0.2.3) - 2026-05-15
+### Changes:
+
+#### 🚀  Features
+
+- *(project)* Add short_name in query - ([18a9fda](https://github.com/toggle-corp/timur-backend/commit/18a9fdab5ad14ddc5a1bc0485d5d03cb4f100be3))
+- *(query)* Add query for hours per day - ([5738017](https://github.com/toggle-corp/timur-backend/commit/5738017b3a6aa9f694206249acc108ad03a0ff84))
+- Add filters for allDeadlines - ([98e2eea](https://github.com/toggle-corp/timur-backend/commit/98e2eeaff694c68b6495e88664962b0bece5f63d))
+
+#### 🐛 Bug Fixes
+
+- Update helm snapshot test - ([1122c5d](https://github.com/toggle-corp/timur-backend/commit/1122c5dbfc28ccc8e63c819d8c4b91fc21e99b4f))
+- Make filters non mandatory for all_deadlines - ([5ba2356](https://github.com/toggle-corp/timur-backend/commit/5ba2356cd758eb2ad3d63b7afbb83587eeb71375))
+
+#### 🚜 Refactor
+
+- Change full day repr to 7 hours - ([acfbdf2](https://github.com/toggle-corp/timur-backend/commit/acfbdf2b3391c6e85e93feb843db590fd1039fb3))
+- Rename hours_per_day to daily_summary - ([fcb33d8](https://github.com/toggle-corp/timur-backend/commit/fcb33d853a41d997e74af11aaa07532b82f8bc20))
+
+### 🍻 Pull Requests (2)
+- (#86) [Add query for recorded times (hours per day)](https://github.com/toggle-corp/timur-backend/pull/86)
+- (#87) [Project: Better journaling](https://github.com/toggle-corp/timur-backend/pull/87)
+
+### :tada: New Contributors (1)
+
+- [@frozenhelium](https://github.com/frozenhelium) made their first contribution
+
 ## [v0.2.2](https://github.com/toggle-corp/timur-backend/compare/v0.2.1..v0.2.2) - 2026-05-03
 ### Changes:
 
