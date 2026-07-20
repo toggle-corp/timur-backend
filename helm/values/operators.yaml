@@ -37,7 +37,7 @@ app:
       spec:
         retentionPolicy: "30d"
         configuration:
-          # destinationPath: XXX: "s3://s3-bucket-name/barman/alpha"
+          # destinationPath is set per-environment (the real S3 barman backup path). XXX: "s3://s3-bucket-name/barman/alpha"
           s3Credentials:
             accessKeyId:
               name: cnpg-barman-s3-creds
