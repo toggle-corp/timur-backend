@@ -192,7 +192,9 @@ class SentryMonitorConfig:
 
     @staticmethod
     def load_cron_data() -> dict[str, str]:
-        with Path.open(helm_values_path) as fp:
+        # Explicit UTF-8: the pod may run under a C/POSIX (ASCII) locale, where
+        # Python's default open() encoding would choke on any non-ASCII byte.
+        with Path.open(helm_values_path, encoding="utf-8") as fp:
             try:
                 yaml_data = yaml.safe_load(fp)
                 return {

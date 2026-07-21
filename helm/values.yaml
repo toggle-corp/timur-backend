@@ -5,7 +5,7 @@ app:
   # without it the release-name-prefixed cronjobs would hit the limit.
   fullnameOverride: "timur"
   # settings.py reads the process role from DJANGO_APP_TYPE (Sentry app_type tag);
-  # the chart injects it per component via appTypeEnvName — never hardcode the role.
+  # the chart injects it per component via appTypeEnvName - never hardcode the role.
   appTypeEnvName: "DJANGO_APP_TYPE"
   # Global Image
   image:
@@ -21,7 +21,7 @@ app:
       enabled: true  # chart defaults: liveness /healthz/live/, readiness+startup /healthz/ready/
     ingress:
       enabled: true
-      # className left blank — the cluster's default IngressClass is used.
+      # className left blank - the cluster's default IngressClass is used.
       className:
       host:
     resources:

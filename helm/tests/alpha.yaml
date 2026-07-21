@@ -23,7 +23,7 @@ app:
     # Standup
     DAILY_STANDUP_DOCUMENTATION_REF: "<https://notes.example.com/XYX?view|Documentation>"
     DAILY_STANDUP_MEET_LINK: "https://meet.google.com/XYZ"
-    # AWS (S3) — dummy bucket names for snapshot rendering (real names per-environment)
+    # AWS (S3) - dummy bucket names for snapshot rendering (real names per-environment)
     AWS_S3_MEDIA_BUCKET_NAME: "example-media"
     AWS_S3_STATIC_BUCKET_NAME: "example-static"
 
