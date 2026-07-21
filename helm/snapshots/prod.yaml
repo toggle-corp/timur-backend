@@ -3,9 +3,9 @@
 kind: Secret
 apiVersion: v1
 metadata:
-  name: release-name-app-secret
+  name: timur-secret
   labels:
-    app: release-name-app
+    app: timur
     environment: PROD
     release: release-name
 type: Opaque
@@ -17,9 +17,9 @@ stringData:
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: release-name-app-env-name
+  name: timur-env-name
   labels:
-    app: release-name-app
+    app: timur
     environment: PROD
     release: release-name
 data:
@@ -48,16 +48,16 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: release-name-app-api
+  name: timur-api
   labels:
-    app: release-name-app
+    app: timur
     component: api
     environment: PROD
     release: release-name
 spec:
   type: ClusterIP
   selector:
-    app: release-name-app
+    app: timur
     component: api
   ports:
     - protocol: TCP
@@ -69,12 +69,12 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: release-name-app-api
+  name: timur-api
   annotations:
     argocd.argoproj.io/sync-wave: "30"
     reloader.stakater.com/auto: "true"
   labels:
-    app: release-name-app
+    app: timur
     component: api
     environment: PROD
     release: release-name
@@ -82,15 +82,15 @@ spec:
   revisionHistoryLimit: 1
   selector:
     matchLabels:
-      app: release-name-app
+      app: timur
       component: api
   template:
     metadata:
       annotations:
-        checksum/secret: b0ee38fa1e4ebc47efef9d6643669d5ef1be602075cc8ee46004222c0ea6a070
-        checksum/configmap: b1653d36b264a57bde68a9685da23b44ab31bcc6fd7810886308f78c78e8a90b
+        checksum/secret: 7ce5e09ecd151abb48f2c64458619e392b409f259d4d2f79a0acafdd0fdbbb41
+        checksum/configmap: 75e54172591f33fd52fbad4f36e80c9ecd6934abfc57c7e8b5ed9c618a503f7a
       labels:
-        app: release-name-app
+        app: timur
         component: api
     spec:
       terminationGracePeriodSeconds: 38
@@ -132,11 +132,11 @@ spec:
               memory: 0.5Gi
           envFrom:
             - secretRef:
-                name: release-name-app-secret
+                name: timur-secret
             - secretRef:
                 name: my-extra-secrets
             - configMapRef:
-                name: release-name-app-env-name
+                name: timur-env-name
           env:
             - name: DJANGO_APP_TYPE
               value: "web"
@@ -181,13 +181,13 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: release-name-app-collect-static
+  name: timur-collect-static
   annotations:
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
     argocd.argoproj.io/sync-wave: "20"
   labels:
-    app: release-name-app
+    app: timur
     component: hook
     hookName: collect-static
     environment: PROD
@@ -196,10 +196,10 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/secret: b0ee38fa1e4ebc47efef9d6643669d5ef1be602075cc8ee46004222c0ea6a070
-        checksum/configmap: b1653d36b264a57bde68a9685da23b44ab31bcc6fd7810886308f78c78e8a90b
+        checksum/secret: 7ce5e09ecd151abb48f2c64458619e392b409f259d4d2f79a0acafdd0fdbbb41
+        checksum/configmap: 75e54172591f33fd52fbad4f36e80c9ecd6934abfc57c7e8b5ed9c618a503f7a
       labels:
-        app: release-name-app
+        app: timur
         component: hook
         hookName: collect-static
     spec:
@@ -220,11 +220,11 @@ spec:
               memory: 1Gi
           envFrom:
             - secretRef:
-                name: release-name-app-secret
+                name: timur-secret
             - secretRef:
                 name: my-extra-secrets
             - configMapRef:
-                name: release-name-app-env-name
+                name: timur-env-name
           env:
             - name: DJANGO_APP_TYPE
               value: "hook"
@@ -263,12 +263,12 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  generateName: release-name-app-db-migrate-
+  generateName: timur-db-migrate-
   annotations:
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/sync-wave: "20"
   labels:
-    app: release-name-app
+    app: timur
     component: hook
     hookName: db-migrate
     environment: PROD
@@ -279,10 +279,10 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/secret: b0ee38fa1e4ebc47efef9d6643669d5ef1be602075cc8ee46004222c0ea6a070
-        checksum/configmap: b1653d36b264a57bde68a9685da23b44ab31bcc6fd7810886308f78c78e8a90b
+        checksum/secret: 7ce5e09ecd151abb48f2c64458619e392b409f259d4d2f79a0acafdd0fdbbb41
+        checksum/configmap: 75e54172591f33fd52fbad4f36e80c9ecd6934abfc57c7e8b5ed9c618a503f7a
       labels:
-        app: release-name-app
+        app: timur
         component: hook
         hookName: db-migrate
     spec:
@@ -302,11 +302,11 @@ spec:
               memory: 1Gi
           envFrom:
             - secretRef:
-                name: release-name-app-secret
+                name: timur-secret
             - secretRef:
                 name: my-extra-secrets
             - configMapRef:
-                name: release-name-app-env-name
+                name: timur-env-name
           env:
             - name: DJANGO_APP_TYPE
               value: "hook"
@@ -345,13 +345,13 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: release-name-app-wait-for-resources
+  name: timur-wait-for-resources
   annotations:
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: HookSucceeded
     argocd.argoproj.io/sync-wave: "10"
   labels:
-    app: release-name-app
+    app: timur
     component: hook
     hookName: wait-for-resources
     environment: PROD
@@ -360,10 +360,10 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/secret: b0ee38fa1e4ebc47efef9d6643669d5ef1be602075cc8ee46004222c0ea6a070
-        checksum/configmap: b1653d36b264a57bde68a9685da23b44ab31bcc6fd7810886308f78c78e8a90b
+        checksum/secret: 7ce5e09ecd151abb48f2c64458619e392b409f259d4d2f79a0acafdd0fdbbb41
+        checksum/configmap: 75e54172591f33fd52fbad4f36e80c9ecd6934abfc57c7e8b5ed9c618a503f7a
       labels:
-        app: release-name-app
+        app: timur
         component: hook
         hookName: wait-for-resources
     spec:
@@ -385,11 +385,11 @@ spec:
               memory: 1Gi
           envFrom:
             - secretRef:
-                name: release-name-app-secret
+                name: timur-secret
             - secretRef:
                 name: my-extra-secrets
             - configMapRef:
-                name: release-name-app-env-name
+                name: timur-env-name
           env:
             - name: DJANGO_APP_TYPE
               value: "hook"
@@ -430,9 +430,9 @@ spec:
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: release-name-app-job-clearsessions
+  name: timur-job-clearsessions
   labels:
-    app: release-name-app
+    app: timur
     component: cronjob
     jobName: clearsessions
     environment: PROD
@@ -451,7 +451,7 @@ spec:
         metadata:
           annotations:
           labels:
-            app: release-name-app
+            app: timur
             component: cronjob
         spec:
           restartPolicy: "Never"
@@ -470,11 +470,11 @@ spec:
                   memory: 0.5Gi
               envFrom:
                 - secretRef:
-                    name: release-name-app-secret
+                    name: timur-secret
                 - secretRef:
                     name: my-extra-secrets
                 - configMapRef:
-                    name: release-name-app-env-name
+                    name: timur-env-name
               env:
                 - name: DJANGO_APP_TYPE
                   value: "cronjob"
@@ -513,9 +513,9 @@ spec:
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: release-name-app-job-process-not-done-time-entries
+  name: timur-job-process-not-done-time-entries
   labels:
-    app: release-name-app
+    app: timur
     component: cronjob
     jobName: process_not_done_time_entries
     environment: PROD
@@ -534,7 +534,7 @@ spec:
         metadata:
           annotations:
           labels:
-            app: release-name-app
+            app: timur
             component: cronjob
         spec:
           restartPolicy: "Never"
@@ -553,11 +553,11 @@ spec:
                   memory: 0.5Gi
               envFrom:
                 - secretRef:
-                    name: release-name-app-secret
+                    name: timur-secret
                 - secretRef:
                     name: my-extra-secrets
                 - configMapRef:
-                    name: release-name-app-env-name
+                    name: timur-env-name
               env:
                 - name: DJANGO_APP_TYPE
                   value: "cronjob"
@@ -596,9 +596,9 @@ spec:
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: release-name-app-job-standup-before-standup-reminder
+  name: timur-job-standup-before-standup-reminder
   labels:
-    app: release-name-app
+    app: timur
     component: cronjob
     jobName: standup_before_standup_reminder
     environment: PROD
@@ -617,7 +617,7 @@ spec:
         metadata:
           annotations:
           labels:
-            app: release-name-app
+            app: timur
             component: cronjob
         spec:
           restartPolicy: "Never"
@@ -637,11 +637,11 @@ spec:
                   memory: 0.5Gi
               envFrom:
                 - secretRef:
-                    name: release-name-app-secret
+                    name: timur-secret
                 - secretRef:
                     name: my-extra-secrets
                 - configMapRef:
-                    name: release-name-app-env-name
+                    name: timur-env-name
               env:
                 - name: DJANGO_APP_TYPE
                   value: "cronjob"
@@ -680,9 +680,9 @@ spec:
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: release-name-app-job-standup-morning-reminder
+  name: timur-job-standup-morning-reminder
   labels:
-    app: release-name-app
+    app: timur
     component: cronjob
     jobName: standup_morning_reminder
     environment: PROD
@@ -701,7 +701,7 @@ spec:
         metadata:
           annotations:
           labels:
-            app: release-name-app
+            app: timur
             component: cronjob
         spec:
           restartPolicy: "Never"
@@ -721,11 +721,11 @@ spec:
                   memory: 0.5Gi
               envFrom:
                 - secretRef:
-                    name: release-name-app-secret
+                    name: timur-secret
                 - secretRef:
                     name: my-extra-secrets
                 - configMapRef:
-                    name: release-name-app-env-name
+                    name: timur-env-name
               env:
                 - name: DJANGO_APP_TYPE
                   value: "cronjob"
@@ -764,9 +764,9 @@ spec:
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: release-name-app-job-standup-read-doc-reminder
+  name: timur-job-standup-read-doc-reminder
   labels:
-    app: release-name-app
+    app: timur
     component: cronjob
     jobName: standup_read_doc_reminder
     environment: PROD
@@ -785,7 +785,7 @@ spec:
         metadata:
           annotations:
           labels:
-            app: release-name-app
+            app: timur
             component: cronjob
         spec:
           restartPolicy: "Never"
@@ -805,11 +805,11 @@ spec:
                   memory: 0.5Gi
               envFrom:
                 - secretRef:
-                    name: release-name-app-secret
+                    name: timur-secret
                 - secretRef:
                     name: my-extra-secrets
                 - configMapRef:
-                    name: release-name-app-env-name
+                    name: timur-env-name
               env:
                 - name: DJANGO_APP_TYPE
                   value: "cronjob"
@@ -848,9 +848,9 @@ spec:
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: release-name-app-job-standup-setup-next-standup
+  name: timur-job-standup-setup-next-standup
   labels:
-    app: release-name-app
+    app: timur
     component: cronjob
     jobName: standup_setup_next_standup
     environment: PROD
@@ -869,7 +869,7 @@ spec:
         metadata:
           annotations:
           labels:
-            app: release-name-app
+            app: timur
             component: cronjob
         spec:
           restartPolicy: "Never"
@@ -889,11 +889,11 @@ spec:
                   memory: 0.5Gi
               envFrom:
                 - secretRef:
-                    name: release-name-app-secret
+                    name: timur-secret
                 - secretRef:
                     name: my-extra-secrets
                 - configMapRef:
-                    name: release-name-app-env-name
+                    name: timur-env-name
               env:
                 - name: DJANGO_APP_TYPE
                   value: "cronjob"
@@ -932,9 +932,9 @@ spec:
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: release-name-app-job-user-sync-slack-users-id
+  name: timur-job-user-sync-slack-users-id
   labels:
-    app: release-name-app
+    app: timur
     component: cronjob
     jobName: user_sync_slack_users_id
     environment: PROD
@@ -953,7 +953,7 @@ spec:
         metadata:
           annotations:
           labels:
-            app: release-name-app
+            app: timur
             component: cronjob
         spec:
           restartPolicy: "Never"
@@ -972,11 +972,11 @@ spec:
                   memory: 0.5Gi
               envFrom:
                 - secretRef:
-                    name: release-name-app-secret
+                    name: timur-secret
                 - secretRef:
                     name: my-extra-secrets
                 - configMapRef:
-                    name: release-name-app-env-name
+                    name: timur-env-name
               env:
                 - name: DJANGO_APP_TYPE
                   value: "cronjob"
@@ -1016,9 +1016,9 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: release-name-app-api
+  name: timur-api
   labels:
-    app: release-name-app
+    app: timur
     component: api
     environment: PROD
     release: release-name
@@ -1033,7 +1033,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: release-name-app-api
+                name: timur-api
                 port:
                   number: 80
 

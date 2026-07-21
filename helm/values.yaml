@@ -1,5 +1,9 @@
 app:
   environment: PROD
+  # Short base name for all generated resources. Keeps CronJob names well under the
+  # 52-char cap (k8s appends a timestamp to spawn Jobs, which must stay <= 63 chars);
+  # without it the release-name-prefixed cronjobs would hit the limit.
+  fullnameOverride: "timur"
   # settings.py reads the process role from DJANGO_APP_TYPE (Sentry app_type tag);
   # the chart injects it per component via appTypeEnvName — never hardcode the role.
   appTypeEnvName: "DJANGO_APP_TYPE"
