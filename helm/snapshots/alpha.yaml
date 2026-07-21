@@ -34,7 +34,7 @@ data:
   APP_ENVIRONMENT: "ALPHA"
   APP_FRONTEND_HOST: "https://timur.example.com"
   APP_RELEASE: "SET-BY-CICD-TAG"
-  AWS_S3_ENABLED: "false"
+  AWS_S3_ENABLED: "true"
   AWS_S3_MEDIA_BUCKET_NAME: "example-media"
   AWS_S3_STATIC_BUCKET_NAME: "example-static"
   CSRF_COOKIE_DOMAIN: ".example.com"
@@ -96,7 +96,7 @@ spec:
     metadata:
       annotations:
         checksum/secret: 6b02115527088e258e587167162478a8df14129ce22a9c77ee93513da19f033c
-        checksum/configmap: 57f780f991b484c5b2495d759658721ae6f3fdf83d68307798882280d0bb60ff
+        checksum/configmap: 0513142030e502a32cabfdcd9068c49a5e936c80323d5eae53e77312381a3004
       labels:
         app: release-name-app
         component: api
@@ -203,7 +203,7 @@ spec:
     metadata:
       annotations:
         checksum/secret: 6b02115527088e258e587167162478a8df14129ce22a9c77ee93513da19f033c
-        checksum/configmap: 57f780f991b484c5b2495d759658721ae6f3fdf83d68307798882280d0bb60ff
+        checksum/configmap: 0513142030e502a32cabfdcd9068c49a5e936c80323d5eae53e77312381a3004
       labels:
         app: release-name-app
         component: hook
@@ -284,7 +284,7 @@ spec:
     metadata:
       annotations:
         checksum/secret: 6b02115527088e258e587167162478a8df14129ce22a9c77ee93513da19f033c
-        checksum/configmap: 57f780f991b484c5b2495d759658721ae6f3fdf83d68307798882280d0bb60ff
+        checksum/configmap: 0513142030e502a32cabfdcd9068c49a5e936c80323d5eae53e77312381a3004
       labels:
         app: release-name-app
         component: hook
@@ -363,7 +363,7 @@ spec:
     metadata:
       annotations:
         checksum/secret: 6b02115527088e258e587167162478a8df14129ce22a9c77ee93513da19f033c
-        checksum/configmap: 57f780f991b484c5b2495d759658721ae6f3fdf83d68307798882280d0bb60ff
+        checksum/configmap: 0513142030e502a32cabfdcd9068c49a5e936c80323d5eae53e77312381a3004
       labels:
         app: release-name-app
         component: hook

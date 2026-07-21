@@ -1,5 +1,8 @@
 app:
   environment: PROD
+  # settings.py reads the process role from DJANGO_APP_TYPE (Sentry app_type tag);
+  # the chart injects it per component via appTypeEnvName — never hardcode the role.
+  appTypeEnvName: "DJANGO_APP_TYPE"
   # Global Image
   image:
     name: SET-BY-CICD-IMAGE
@@ -108,7 +111,9 @@ app:
     GOOGLE_SSO_ENABLED: "false"
     # GOOGLE_SSO_ALLOWED_DOMAINS: togglecorp.com
     # -- AWS
-    AWS_S3_ENABLED: "false"
+    # Default ENABLED so media/static use S3, not the pod's ephemeral filesystem.
+    # Endpoint/bucket names + credentials are provided per-environment (CICD / ExternalSecret).
+    AWS_S3_ENABLED: "true"
     # AWS_S3_ENDPOINT_URL:
     # AWS_S3_MEDIA_BUCKET_NAME:
     # AWS_S3_STATIC_BUCKET_NAME:
