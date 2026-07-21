@@ -1,5 +1,30 @@
 # Changelog
 
+## [v0.3.0-dev2](https://github.com/toggle-corp/timur-backend/compare/v0.2.3..v0.3.0-dev2) - 2026-07-21
+### Changes:
+
+#### ⚙️ Miscellaneous Tasks
+
+- Grant contents: write so tag releases can be published - ([7b94488](https://github.com/toggle-corp/timur-backend/commit/7b94488a17743a4bc6334f86f6b6295eec91ed11))
+- TEMP publish trigger on feature/banjo-stack (REMOVE before merge) - ([8e1e55b](https://github.com/toggle-corp/timur-backend/commit/8e1e55b5bdba9036cd26c0d1fbc2c2c1f5372fb5))
+
+#### Banjo
+
+- Bump banjo-action v0.1.0 -> v0.2.0 - ([f08d52c](https://github.com/toggle-corp/timur-backend/commit/f08d52cf83bac9d69480b398bc2a011e4ba90f97))
+- Migrate helm chart to banjo-helm 0.4.1 - ([2ce3d94](https://github.com/toggle-corp/timur-backend/commit/2ce3d945bb8de8db0c346cb438706399f6e9ab08))
+- Wire banjo-utils (health probes, log filter, sentry sampler) - ([186d081](https://github.com/toggle-corp/timur-backend/commit/186d081904a31c3af47d2dad7770edb6ab5ae6bf))
+
+#### Deploy
+
+- Fail the web container fast when the WSGI app cannot import - ([f8974bd](https://github.com/toggle-corp/timur-backend/commit/f8974bd1aaa715b4cad139f429f3ded87847f478))
+
+#### Helm
+
+- Set fullnameOverride to keep CronJob names within the k8s limit - ([3b957ec](https://github.com/toggle-corp/timur-backend/commit/3b957ecf1ac376f249de0acef092238b5793698b))
+- Drop placeholder example from CNPG backup-store comment - ([f048273](https://github.com/toggle-corp/timur-backend/commit/f048273f2132ac4d55855a06ca42017f798d2373))
+- Inject DJANGO_APP_TYPE per workload + default S3 storage on - ([0eb1210](https://github.com/toggle-corp/timur-backend/commit/0eb121000811aa1228222bf4f9d577e0128508f4))
+
+
 ## [v0.2.3](https://github.com/toggle-corp/timur-backend/compare/v0.2.2..v0.2.3) - 2026-05-15
 ### Changes:
 
