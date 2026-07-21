@@ -38,6 +38,7 @@ dependencies = [
     "python-ulid",
     "slack_sdk",
     "pyyaml",
+    "banjo-utils",
 ]
 
 [dependency-groups]
@@ -56,6 +57,9 @@ dev = [
 
 [tool.uv]
 package = false
+
+[tool.uv.sources]
+banjo-utils = { git = "https://github.com/toggle-corp/banjo-utils", tag = "v0.2.0" }
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "main.settings"

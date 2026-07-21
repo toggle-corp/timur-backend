@@ -1,17 +1,10 @@
 app:
   environment: PROD
 
-  ingress:
-    enabled: true
-    className: nginx
-    host: timur.example.com
-
-  minio:
-    enabled: true
-    apiIngress:
-      hostname: timur-minio.example.com
-    auth:
-      rootPassword: XYZ
+  api:
+    ingress:
+      enabled: true
+      host: timur-api.example.com
 
   env:
     APP_DOMAIN: https://timur-api.example.com

@@ -11,12 +11,21 @@ on:
 
 # TODO: Code climate integration?
 
+permissions:
+  # contents: write is required so the tag-triggered release job can create the
+  # GitHub Release (softprops/action-gh-release); read is insufficient (403).
+  contents: write
+  packages: write
+  pull-requests: read
+
 jobs:
   _:
-    uses: toggle-corp/banjo-action/.github/workflows/pipeline.yml@v0.1.0
+    uses: toggle-corp/banjo-action/.github/workflows/pipeline.yml@v0.2.0
     with:
+      # Job: Pre-commit
+      pre_commit__apt_packages: "gdal-bin libgdal-dev"
       # Job: Docker
-      docker__wait_cmd: "./manage.py wait_for_resources --db --redis"
+      docker__wait_cmd: "./manage.py wait_for_resources --db --cache"
       docker__migration_dummy_test: "main.tests.FakeTest"
       docker__run_graphql_check: true
       docker__compose_file: "gh-docker-compose.yml"

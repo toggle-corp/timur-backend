@@ -1,124 +1,65 @@
 app:
   environment: PROD
+  # Short base name for all generated resources. Keeps CronJob names well under the
+  # 52-char cap (k8s appends a timestamp to spawn Jobs, which must stay <= 63 chars);
+  # without it the release-name-prefixed cronjobs would hit the limit.
+  fullnameOverride: "timur"
+  # settings.py reads the process role from DJANGO_APP_TYPE (Sentry app_type tag);
+  # the chart injects it per component via appTypeEnvName - never hardcode the role.
+  appTypeEnvName: "DJANGO_APP_TYPE"
   # Global Image
   image:
     name: SET-BY-CICD-IMAGE
     tag: SET-BY-CICD-TAG
     imagePullPolicy: IfNotPresent
 
-  ingress:
-    enabled: true
-    className:
-    host:
-
-  redis:
-    enabled: false
-    architecture: standalone
-    fullnameOverride: timur-redis
-    auth:
-      enabled: false
-    master:
-      persistence:
-        enabled: true
-        size: .5Gi
-        storageClass:
-
-  postgresql:
-    enabled: false
-    fullnameOverride: "timur-pg"
-    architecture: standalone
-    auth:
-      postgresPassword: ""
-      username: ""
-      password: ""
-      database: ""
-    primary:
-      persistence:
-        enabled: true
-        storageClass: ""
-        size: 8Gi
-
-  # https://artifacthub.io/packages/helm/bitnami/minio
-  # extraEnvVars: https://github.com/bitnami/containers/blob/main/bitnami/minio/README.md#environment-variables
-  minio:
-    enabled: false
-    disableWebUI: true
-    mode: standalone
-    fullnameOverride: timur-minio
-    global:
-      defaultStorageClass:
-    apiIngress:
-      enabled: true
-      ingressClassName:
-      hostname:
-      annotations:
-        nginx.ingress.kubernetes.io/proxy-body-size: "50m"
-    auth:
-      forceNewKeys: True
-      rootUser: timur
-      rootPassword:
-    persistence:
-      enabled: true
-      size: 1Gi
-    defaultBuckets: timur-static,timur-media  # XXX: Don't change this
-    provisioning:
-      enabled: true
-      resourcesPreset: "nano"
-      cleanupAfterFinished:
-        enabled: true
-      extraCommands:
-        - "mc anonymous set download provisioning/timur-static"
-
   api:
     enabled: true
-    replicaCount: 1
     containerPort: 80
     command: ["/code/scripts/deploy/run_web.sh"]
+    probes:
+      enabled: true  # chart defaults: liveness /healthz/live/, readiness+startup /healthz/ready/
+    ingress:
+      enabled: true
+      # className left blank - the cluster's default IngressClass is used.
+      className:
+      host:
     resources:
       requests:
         cpu: "2"
         memory: 0.5Gi
       limits:
-        cpu: "2"
         memory: 1Gi
 
   worker:
     enabled: false
 
-  argoHook:
+  hooks:
     enabled: true
-    resources:
-      requests:
-        cpu: "0.1"
-        memory: 1Gi
-      limits:
-        cpu: "4"
-        memory: 2Gi
-    hooks:
-      # NOTE: Make sure keys are lowercase
-      db-migrate:
-        enabled: true
-        hook: PostSync
-        preserveHistory: true
-        command: ["/bin/bash", "-c"]
-        args:
-          - "./manage.py wait_for_resources --db && ./manage.py migrate"
-      collect-static:
-        enabled: true
-        hook: PostSync
-        command: ["/bin/bash", "-c"]
-        args:
-          - "./manage.py wait_for_resources --minio && ./manage.py collectstatic --noinput"
+    defaults:
+      resources:
+        requests:
+          cpu: "0.1"
+          memory: 1Gi
+        limits:
+          memory: 2Gi
+    jobs:
+      # NOTE: Make sure keys are lowercase.
+      # db-migrate and collect-static inherit the chart defaults (Sync hook @ wave 20).
+      # wait-for-resources (Sync hook @ wave 10) gates api on connectivity.
+      wait-for-resources:
+        command: ["./manage.py", "wait_for_resources", "--db", "--cache"]
 
   cronjobs:
     enabled: true
-    defaultResources:
-      requests:
-        cpu: "0.1"
-        memory: 0.5Gi
-      limits:
-        cpu: "2"
-        memory: 1Gi
+    defaults:
+      resources:
+        requests:
+          cpu: "0.1"
+          memory: 0.5Gi
+        limits:
+          memory: 1Gi
+    # NOTE: job keys here are kept in sync with main/sentry.py SentryMonitorConfig.CronJob.
     jobs:
       process_not_done_time_entries:
         enabled: true
@@ -158,20 +99,15 @@ app:
         timeZone: "Asia/Kathmandu"
         command: ["./manage.py", "standup", "read-doc-reminder"]
 
-  # NOTE: Check main/settings.py for all available options
+  # NOTE: Check main/settings.py for all available options.
+  # APP_DOMAIN, APP_FRONTEND_HOST, SESSION_COOKIE_DOMAIN, CSRF_COOKIE_DOMAIN and
+  # EMAIL_FROM are provided per-environment (env overlays / CICD).
   env:
     APP_RELEASE: "{{ $.Values.image.tag }}"
     APP_ENVIRONMENT: "{{ $.Values.environment }}"
     DJANGO_TIME_ZONE: "Asia/Kathmandu"
     DJANGO_DEBUG: "false"
-    # App Domain
-    APP_DOMAIN: "{{ required \".app.env.APP_DOMAIN\" nil }}"
-    APP_FRONTEND_HOST: "{{ required \".app.env.APP_FRONTEND_HOST\" nil }}"
-    SESSION_COOKIE_DOMAIN: "{{ required \".app.env.SESSION_COOKIE_DOMAIN\" nil }}"
-    CSRF_COOKIE_DOMAIN: "{{ required \".app.env.CSRF_COOKIE_DOMAIN\" nil }}"
     SESSION_COOKIE_AGE: "2592000"  # 30 days
-    # -- Email
-    EMAIL_FROM: "{{ required \".app.env.EMAIL_FROM\" nil }}"
     # -- Sentry
     SENTRY_TRACES_SAMPLE_RATE: "0.2"
     SENTRY_PROFILE_SAMPLE_RATE: "0.2"
@@ -179,32 +115,13 @@ app:
     GOOGLE_SSO_ENABLED: "false"
     # GOOGLE_SSO_ALLOWED_DOMAINS: togglecorp.com
     # -- AWS
-    AWS_S3_ENABLED: "false"
+    # Default ENABLED so media/static use S3, not the pod's ephemeral filesystem.
+    # Endpoint/bucket names + credentials are provided per-environment (CICD / ExternalSecret).
+    AWS_S3_ENABLED: "true"
     # AWS_S3_ENDPOINT_URL:
     # AWS_S3_MEDIA_BUCKET_NAME:
     # AWS_S3_STATIC_BUCKET_NAME:
 
-  # NOTE: Check main/settings.py for all available options
+  # NOTE: Check main/settings.py for all available options.
+  # Secrets are provided per-environment (env overlays / CICD / ExternalSecret).
   secrets: {}
-    # -- Redis
-    # CELERY_REDIS_URL:
-    # DJANGO_CACHE_REDIS_URL:
-    # -- Google calendar
-    # GOOGLE_CALENDAR_ID:
-    # GOOGLE_CREDENTIALS_B64_GZ:
-    # -- Misc
-    # SENTRY_DSN:
-    # DJANGO_SECRET_KEY: "{{ required \".app.secrets.DJANGO_SECRET_KEY\" nil }}"
-    # -- Postgres
-    # DB_NAME:
-    # DB_USER:
-    # DB_PASSWORD:
-    # DB_HOST:
-    # DB_PORT:
-    # -- S3
-    # AWS_S3_ACCESS_KEY_ID:
-    # AWS_S3_SECRET_ACCESS_KEY:
-    # AWS_S3_REGION_NAME:
-    # -- Google SSO
-    # GOOGLE_SSO_CLIENT_ID:
-    # GOOGLE_SSO_SECRET:

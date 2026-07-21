@@ -9,6 +9,7 @@ from pathlib import Path
 import sentry_sdk
 import yaml
 from asgiref.sync import sync_to_async
+from banjo_utils.health import make_sentry_traces_sampler_with_health_probe_ignore
 from django.db import models
 from sentry_sdk import Scope, set_user
 from sentry_sdk.crons import monitor as og_monitor
@@ -80,7 +81,8 @@ class SentryConfig:
             release=self.release,
             environment=self.environment,
             send_default_pii=self.send_default_pii,
-            traces_sample_rate=self.traces_sample_rate,
+            # Ignore k8s health-probe (/healthz/*) requests so they don't consume tracing quota.
+            traces_sampler=make_sentry_traces_sampler_with_health_probe_ignore(self.traces_sample_rate),
             profiles_sample_rate=self.profiles_sample_rate,
             before_send=sentry_before_send,
             debug=self.debug,
@@ -190,7 +192,9 @@ class SentryMonitorConfig:
 
     @staticmethod
     def load_cron_data() -> dict[str, str]:
-        with Path.open(helm_values_path) as fp:
+        # Explicit UTF-8: the pod may run under a C/POSIX (ASCII) locale, where
+        # Python's default open() encoding would choke on any non-ASCII byte.
+        with Path.open(helm_values_path, encoding="utf-8") as fp:
             try:
                 yaml_data = yaml.safe_load(fp)
                 return {

@@ -19,13 +19,21 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     && apt-get install -y --no-install-recommends \
         # Build required packages
         gcc libc-dev gdal-bin libproj-dev \
+        # PCRE headers so the pip-built uWSGI gets internal routing support
+        # (needed for the `route = ... donotlog:` probe-log suppression in uwsgi.ini)
+        libpcre3-dev \
+        # Required by uv to fetch the banjo-utils git dependency
+        git \
         # Helper packages
         procps \
         wait-for-it \
+    # Evict any cached uWSGI wheel so it recompiles against libpcre3-dev now that
+    # the headers are present (a wheel cached before PCRE existed lacks routing support).
+    && uv cache clean uwsgi \
     # FIXME: Add condition to skip dev dependencies
     && uv sync --frozen --no-install-project --all-groups \
     # Clean-up
-    && apt-get remove -y gcc libc-dev libproj-dev \
+    && apt-get remove -y gcc libc-dev libproj-dev git \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 

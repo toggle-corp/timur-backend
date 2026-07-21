@@ -18,7 +18,7 @@ if typing.TYPE_CHECKING:
 import environ
 from corsheaders.defaults import default_headers
 
-from main.logging import log_render_custom_field
+from main.logging import log_render_custom_field, skip_health_probe_logs
 from main.sentry import SentryConfig
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -140,6 +140,7 @@ ALLOWED_HOSTS: list[str] = [
 
 INSTALLED_APPS = [
     "apps.common",  # Common (NOTE: Moved to first to override some of existing commands like clearsessions)
+    "banjo_utils",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -179,6 +180,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    # banjo_utils HealthProbeMiddleware serves pod-local /healthz/live/ and
+    # /healthz/ready/ (bypassing ALLOWED_HOSTS); keep it first.
+    "banjo_utils.health.HealthProbeMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -528,6 +532,10 @@ GOOGLE_CALENDAR_ID = env("GOOGLE_CALENDAR_ID")
 GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_EVENT = env("GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_EVENT")
 
 # Health check
+# banjo_utils HealthProbeMiddleware pod-local probe URLs (see MIDDLEWARE)
+BANJO_HEALTH_PROBE_LIVE_URL = "/healthz/live/"
+BANJO_HEALTH_PROBE_READY_URL = "/healthz/ready/"
+
 REDIS_URL = DJANGO_CACHE_REDIS_URL
 HEALTHCHECK_CACHE_KEY = "alert_hub_healthcheck_key"
 HEALTH_CHECK = {
@@ -556,6 +564,11 @@ LOGGING = {
             "()": "django.utils.log.CallbackFilter",
             "callback": log_render_custom_field,
         },
+        # Drop successful k8s health-probe (/healthz/*) request-line logs (django.server).
+        "skip_health_probes": {
+            "()": "django.utils.log.CallbackFilter",
+            "callback": skip_health_probe_logs,
+        },
     },
     "formatters": {
         "simple": {
@@ -567,7 +580,7 @@ LOGGING = {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "simple",
-            "filters": ["render_extra_context"],
+            "filters": ["render_extra_context", "skip_health_probes"],
         },
     },
     "loggers": {
@@ -602,7 +615,7 @@ if DEBUG:
             "colored_console": {
                 "class": "logging.StreamHandler",
                 "formatter": "colored_verbose",
-                "filters": ["render_extra_context"],
+                "filters": ["render_extra_context", "skip_health_probes"],
             },
         },
         "loggers": {
