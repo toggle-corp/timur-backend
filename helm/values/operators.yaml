@@ -88,36 +88,37 @@ app:
         pluginConfiguration:
           name: barman-cloud.cloudnative-pg.io
 
+  # Dict form so per-environment overlays deep-merge (array form replaces wholesale).
   extraEnvVars:
     # Checkout the resources defined by extraManifests
     # -- Redis (Dragonfly)
-    - name: CELERY_REDIS_URL
+    CELERY_REDIS_URL:
       value: redis://timur-dragonfly:6379/0
-    - name: DJANGO_CACHE_REDIS_URL
+    DJANGO_CACHE_REDIS_URL:
       value: redis://timur-dragonfly:6379/1
     # -- Postgres (CNPG)
     # NOTE: cnpg-pg is the cluster name (See cnpg-cluster)
-    - name: DB_HOST
+    DB_HOST:
       valueFrom:
         secretKeyRef:
           name: cnpg-pg-app
           key: host
-    - name: DB_PORT
+    DB_PORT:
       valueFrom:
         secretKeyRef:
           name: cnpg-pg-app
           key: port
-    - name: DB_NAME
+    DB_NAME:
       valueFrom:
         secretKeyRef:
           name: cnpg-pg-app
           key: dbname
-    - name: DB_USER
+    DB_USER:
       valueFrom:
         secretKeyRef:
           name: cnpg-pg-app
           key: username
-    - name: DB_PASSWORD
+    DB_PASSWORD:
       valueFrom:
         secretKeyRef:
           name: cnpg-pg-app

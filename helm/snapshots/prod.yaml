@@ -1,112 +1,4 @@
 ---
-# Source: timur-backend-helm/charts/app/charts/minio/templates/networkpolicy.yaml
-kind: NetworkPolicy
-apiVersion: networking.k8s.io/v1
-metadata:
-  name: timur-minio
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: minio
-    app.kubernetes.io/version: 2024.12.18
-    helm.sh/chart: minio-14.10.5
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/instance: release-name
-      app.kubernetes.io/name: minio
-  policyTypes:
-    - Ingress
-    - Egress
-  egress:
-    - {}
-  ingress:
-    # Allow inbound connections
-    - ports:
-        - port: 9001
-        - port: 9000
-
----
-# Source: timur-backend-helm/charts/app/charts/minio/templates/provisioning-networkpolicy.yaml
-kind: NetworkPolicy
-apiVersion: networking.k8s.io/v1
-metadata:
-  name: timur-minio-provisioning
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: minio
-    app.kubernetes.io/version: 2024.12.18
-    helm.sh/chart: minio-14.10.5
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/component: minio-provisioning
-  policyTypes:
-    - Ingress
-    - Egress
-  egress:
-    - {}
-  ingress:
-
----
-# Source: timur-backend-helm/charts/app/charts/minio/templates/pdb.yaml
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: timur-minio
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: minio
-    app.kubernetes.io/version: 2024.12.18
-    helm.sh/chart: minio-14.10.5
-spec:
-  maxUnavailable: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/instance: release-name
-      app.kubernetes.io/name: minio
-
----
-# Source: timur-backend-helm/charts/app/charts/minio/templates/serviceaccount.yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: timur-minio
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: minio
-    app.kubernetes.io/version: 2024.12.18
-    helm.sh/chart: minio-14.10.5
-automountServiceAccountToken: false
-secrets:
-  - name: timur-minio
-
----
-# Source: timur-backend-helm/charts/app/charts/minio/templates/secrets.yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: timur-minio
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: minio
-    app.kubernetes.io/version: 2024.12.18
-    helm.sh/chart: minio-14.10.5
-type: Opaque
-data:
-  root-user: "dGltdXI="
-  root-password: "WFla"
-
----
 # Source: timur-backend-helm/charts/app/templates/config/secret.yaml
 kind: Secret
 apiVersion: v1
@@ -119,22 +11,6 @@ metadata:
 type: Opaque
 stringData:
   # secrets
-
----
-# Source: timur-backend-helm/charts/app/charts/minio/templates/provisioning-configmap.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: timur-minio-provisioning
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: minio
-    app.kubernetes.io/version: 2024.12.18
-    helm.sh/chart: minio-14.10.5
-    app.kubernetes.io/component: minio-provisioning
-data:
 
 ---
 # Source: timur-backend-helm/charts/app/templates/config/configmap.yaml
@@ -168,55 +44,6 @@ data:
   SESSION_COOKIE_DOMAIN: ".example.com"
 
 ---
-# Source: timur-backend-helm/charts/app/charts/minio/templates/pvc.yaml
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: timur-minio
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: minio
-    app.kubernetes.io/version: 2024.12.18
-    helm.sh/chart: minio-14.10.5
-spec:
-  accessModes:
-    - "ReadWriteOnce"
-  resources:
-    requests:
-      storage: "1Gi"
-  
-
----
-# Source: timur-backend-helm/charts/app/charts/minio/templates/service.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: timur-minio
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: minio
-    app.kubernetes.io/version: 2024.12.18
-    helm.sh/chart: minio-14.10.5
-spec:
-  type: ClusterIP
-  ports:
-    - name: minio-api
-      port: 9000
-      targetPort: minio-api
-      nodePort: null
-    - name: minio-console
-      port: 9001
-      targetPort: minio-console
-      nodePort: null
-  selector:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/name: minio
-
----
 # Source: timur-backend-helm/charts/app/templates/api/service.yaml
 apiVersion: v1
 kind: Service
@@ -238,165 +65,13 @@ spec:
       targetPort: 80
 
 ---
-# Source: timur-backend-helm/charts/app/charts/minio/templates/standalone/deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: timur-minio
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: minio
-    app.kubernetes.io/version: 2024.12.18
-    helm.sh/chart: minio-14.10.5
-spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/instance: release-name
-      app.kubernetes.io/name: minio
-  strategy:
-    type: Recreate
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/instance: release-name
-        app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/name: minio
-        app.kubernetes.io/version: 2024.12.18
-        helm.sh/chart: minio-14.10.5
-      annotations:
-        checksum/credentials-secret: cd5ea9ebe5ed3533110ba71e8c86dec879d230f36589d7a1ab6f340298401002
-    spec:
-      
-      serviceAccountName: timur-minio
-      affinity:
-        podAffinity:
-          
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - podAffinityTerm:
-                labelSelector:
-                  matchLabels:
-                    app.kubernetes.io/instance: release-name
-                    app.kubernetes.io/name: minio
-                topologyKey: kubernetes.io/hostname
-              weight: 1
-        nodeAffinity:
-          
-      automountServiceAccountToken: false
-      securityContext:
-        fsGroup: 1001
-        fsGroupChangePolicy: OnRootMismatch
-        supplementalGroups: []
-        sysctls: []
-      containers:
-        - name: minio
-          image: docker.io/bitnamilegacy/minio:2024.12.18-debian-12-r1
-          imagePullPolicy: "IfNotPresent"
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            privileged: false
-            readOnlyRootFilesystem: true
-            runAsGroup: 1001
-            runAsNonRoot: true
-            runAsUser: 1001
-            seLinuxOptions: {}
-            seccompProfile:
-              type: RuntimeDefault
-          env:
-            - name: BITNAMI_DEBUG
-              value: "false"
-            - name: MINIO_SCHEME
-              value: "http"
-            - name: MINIO_FORCE_NEW_KEYS
-              value: "yes"
-            - name: MINIO_API_PORT_NUMBER
-              value: "9000"
-            - name: MINIO_ROOT_USER
-              valueFrom:
-                secretKeyRef:
-                  name: timur-minio
-                  key: root-user
-            - name: MINIO_ROOT_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: timur-minio
-                  key: root-password
-            - name: MINIO_DEFAULT_BUCKETS
-              value: timur-static,timur-media
-            - name: MINIO_BROWSER
-              value: "off"
-            - name: MINIO_PROMETHEUS_AUTH_TYPE
-              value: "public"
-            - name: MINIO_CONSOLE_PORT_NUMBER
-              value: "9001"
-            - name: MINIO_DATA_DIR
-              value: "/bitnami/minio/data"
-          envFrom:
-          ports:
-            - name: minio-api
-              containerPort: 9000
-              protocol: TCP
-            - name: minio-console
-              containerPort: 9001
-              protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /minio/health/live
-              port: minio-api
-              scheme: "HTTP"
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 5
-            successThreshold: 1
-            failureThreshold: 5
-          readinessProbe:
-            tcpSocket:
-              port: minio-api
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 1
-            successThreshold: 1
-            failureThreshold: 5
-          resources:
-            limits:
-              cpu: 375m
-              ephemeral-storage: 2Gi
-              memory: 384Mi
-            requests:
-              cpu: 250m
-              ephemeral-storage: 50Mi
-              memory: 256Mi
-          volumeMounts:
-            - name: empty-dir
-              mountPath: /tmp
-              subPath: tmp-dir
-            - name: empty-dir
-              mountPath: /opt/bitnami/minio/tmp
-              subPath: app-tmp-dir
-            - name: empty-dir
-              mountPath: /.mc
-              subPath: app-mc-dir
-            - name: data
-              mountPath: /bitnami/minio/data
-      volumes:
-        - name: empty-dir
-          emptyDir: {}
-        - name: data
-          persistentVolumeClaim:
-            claimName: timur-minio
-
----
 # Source: timur-backend-helm/charts/app/templates/api/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: release-name-app-api
   annotations:
+    argocd.argoproj.io/sync-wave: "30"
     reloader.stakater.com/auto: "true"
   labels:
     app: release-name-app
@@ -404,7 +79,7 @@ metadata:
     environment: PROD
     release: release-name
 spec:
-  replicas: 1
+  revisionHistoryLimit: 1
   selector:
     matchLabels:
       app: release-name-app
@@ -418,6 +93,7 @@ spec:
         app: release-name-app
         component: api
     spec:
+      terminationGracePeriodSeconds: 38
       containers:
         - name: api
           image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
@@ -428,10 +104,28 @@ spec:
             - name: http
               containerPort: 80
               protocol: TCP
-          # TODO: livenessProbe
+          livenessProbe:
+            failureThreshold: 6
+            httpGet:
+              path: /healthz/live/
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 2
+          readinessProbe:
+            failureThreshold: 6
+            httpGet:
+              path: /healthz/ready/
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+          startupProbe:
+            failureThreshold: 30
+            httpGet:
+              path: /healthz/ready/
+              port: http
+            periodSeconds: 5
           resources:
             limits:
-              cpu: "2"
               memory: 1Gi
             requests:
               cpu: "2"
@@ -448,43 +142,56 @@ spec:
               value: "web"
             - name: CELERY_REDIS_URL
               value: redis://timur-dragonfly:6379/0
-            - name: DJANGO_CACHE_REDIS_URL
-              value: redis://timur-dragonfly:6379/1
             - name: DB_HOST
               valueFrom:
                 secretKeyRef:
                   key: host
-                  name: cnpg-pg-app
-            - name: DB_PORT
-              valueFrom:
-                secretKeyRef:
-                  key: port
                   name: cnpg-pg-app
             - name: DB_NAME
               valueFrom:
                 secretKeyRef:
                   key: dbname
                   name: cnpg-pg-app
-            - name: DB_USER
-              valueFrom:
-                secretKeyRef:
-                  key: username
-                  name: cnpg-pg-app
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   key: password
                   name: cnpg-pg-app
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  key: port
+                  name: cnpg-pg-app
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  key: username
+                  name: cnpg-pg-app
+            - name: DJANGO_CACHE_REDIS_URL
+              value: redis://timur-dragonfly:6379/1
+            
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 8
 
 ---
-# Source: timur-backend-helm/charts/app/templates/argo-hooks/hook-job.yaml
+# Source: timur-backend-helm/charts/app/templates/hooks/job.yaml
 # Hook: collect-static
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: release-name-app-collect-static
   annotations:
-    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "20"
+  labels:
+    app: release-name-app
+    component: hook
+    hookName: collect-static
+    environment: PROD
+    release: release-name
 spec:
   template:
     metadata:
@@ -493,7 +200,8 @@ spec:
         checksum/configmap: b1653d36b264a57bde68a9685da23b44ab31bcc6fd7810886308f78c78e8a90b
       labels:
         app: release-name-app
-        component: argo-hooks
+        component: hook
+        hookName: collect-static
     spec:
       restartPolicy: "Never"
       containers:
@@ -501,13 +209,11 @@ spec:
           image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
           imagePullPolicy: IfNotPresent
           command: 
-            - /bin/bash
-            - -c
-          args: 
-            - ./manage.py wait_for_resources --minio && ./manage.py collectstatic --noinput
+            - ./manage.py
+            - collectstatic
+            - --noinput
           resources:
             limits:
-              cpu: "4"
               memory: 2Gi
             requests:
               cpu: "0.1"
@@ -524,42 +230,132 @@ spec:
               value: "hook"
             - name: CELERY_REDIS_URL
               value: redis://timur-dragonfly:6379/0
-            - name: DJANGO_CACHE_REDIS_URL
-              value: redis://timur-dragonfly:6379/1
             - name: DB_HOST
               valueFrom:
                 secretKeyRef:
                   key: host
-                  name: cnpg-pg-app
-            - name: DB_PORT
-              valueFrom:
-                secretKeyRef:
-                  key: port
                   name: cnpg-pg-app
             - name: DB_NAME
               valueFrom:
                 secretKeyRef:
                   key: dbname
                   name: cnpg-pg-app
-            - name: DB_USER
-              valueFrom:
-                secretKeyRef:
-                  key: username
-                  name: cnpg-pg-app
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   key: password
                   name: cnpg-pg-app
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  key: port
+                  name: cnpg-pg-app
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  key: username
+                  name: cnpg-pg-app
+            - name: DJANGO_CACHE_REDIS_URL
+              value: redis://timur-dragonfly:6379/1
 ---
-# Source: timur-backend-helm/charts/app/templates/argo-hooks/hook-job.yaml
+# Source: timur-backend-helm/charts/app/templates/hooks/job.yaml
 # Hook: db-migrate
 apiVersion: batch/v1
 kind: Job
 metadata:
   generateName: release-name-app-db-migrate-
   annotations:
-    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/sync-wave: "20"
+  labels:
+    app: release-name-app
+    component: hook
+    hookName: db-migrate
+    environment: PROD
+    release: release-name
+spec:
+  activeDeadlineSeconds: 3600
+  ttlSecondsAfterFinished: 604800
+  template:
+    metadata:
+      annotations:
+        checksum/secret: b0ee38fa1e4ebc47efef9d6643669d5ef1be602075cc8ee46004222c0ea6a070
+        checksum/configmap: b1653d36b264a57bde68a9685da23b44ab31bcc6fd7810886308f78c78e8a90b
+      labels:
+        app: release-name-app
+        component: hook
+        hookName: db-migrate
+    spec:
+      restartPolicy: "Never"
+      containers:
+        - name: db-migrate
+          image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
+          imagePullPolicy: IfNotPresent
+          command: 
+            - ./manage.py
+            - migrate
+          resources:
+            limits:
+              memory: 2Gi
+            requests:
+              cpu: "0.1"
+              memory: 1Gi
+          envFrom:
+            - secretRef:
+                name: release-name-app-secret
+            - secretRef:
+                name: my-extra-secrets
+            - configMapRef:
+                name: release-name-app-env-name
+          env:
+            - name: DJANGO_APP_TYPE
+              value: "hook"
+            - name: CELERY_REDIS_URL
+              value: redis://timur-dragonfly:6379/0
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  key: host
+                  name: cnpg-pg-app
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  key: dbname
+                  name: cnpg-pg-app
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: password
+                  name: cnpg-pg-app
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  key: port
+                  name: cnpg-pg-app
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  key: username
+                  name: cnpg-pg-app
+            - name: DJANGO_CACHE_REDIS_URL
+              value: redis://timur-dragonfly:6379/1
+---
+# Source: timur-backend-helm/charts/app/templates/hooks/job.yaml
+# Hook: wait-for-resources
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: release-name-app-wait-for-resources
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+    argocd.argoproj.io/sync-wave: "10"
+  labels:
+    app: release-name-app
+    component: hook
+    hookName: wait-for-resources
+    environment: PROD
+    release: release-name
 spec:
   template:
     metadata:
@@ -568,21 +364,21 @@ spec:
         checksum/configmap: b1653d36b264a57bde68a9685da23b44ab31bcc6fd7810886308f78c78e8a90b
       labels:
         app: release-name-app
-        component: argo-hooks
+        component: hook
+        hookName: wait-for-resources
     spec:
       restartPolicy: "Never"
       containers:
-        - name: db-migrate
+        - name: wait-for-resources
           image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
           imagePullPolicy: IfNotPresent
           command: 
-            - /bin/bash
-            - -c
-          args: 
-            - ./manage.py wait_for_resources --db && ./manage.py migrate
+            - ./manage.py
+            - wait_for_resources
+            - --db
+            - --cache
           resources:
             limits:
-              cpu: "4"
               memory: 2Gi
             requests:
               cpu: "0.1"
@@ -599,33 +395,34 @@ spec:
               value: "hook"
             - name: CELERY_REDIS_URL
               value: redis://timur-dragonfly:6379/0
-            - name: DJANGO_CACHE_REDIS_URL
-              value: redis://timur-dragonfly:6379/1
             - name: DB_HOST
               valueFrom:
                 secretKeyRef:
                   key: host
-                  name: cnpg-pg-app
-            - name: DB_PORT
-              valueFrom:
-                secretKeyRef:
-                  key: port
                   name: cnpg-pg-app
             - name: DB_NAME
               valueFrom:
                 secretKeyRef:
                   key: dbname
                   name: cnpg-pg-app
-            - name: DB_USER
-              valueFrom:
-                secretKeyRef:
-                  key: username
-                  name: cnpg-pg-app
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   key: password
                   name: cnpg-pg-app
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  key: port
+                  name: cnpg-pg-app
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  key: username
+                  name: cnpg-pg-app
+            - name: DJANGO_CACHE_REDIS_URL
+              value: redis://timur-dragonfly:6379/1
+            
 
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
@@ -644,11 +441,15 @@ spec:
   schedule: "0 0 1 * *"
   timeZone: "Asia/Kathmandu"
   concurrencyPolicy: "Forbid"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
       activeDeadlineSeconds: 7200  # 2 hours default
+      ttlSecondsAfterFinished: 604800
       template:
         metadata:
+          annotations:
           labels:
             app: release-name-app
             component: cronjob
@@ -663,7 +464,6 @@ spec:
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
-                  cpu: "2"
                   memory: 1Gi
                 requests:
                   cpu: "0.1"
@@ -680,33 +480,33 @@ spec:
                   value: "cronjob"
                 - name: CELERY_REDIS_URL
                   value: redis://timur-dragonfly:6379/0
-                - name: DJANGO_CACHE_REDIS_URL
-                  value: redis://timur-dragonfly:6379/1
                 - name: DB_HOST
                   valueFrom:
                     secretKeyRef:
                       key: host
-                      name: cnpg-pg-app
-                - name: DB_PORT
-                  valueFrom:
-                    secretKeyRef:
-                      key: port
                       name: cnpg-pg-app
                 - name: DB_NAME
                   valueFrom:
                     secretKeyRef:
                       key: dbname
                       name: cnpg-pg-app
-                - name: DB_USER
-                  valueFrom:
-                    secretKeyRef:
-                      key: username
-                      name: cnpg-pg-app
                 - name: DB_PASSWORD
                   valueFrom:
                     secretKeyRef:
                       key: password
                       name: cnpg-pg-app
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      key: port
+                      name: cnpg-pg-app
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: cnpg-pg-app
+                - name: DJANGO_CACHE_REDIS_URL
+                  value: redis://timur-dragonfly:6379/1
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
 # Job: process_not_done_time_entries
@@ -724,11 +524,15 @@ spec:
   schedule: "5 0 * * *"
   timeZone: "Asia/Kathmandu"
   concurrencyPolicy: "Forbid"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
       activeDeadlineSeconds: 7200  # 2 hours default
+      ttlSecondsAfterFinished: 604800
       template:
         metadata:
+          annotations:
           labels:
             app: release-name-app
             component: cronjob
@@ -743,7 +547,6 @@ spec:
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
-                  cpu: "2"
                   memory: 1Gi
                 requests:
                   cpu: "0.1"
@@ -760,33 +563,33 @@ spec:
                   value: "cronjob"
                 - name: CELERY_REDIS_URL
                   value: redis://timur-dragonfly:6379/0
-                - name: DJANGO_CACHE_REDIS_URL
-                  value: redis://timur-dragonfly:6379/1
                 - name: DB_HOST
                   valueFrom:
                     secretKeyRef:
                       key: host
-                      name: cnpg-pg-app
-                - name: DB_PORT
-                  valueFrom:
-                    secretKeyRef:
-                      key: port
                       name: cnpg-pg-app
                 - name: DB_NAME
                   valueFrom:
                     secretKeyRef:
                       key: dbname
                       name: cnpg-pg-app
-                - name: DB_USER
-                  valueFrom:
-                    secretKeyRef:
-                      key: username
-                      name: cnpg-pg-app
                 - name: DB_PASSWORD
                   valueFrom:
                     secretKeyRef:
                       key: password
                       name: cnpg-pg-app
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      key: port
+                      name: cnpg-pg-app
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: cnpg-pg-app
+                - name: DJANGO_CACHE_REDIS_URL
+                  value: redis://timur-dragonfly:6379/1
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
 # Job: standup_before_standup_reminder
@@ -804,11 +607,15 @@ spec:
   schedule: "10 9 * * 1,2,3,4,5"
   timeZone: "Asia/Kathmandu"
   concurrencyPolicy: "Forbid"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
       activeDeadlineSeconds: 7200  # 2 hours default
+      ttlSecondsAfterFinished: 604800
       template:
         metadata:
+          annotations:
           labels:
             app: release-name-app
             component: cronjob
@@ -824,7 +631,6 @@ spec:
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
-                  cpu: "2"
                   memory: 1Gi
                 requests:
                   cpu: "0.1"
@@ -841,33 +647,33 @@ spec:
                   value: "cronjob"
                 - name: CELERY_REDIS_URL
                   value: redis://timur-dragonfly:6379/0
-                - name: DJANGO_CACHE_REDIS_URL
-                  value: redis://timur-dragonfly:6379/1
                 - name: DB_HOST
                   valueFrom:
                     secretKeyRef:
                       key: host
-                      name: cnpg-pg-app
-                - name: DB_PORT
-                  valueFrom:
-                    secretKeyRef:
-                      key: port
                       name: cnpg-pg-app
                 - name: DB_NAME
                   valueFrom:
                     secretKeyRef:
                       key: dbname
                       name: cnpg-pg-app
-                - name: DB_USER
-                  valueFrom:
-                    secretKeyRef:
-                      key: username
-                      name: cnpg-pg-app
                 - name: DB_PASSWORD
                   valueFrom:
                     secretKeyRef:
                       key: password
                       name: cnpg-pg-app
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      key: port
+                      name: cnpg-pg-app
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: cnpg-pg-app
+                - name: DJANGO_CACHE_REDIS_URL
+                  value: redis://timur-dragonfly:6379/1
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
 # Job: standup_morning_reminder
@@ -885,11 +691,15 @@ spec:
   schedule: "0 8 * * 1,2,3,4,5"
   timeZone: "Asia/Kathmandu"
   concurrencyPolicy: "Forbid"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
       activeDeadlineSeconds: 7200  # 2 hours default
+      ttlSecondsAfterFinished: 604800
       template:
         metadata:
+          annotations:
           labels:
             app: release-name-app
             component: cronjob
@@ -905,7 +715,6 @@ spec:
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
-                  cpu: "2"
                   memory: 1Gi
                 requests:
                   cpu: "0.1"
@@ -922,33 +731,33 @@ spec:
                   value: "cronjob"
                 - name: CELERY_REDIS_URL
                   value: redis://timur-dragonfly:6379/0
-                - name: DJANGO_CACHE_REDIS_URL
-                  value: redis://timur-dragonfly:6379/1
                 - name: DB_HOST
                   valueFrom:
                     secretKeyRef:
                       key: host
-                      name: cnpg-pg-app
-                - name: DB_PORT
-                  valueFrom:
-                    secretKeyRef:
-                      key: port
                       name: cnpg-pg-app
                 - name: DB_NAME
                   valueFrom:
                     secretKeyRef:
                       key: dbname
                       name: cnpg-pg-app
-                - name: DB_USER
-                  valueFrom:
-                    secretKeyRef:
-                      key: username
-                      name: cnpg-pg-app
                 - name: DB_PASSWORD
                   valueFrom:
                     secretKeyRef:
                       key: password
                       name: cnpg-pg-app
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      key: port
+                      name: cnpg-pg-app
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: cnpg-pg-app
+                - name: DJANGO_CACHE_REDIS_URL
+                  value: redis://timur-dragonfly:6379/1
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
 # Job: standup_read_doc_reminder
@@ -966,11 +775,15 @@ spec:
   schedule: "55 16 * * 1,2,3,4,5"
   timeZone: "Asia/Kathmandu"
   concurrencyPolicy: "Forbid"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
       activeDeadlineSeconds: 7200  # 2 hours default
+      ttlSecondsAfterFinished: 604800
       template:
         metadata:
+          annotations:
           labels:
             app: release-name-app
             component: cronjob
@@ -986,7 +799,6 @@ spec:
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
-                  cpu: "2"
                   memory: 1Gi
                 requests:
                   cpu: "0.1"
@@ -1003,33 +815,33 @@ spec:
                   value: "cronjob"
                 - name: CELERY_REDIS_URL
                   value: redis://timur-dragonfly:6379/0
-                - name: DJANGO_CACHE_REDIS_URL
-                  value: redis://timur-dragonfly:6379/1
                 - name: DB_HOST
                   valueFrom:
                     secretKeyRef:
                       key: host
-                      name: cnpg-pg-app
-                - name: DB_PORT
-                  valueFrom:
-                    secretKeyRef:
-                      key: port
                       name: cnpg-pg-app
                 - name: DB_NAME
                   valueFrom:
                     secretKeyRef:
                       key: dbname
                       name: cnpg-pg-app
-                - name: DB_USER
-                  valueFrom:
-                    secretKeyRef:
-                      key: username
-                      name: cnpg-pg-app
                 - name: DB_PASSWORD
                   valueFrom:
                     secretKeyRef:
                       key: password
                       name: cnpg-pg-app
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      key: port
+                      name: cnpg-pg-app
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: cnpg-pg-app
+                - name: DJANGO_CACHE_REDIS_URL
+                  value: redis://timur-dragonfly:6379/1
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
 # Job: standup_setup_next_standup
@@ -1047,11 +859,15 @@ spec:
   schedule: "45 16 * * 1,2,3,4,5"
   timeZone: "Asia/Kathmandu"
   concurrencyPolicy: "Forbid"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
       activeDeadlineSeconds: 7200  # 2 hours default
+      ttlSecondsAfterFinished: 604800
       template:
         metadata:
+          annotations:
           labels:
             app: release-name-app
             component: cronjob
@@ -1067,7 +883,6 @@ spec:
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
-                  cpu: "2"
                   memory: 1Gi
                 requests:
                   cpu: "0.1"
@@ -1084,33 +899,33 @@ spec:
                   value: "cronjob"
                 - name: CELERY_REDIS_URL
                   value: redis://timur-dragonfly:6379/0
-                - name: DJANGO_CACHE_REDIS_URL
-                  value: redis://timur-dragonfly:6379/1
                 - name: DB_HOST
                   valueFrom:
                     secretKeyRef:
                       key: host
-                      name: cnpg-pg-app
-                - name: DB_PORT
-                  valueFrom:
-                    secretKeyRef:
-                      key: port
                       name: cnpg-pg-app
                 - name: DB_NAME
                   valueFrom:
                     secretKeyRef:
                       key: dbname
                       name: cnpg-pg-app
-                - name: DB_USER
-                  valueFrom:
-                    secretKeyRef:
-                      key: username
-                      name: cnpg-pg-app
                 - name: DB_PASSWORD
                   valueFrom:
                     secretKeyRef:
                       key: password
                       name: cnpg-pg-app
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      key: port
+                      name: cnpg-pg-app
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: cnpg-pg-app
+                - name: DJANGO_CACHE_REDIS_URL
+                  value: redis://timur-dragonfly:6379/1
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
 # Job: user_sync_slack_users_id
@@ -1128,11 +943,15 @@ spec:
   schedule: "30 16 * * 1,2,3,4,5"
   timeZone: "Asia/Kathmandu"
   concurrencyPolicy: "Forbid"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
       activeDeadlineSeconds: 7200  # 2 hours default
+      ttlSecondsAfterFinished: 604800
       template:
         metadata:
+          annotations:
           labels:
             app: release-name-app
             component: cronjob
@@ -1147,7 +966,6 @@ spec:
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
-                  cpu: "2"
                   memory: 1Gi
                 requests:
                   cpu: "0.1"
@@ -1164,61 +982,34 @@ spec:
                   value: "cronjob"
                 - name: CELERY_REDIS_URL
                   value: redis://timur-dragonfly:6379/0
-                - name: DJANGO_CACHE_REDIS_URL
-                  value: redis://timur-dragonfly:6379/1
                 - name: DB_HOST
                   valueFrom:
                     secretKeyRef:
                       key: host
-                      name: cnpg-pg-app
-                - name: DB_PORT
-                  valueFrom:
-                    secretKeyRef:
-                      key: port
                       name: cnpg-pg-app
                 - name: DB_NAME
                   valueFrom:
                     secretKeyRef:
                       key: dbname
                       name: cnpg-pg-app
-                - name: DB_USER
-                  valueFrom:
-                    secretKeyRef:
-                      key: username
-                      name: cnpg-pg-app
                 - name: DB_PASSWORD
                   valueFrom:
                     secretKeyRef:
                       key: password
                       name: cnpg-pg-app
-
----
-# Source: timur-backend-helm/charts/app/charts/minio/templates/api-ingress.yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: timur-minio-api
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: minio
-    app.kubernetes.io/version: 2024.12.18
-    helm.sh/chart: minio-14.10.5
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: 50m
-spec:
-  rules:
-    - host: timur-minio.example.com
-      http:
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: timur-minio
-                port:
-                  name: minio-api
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      key: port
+                      name: cnpg-pg-app
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: cnpg-pg-app
+                - name: DJANGO_CACHE_REDIS_URL
+                  value: redis://timur-dragonfly:6379/1
+                
 
 ---
 # Source: timur-backend-helm/charts/app/templates/api/ingress.yaml
@@ -1231,10 +1022,11 @@ metadata:
     component: api
     environment: PROD
     release: release-name
+  annotations:
+    argocd.argoproj.io/sync-wave: "30"
 spec:
-  ingressClassName: "nginx"
   rules:
-    - host: "timur.example.com"
+    - host: "timur-api.example.com"
       http:
         paths:
           - path: /
@@ -1335,219 +1127,3 @@ spec:
     name: barman-cloud.cloudnative-pg.io
   schedule: 0 0 0 * * *
   suspend: false
----
-# Source: timur-backend-helm/charts/app/charts/minio/templates/provisioning-job.yaml
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: timur-minio-provisioning
-  namespace: "default"
-  labels:
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: minio
-    app.kubernetes.io/version: 2024.12.18
-    helm.sh/chart: minio-14.10.5
-    app.kubernetes.io/component: minio-provisioning
-  annotations:
-    helm.sh/hook: post-install,post-upgrade
-    helm.sh/hook-delete-policy: before-hook-creation
-spec: 
-  ttlSecondsAfterFinished: 600 
-  parallelism: 1
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/managed-by: Helm
-        app.kubernetes.io/version: 2024.12.18
-        helm.sh/chart: minio-14.10.5
-        app.kubernetes.io/component: minio-provisioning
-    spec:
-      
-      restartPolicy: OnFailure
-      terminationGracePeriodSeconds: 0
-      securityContext:
-        fsGroup: 1001
-        fsGroupChangePolicy: Always
-        supplementalGroups: []
-        sysctls: []
-      serviceAccountName: timur-minio
-      initContainers:
-        - name: wait-for-available-minio
-          image: docker.io/bitnamilegacy/os-shell:12-debian-12-r35
-          imagePullPolicy: "IfNotPresent"
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            privileged: false
-            readOnlyRootFilesystem: true
-            runAsGroup: 1001
-            runAsNonRoot: true
-            runAsUser: 1001
-            seLinuxOptions: {}
-            seccompProfile:
-              type: RuntimeDefault
-          command:
-            - /bin/bash
-            - -c
-            - |-
-              set -e;
-              echo "Waiting for Minio";
-              wait-for-port \
-                --host=timur-minio \
-                --state=inuse \
-                --timeout=120 \
-                9000;
-              echo "Minio is available";
-          resources:
-            limits:
-              cpu: 150m
-              ephemeral-storage: 2Gi
-              memory: 192Mi
-            requests:
-              cpu: 100m
-              ephemeral-storage: 50Mi
-              memory: 128Mi
-      containers:
-        - name: minio
-          image: docker.io/bitnamilegacy/minio:2024.12.18-debian-12-r1
-          imagePullPolicy: "IfNotPresent"
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            privileged: false
-            readOnlyRootFilesystem: true
-            runAsGroup: 1001
-            runAsNonRoot: true
-            runAsUser: 1001
-            seLinuxOptions: {}
-            seccompProfile:
-              type: RuntimeDefault
-          command:
-            - /bin/bash
-            - -c
-            - |-
-              set -e;
-              echo "Start Minio provisioning";
-
-              retry_while() {
-                local -r cmd="${1:?cmd is missing}"
-                local -r retries="${2:-12}"
-                local -r sleep_time="${3:-5}"
-                local return_value=1
-
-                read -r -a command <<< "$cmd"
-                for ((i = 1 ; i <= retries ; i+=1 )); do
-                    "${command[@]}" && return_value=0 && break
-                    sleep "$sleep_time"
-                done
-                return $return_value
-              }
-
-              function attachPolicy() {
-                local tmp=$(mc admin $1 info provisioning $2 | sed -n -e 's/^Policy.*: \(.*\)$/\1/p');
-                IFS=',' read -r -a CURRENT_POLICIES <<< "$tmp";
-                if [[ ! "${CURRENT_POLICIES[*]}" =~ "$3" ]]; then
-                  mc admin policy attach provisioning $3 --$1=$2;
-                fi;
-              };
-
-              function detachDanglingPolicies() {
-                local tmp=$(mc admin $1 info provisioning $2 | sed -n -e 's/^Policy.*: \(.*\)$/\1/p');
-                IFS=',' read -r -a CURRENT_POLICIES <<< "$tmp";
-                IFS=',' read -r -a DESIRED_POLICIES <<< "$3";
-                for current in "${CURRENT_POLICIES[@]}"; do
-                  if [[ ! "${DESIRED_POLICIES[*]}" =~ "${current}" ]]; then
-                    mc admin policy detach provisioning $current --$1=$2;
-                  fi;
-                done;
-              }
-
-              function addUsersFromFile() {
-                local username=$(grep -oP '^username=\K.+' $1);
-                local password=$(grep -oP '^password=\K.+' $1);
-                local disabled=$(grep -oP '^disabled=\K.+' $1);
-                local policies_list=$(grep -oP '^policies=\K.+' $1);
-                local set_policies=$(grep -oP '^setPolicies=\K.+' $1);
-
-                mc admin user add provisioning "${username}" "${password}";
-
-                IFS=',' read -r -a POLICIES <<< "${policies_list}";
-                for policy in "${POLICIES[@]}"; do
-                  attachPolicy user "${username}" "${policy}";
-                done;
-                if [ "${set_policies}" == "true" ]; then
-                  detachDanglingPolicies user "${username}" "${policies_list}";
-                fi;
-
-                local user_status="enable";
-                if [[ "${disabled}" != "" && "${disabled,,}" == "true" ]]; then
-                  user_status="disable";
-                fi;
-
-                mc admin user "${user_status}" provisioning "${username}";
-              };
-              mc alias set provisioning $MINIO_SCHEME://timur-minio:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD;
-
-              mc admin service restart provisioning --wait --json;
-
-              # Adding a sleep to ensure that the check below does not cause
-              # a race condition. We check for the MinIO port because the
-              # "mc admin service restart --wait" command is not working as expected
-              sleep 5;
-              echo "Waiting for Minio to be available after restart";
-              if ! retry_while "mc admin info provisioning"; then
-                  echo "Error connecting to Minio"
-                  exit 1
-              fi
-              echo "Minio is available. Executing provisioning commands";
-              
-              mc anonymous set download provisioning/timur-static;
-
-              echo "End Minio provisioning";
-          env:
-            - name: MINIO_SCHEME
-              value: "http"
-            - name: MINIO_ROOT_USER
-              valueFrom:
-                secretKeyRef:
-                  name: timur-minio
-                  key: root-user
-            - name: MINIO_ROOT_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: timur-minio
-                  key: root-password
-          envFrom:
-          resources:
-            limits:
-              cpu: 150m
-              ephemeral-storage: 2Gi
-              memory: 192Mi
-            requests:
-              cpu: 100m
-              ephemeral-storage: 50Mi
-              memory: 128Mi
-          volumeMounts:
-            - name: empty-dir
-              mountPath: /.mc
-              subPath: app-mc-dir
-            - name: empty-dir
-              mountPath: /opt/bitnami/minio/tmp
-              subPath: app-tmp-dir
-            - name: empty-dir
-              mountPath: /tmp
-              subPath: tmp-dir
-            - name: minio-provisioning
-              mountPath: /etc/ilm
-      volumes:
-        - name: empty-dir
-          emptyDir: {}
-        - name: minio-provisioning
-          configMap:
-            name: timur-minio-provisioning
-

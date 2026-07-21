@@ -1,33 +1,13 @@
 app:
   environment: ALPHA
 
-  redis:
-    enabled: true
+  # DB (CNPG) + Redis (Dragonfly) connection env come from values/operators.yaml.
 
-  postgresql:
-    enabled: true
+  # S3 storage is enabled by default in values.yaml. The endpoint, bucket names
+  # and credentials are deployment-specific and supplied per-environment at
+  # deploy time (see main/settings.py for the AWS_S3_* options).
+  # env: {}
 
-  minio:
-    enabled: true
-
-  env:
-    # AWS (Using minio)
-    AWS_S3_ENABLED: "true"
-    AWS_S3_ENDPOINT_URL: "https://{{ $.Values.minio.apiIngress.hostname }}/"
-    AWS_S3_MEDIA_BUCKET_NAME: "timur-media"
-    AWS_S3_STATIC_BUCKET_NAME: "timur-static"
-
-  secrets:
-    # Redis
-    CELERY_REDIS_URL: "redis://{{ printf \"%s-master\" (include \"common.names.fullname\" $.Subcharts.redis) }}:6379/0"
-    DJANGO_CACHE_REDIS_URL: "redis://{{ printf \"%s-master\" (include \"common.names.fullname\" $.Subcharts.redis) }}:6379/1"
-    # Postgres (Using bitnami)
-    DB_NAME: "{{ $.Values.postgresql.auth.database }}"
-    DB_USER: "postgres"
-    DB_PASSWORD: "{{ $.Values.postgresql.auth.postgresPassword }}"
-    DB_HOST: "{{ include \"postgresql.v1.primary.fullname\" $.Subcharts.postgresql }}"
-    DB_PORT: "{{ include \"postgresql.v1.service.port\" $.Subcharts.postgresql }}"
-    # Minio (S3)
-    AWS_S3_ACCESS_KEY_ID: "{{ required \".app.minio.auth.rootUser\" $.Values.minio.auth.rootUser }}"
-    AWS_S3_SECRET_ACCESS_KEY: "{{ required \".app.minio.auth.rootPassword\" $.Values.minio.auth.rootPassword }}"
-    AWS_S3_REGION_NAME: "us-east-1"
+  # DJANGO_SECRET_KEY, S3 credentials, Google + Sentry secrets are provided
+  # per-environment at deploy time.
+  secrets: {}

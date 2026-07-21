@@ -1,26 +1,10 @@
 app:
   environment: ALPHA
 
-  ingress:
-    enabled: true
-    className: nginx
-    host: timur.example.com
-
-  redis:
-    master:
-      persistence:
-        size: .1Gi
-
-  postgresql:
-    auth:
-      postgresPassword: "pg-postgres-secure-password"
-
-  minio:
-    enabled: true
-    apiIngress:
-      hostname: timur-minio.example.com
-    auth:
-      rootPassword: XYZ
+  api:
+    ingress:
+      enabled: true
+      host: timur-api.example.com
 
   env:
     APP_DOMAIN: https://timur-api.example.com
@@ -39,6 +23,9 @@ app:
     # Standup
     DAILY_STANDUP_DOCUMENTATION_REF: "<https://notes.example.com/XYX?view|Documentation>"
     DAILY_STANDUP_MEET_LINK: "https://meet.google.com/XYZ"
+    # AWS (S3) — dummy bucket names for snapshot rendering (real names per-environment)
+    AWS_S3_MEDIA_BUCKET_NAME: "example-media"
+    AWS_S3_STATIC_BUCKET_NAME: "example-static"
 
   # NOTE: Check main/settings.py for all available options
   secrets:

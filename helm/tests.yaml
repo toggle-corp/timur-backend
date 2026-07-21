@@ -1,5 +1,6 @@
 tests:
   alpha.yaml:
+    - values/operators.yaml
     - values/alpha.yaml
   prod.yaml:
     - values/operators.yaml
