@@ -15,7 +15,9 @@ on:
 # TODO: Code climate integration?
 
 permissions:
-  contents: read
+  # contents: write is required so the tag-triggered release job can create the
+  # GitHub Release (softprops/action-gh-release); read is insufficient (403).
+  contents: write
   packages: write
   pull-requests: read
 
