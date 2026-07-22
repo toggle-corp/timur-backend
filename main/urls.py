@@ -17,8 +17,9 @@ admin.site.site_url = config.APP_FRONTEND_HOST.geturl()
 
 urlpatterns = [
     path("admin/", admin.site.urls, name="admin"),
+    # Outward-facing health endpoint for the external monitor (django-health-check).
+    # Distinct from the pod-internal /healthz/{live,ready} probes served by banjo middleware.
     path("health-check/", include("health_check.urls")),
-    # path('health-check/', include('health_check.urls')),
     path(
         "graphql/",
         # TODO: Remove this after updating the frontend to send csrf tokens
