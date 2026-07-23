@@ -1,5 +1,16 @@
 # Changelog
 
+## [v0.3.1](https://github.com/toggle-corp/timur-backend/compare/v0.3.0..v0.3.1) - 2026-07-23
+### Changes:
+
+#### Health
+
+- Align /health-check/ with the external-monitoring spec - ([28f44f6](https://github.com/toggle-corp/timur-backend/commit/28f44f6c78ae691dcc9d0b59f66233ca867b2c60))
+
+### 🍻 Pull Requests (1)
+- (#90) [Health: align /health-check/ with the external-monitoring spec](https://github.com/toggle-corp/timur-backend/pull/90)
+
+
 ## [v0.3.0](https://github.com/toggle-corp/timur-backend/compare/v0.2.3..v0.3.0) - 2026-07-21
 ### Changes:
 
