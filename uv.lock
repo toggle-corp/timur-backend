@@ -519,7 +519,7 @@ wheels = [
 
 [[package]]
 name = "django-stubs"
-version = "4.2.6"
+version = "4.2.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
@@ -528,9 +528,9 @@ dependencies = [
     { name = "types-pyyaml" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f8/99/4c08be0e2e45cd1e8a120733d0f9d7a35f895d7f490d054be73683a08097/django-stubs-4.2.6.tar.gz", hash = "sha256:e60b43de662a199db4b15c803c06669e0ac5035614af291cbd3b91591f7dcc94", size = 255316, upload-time = "2023-10-23T19:47:34.401Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1c/1f/1b1da357d37cbbf21496c17aad5a55416c7c37944a909c4a19ddd61994df/django-stubs-4.2.7.tar.gz", hash = "sha256:8ccd2ff4ee5adf22b9e3b7b1a516d2e1c2191e9d94e672c35cc2bc3dd61e0f6b", size = 258590, upload-time = "2023-12-05T19:02:28.493Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1c/69/9224cb6dd7aab53b2256a43018e2910ddd2534b5e2e6231b9acce1f81709/django_stubs-4.2.6-py3-none-any.whl", hash = "sha256:2fcd257884a68dfa02de41ee5410ec805264d9b07d9b5b119e4dea82c7b8345e", size = 452211, upload-time = "2023-10-23T19:47:32.041Z" },
+    { url = "https://files.pythonhosted.org/packages/31/33/a4024662b31999841bc18ef845a790f6b6a9ad50f5b2aceb029896612d17/django_stubs-4.2.7-py3-none-any.whl", hash = "sha256:4cf4de258fa71adc6f2799e983091b9d46cfc67c6eebc68fe111218c9a62b3b8", size = 456669, upload-time = "2023-12-05T19:02:25.29Z" },
 ]
 
 [[package]]
@@ -1564,7 +1564,7 @@ dev = [
     { name = "celery-types" },
     { name = "colorlog" },
     { name = "dacite" },
-    { name = "django-stubs", specifier = "==4.2.6" },
+    { name = "django-stubs", specifier = "==4.2.7" },
     { name = "djangorestframework-stubs" },
     { name = "google-api-python-client-stubs" },
     { name = "pytest" },
