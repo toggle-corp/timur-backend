@@ -29,9 +29,11 @@ dependencies = [
     "uwsgi",
     "aws-sns-message-validator",
     "google-api-python-client",
-    "django-health-check",
+    # NOTE: pinned to the latest 3.x; 4.x is a breaking async rewrite that drops the
+    # migrations/disk checks and the HEALTH_CHECK settings this project uses.
+    "django-health-check==3.24.0",
     "Pillow",
-    "psutil",
+    "psutil==7.2.2",
     "django-admin-rangefilter",
     "django-allauth[socialaccount]",
     "djangoql", # Admin panel query search

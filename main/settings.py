@@ -69,9 +69,11 @@ env = environ.Env(
     SESSION_COOKIE_DOMAIN=str,
     SESSION_COOKIE_AGE=(int, 1209600),  # seconds (Default: 2 weeks)
     CSRF_COOKIE_DOMAIN=str,
-    # Health check
-    HEALTH_CHECK_DISK_USAGE_MAX=(int, 95),  # in percentage
-    HEALTH_CHECK_DISK_MEMORY_MIN=(int, 100),  # in MB
+    # Health check (/health-check/ — external monitoring, distinct from /healthz probes)
+    # Read as strings so an empty value / "none" can disable a check (see below); default active.
+    HEALTH_CHECK_DISK_USAGE_MAX=(str, "80"),  # percent; empty/"none" -> disk check skipped
+    HEALTH_CHECK_MEMORY_MIN=(str, "100"),  # MB (toggles the memory check on); empty/"none" -> skipped
+    HEALTH_CHECK_SKIP_STORAGE=(bool, False),  # true -> drop the storage round-trip check
     # Misc
     TEMP_FILE_DIR=(str, "/tmp/"),
     RELEASE=(str, "develop"),
@@ -163,14 +165,16 @@ INSTALLED_APPS = [
     "allauth.headless",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
-    # - Health-check
+    # - Health-check: outward-facing /health-check/ endpoint for the external monitor
+    #   (distinct from the pod-internal /healthz probes). Each plugin is a Django app; only the
+    #   ones whose dependency this project actually has are enabled. health_check.storage is
+    #   appended conditionally below (HEALTH_CHECK_SKIP_STORAGE). No rabbitmq plugin (redis cache).
     "health_check",  # required
     "health_check.db",  # stock Django health checkers
     "health_check.cache",
-    "health_check.storage",
     "health_check.contrib.migrations",
-    "health_check.contrib.psutil",  # disk and memory utilization; requires psutil
-    "health_check.contrib.redis",  # requires Redis broker
+    "health_check.contrib.psutil",  # disk + memory (needs psutil)
+    "health_check.contrib.redis",  # redis cache is wired (REDIS_URL below)
     # Internal apps
     "apps.standup",
     "apps.user",
@@ -178,6 +182,12 @@ INSTALLED_APPS = [
     "apps.track",
     "apps.journal",
 ]
+
+# health_check.storage does a save/read/delete round-trip against the default storage backend
+# on every /health-check/ poll. Enabled by default; set HEALTH_CHECK_SKIP_STORAGE=true to omit it
+# where that round-trip is undesirable (e.g. a remote object store polled frequently).
+if not env("HEALTH_CHECK_SKIP_STORAGE"):
+    INSTALLED_APPS.append("health_check.storage")
 
 MIDDLEWARE = [
     # banjo_utils HealthProbeMiddleware serves pod-local /healthz/live/ and
@@ -536,11 +546,24 @@ GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_EVENT = env("GOOGLE_CALENDAR_INCLUDE_DEBUG_IN_E
 BANJO_HEALTH_PROBE_LIVE_URL = "/healthz/live/"
 BANJO_HEALTH_PROBE_READY_URL = "/healthz/ready/"
 
+# django-health-check (/health-check/). health_check.contrib.redis connects to settings.REDIS_URL
+# (it defaults to localhost otherwise) — point it at the same redis the app already uses.
 REDIS_URL = DJANGO_CACHE_REDIS_URL
-HEALTHCHECK_CACHE_KEY = "alert_hub_healthcheck_key"
+HEALTHCHECK_CACHE_KEY = "app_healthcheck_key"
+
+
+def _health_check_threshold(env_key):
+    # Empty / "none" disables the corresponding psutil check (the plugin isn't registered);
+    # any other value is the numeric threshold. Lets each environment toggle it via env alone.
+    raw = typing.cast("str", env(env_key)).strip()
+    return None if raw.lower() in ("", "none") else int(raw)
+
+
 HEALTH_CHECK = {
-    "DISK_USAGE_MAX": env("HEALTH_CHECK_DISK_USAGE_MAX"),
-    "MEMORY_MIN": env("HEALTH_CHECK_DISK_MEMORY_MIN"),
+    # percent; None -> disk check skipped (env HEALTH_CHECK_DISK_USAGE_MAX)
+    "DISK_USAGE_MAX": _health_check_threshold("HEALTH_CHECK_DISK_USAGE_MAX"),
+    # MB toggle; None -> memory check skipped (env HEALTH_CHECK_MEMORY_MIN)
+    "MEMORY_MIN": _health_check_threshold("HEALTH_CHECK_MEMORY_MIN"),
 }
 
 # Slack
