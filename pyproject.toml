@@ -3,7 +3,7 @@ name = "timur-backend"
 version = "0.3.1"  # managed by release.sh
 description = ""
 authors = [{ name = "tc-dev", email = "dev@togglecorp.com" }]
-requires-python = "~=3.13.2"
+requires-python = "~=3.14.7"
 readme = "README.md"
 license = "GNU Affero General Public License v3.0"
 dependencies = [
