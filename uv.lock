@@ -493,16 +493,15 @@ wheels = [
 
 [[package]]
 name = "django-ses"
-version = "3.6.0"
+version = "4.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3" },
     { name = "django" },
-    { name = "pytz" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/04/bc/e2f88e026e59c59d8362416f11dacac66ffb60406c52ef11d95bd66b9326/django_ses-3.6.0.tar.gz", hash = "sha256:ea08bea9e1aab71f9fbf43b30733a27eff76cea3797b7ebeab9f6bc5d3df6b37", size = 47077, upload-time = "2024-04-11T15:15:09.654Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c4/cf/9ecd938a2fde48e427f0899fbca4dfb176426c5e9d0808477a27dd702b54/django_ses-4.8.0.tar.gz", hash = "sha256:7be2907bbd86aaac115f3bb97fc5653b7ada70743e34cd144949eed93820302e", size = 72936, upload-time = "2026-09-03T23:39:19.946Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c9/77/12f59d2ebc0dd89c3747a7dc3ef0990e16b4b5dd95b964370d06bbcef403/django_ses-3.6.0-py3-none-any.whl", hash = "sha256:f3f69b97444fdbda41946c7349c63e1a0ea8284d9e9acd6f4b5cb3dba5030829", size = 29338, upload-time = "2024-04-11T15:15:06.669Z" },
+    { url = "https://files.pythonhosted.org/packages/7c/e7/ea705f99f8db91f1718e26a7fccd6a0d5cb03a4ffbb5a8138d8e07be2d24/django_ses-4.8.0-py3-none-any.whl", hash = "sha256:6c3e625e6b0c2032153859ef20ea6774c47f35a3794a8163b2357ae4b48e7c3c", size = 38233, upload-time = "2026-09-03T23:39:18.423Z" },
 ]
 
 [[package]]
@@ -1284,15 +1283,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pytz"
-version = "2025.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/f8/bf/abbd3cdfb8fbc7fb3d4d38d320f2441b1e7cbe29be4f23797b4a2b5d8aac/pytz-2025.2.tar.gz", hash = "sha256:360b9e3dbb49a209c21ad61809c7fb453643e048b38924c765813546746e81c3", size = 320884, upload-time = "2025-03-25T02:25:00.538Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/81/c4/34e93fe5f5429d7570ec1fa436f1986fb1f00c3e0f43a589fe2bbcd22c3f/pytz-2025.2-py2.py3-none-any.whl", hash = "sha256:5ddf76296dd8c44c26eb8f4b6f35488f3ccbf6fbbd7adee0b7262d43f0ec2f00", size = 509225, upload-time = "2025-03-25T02:24:58.468Z" },
-]
-
-[[package]]
 name = "pyyaml"
 version = "6.0.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1538,7 +1528,7 @@ requires-dist = [
     { name = "django-premailer" },
     { name = "django-redis", specifier = ">=5.3.0,<6" },
     { name = "django-reversion" },
-    { name = "django-ses", specifier = ">=3,<4" },
+    { name = "django-ses", specifier = ">=4,<5" },
     { name = "django-storages" },
     { name = "djangoql" },
     { name = "djangorestframework" },
