@@ -17,7 +17,7 @@ dependencies = [
     "django-premailer",
     "django-storages",
     "django-admin-autocomplete-filter",
-    "strawberry-graphql-django==0.47.1",
+    "strawberry-graphql-django==0.89.0",
     "sentry-sdk",
     "ipython",
     "factory-boy",
