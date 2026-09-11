@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   _:
-    uses: toggle-corp/banjo-action/.github/workflows/pipeline.yml@v0.2.0
+    uses: toggle-corp/banjo-action/.github/workflows/pipeline.yml@v0.5.0
     with:
       # Job: Pre-commit
       pre_commit__apt_packages: "gdal-bin libgdal-dev"
