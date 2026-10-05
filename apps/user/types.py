@@ -22,7 +22,11 @@ class UserBaseType:
     id: strawberry.ID
     first_name = string_field(User.first_name)
     last_name = string_field(User.last_name)
-    display_name = string_field(User.display_name)  # type: ignore[reportArgumentType]
+
+    @strawberry.field
+    def display_name(self, user: strawberry.Parent[User]) -> str:
+        return User.get_display_name(user.pk, user.display_name)
+
     display_picture = string_field(User.display_picture)
 
     department = enum_field(User.department)
