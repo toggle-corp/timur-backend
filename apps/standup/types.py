@@ -12,6 +12,7 @@ from apps.journal.enums import JournalLeaveTypeEnum, JournalWorkFromHomeTypeEnum
 from apps.project.models import Project
 from apps.project.types import ProjectType
 from apps.standup.models import DailyUserStandup, Quote
+from apps.standup.occupancy import get_occupancy
 from apps.track.models import TimeEntry
 from apps.user.models import User
 from apps.user.types import UserType
@@ -127,6 +128,35 @@ class DailyStandUpProjectStatType:
         ]
 
 
+@strawberry.type
+class DailyStandUpOccupancyUserDayType:
+    date: datetime.date
+    hours: float | None
+    leave: JournalLeaveTypeEnum | None  # type: ignore[reportInvalidTypeForm]
+    occupancy: float | None
+
+
+@strawberry.type
+class DailyStandUpOccupancyUserType:
+    user_obj: strawberry.Private[User]
+
+    id: strawberry.ID
+    days: list[DailyStandUpOccupancyUserDayType]
+
+    @strawberry.field
+    def user(self) -> UserType:
+        return self.user_obj  # type: ignore[reportReturnType]
+
+
+@strawberry.type
+class DailyStandUpOccupancyType:
+    id: strawberry.ID
+    start_date: datetime.date
+    end_date: datetime.date
+    dates: list[datetime.date]
+    users: list[DailyStandUpOccupancyUserType]
+
+
 @strawberry_django.type(DailyUserStandup)
 class DailyStandUpType:
     id: strawberry.ID
@@ -177,3 +207,32 @@ class DailyStandUpType:
                 date=standup.date,
             )
         return None
+
+    @strawberry.field
+    async def occupancy(
+        self,
+        standup: strawberry.Parent[DailyUserStandup],
+    ) -> DailyStandUpOccupancyType:
+        occupancy = await sync_to_async(get_occupancy)(standup.date)
+        return DailyStandUpOccupancyType(
+            id=strawberry.ID(standup.date.isoformat()),
+            start_date=occupancy.start_date,
+            end_date=occupancy.end_date,
+            dates=occupancy.dates,
+            users=[
+                DailyStandUpOccupancyUserType(
+                    id=strawberry.ID(f"{user_occupancy.user.pk}-{standup.date.isoformat()}"),
+                    user_obj=user_occupancy.user,
+                    days=[
+                        DailyStandUpOccupancyUserDayType(
+                            date=day.date,
+                            hours=day.hours,
+                            leave=day.leave,
+                            occupancy=day.occupancy,
+                        )
+                        for day in user_occupancy.days
+                    ],
+                )
+                for user_occupancy in occupancy.users
+            ],
+        )

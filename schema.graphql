@@ -157,6 +157,27 @@ type ContractorTypeCountList {
 """A generic type to return error messages"""
 scalar CustomErrorType
 
+type DailyStandUpOccupancyType {
+  id: ID!
+  startDate: Date!
+  endDate: Date!
+  dates: [Date!]!
+  users: [DailyStandUpOccupancyUserType!]!
+}
+
+type DailyStandUpOccupancyUserDayType {
+  date: Date!
+  hours: Float
+  leave: JournalLeaveTypeEnum
+  occupancy: Float
+}
+
+type DailyStandUpOccupancyUserType {
+  id: ID!
+  days: [DailyStandUpOccupancyUserDayType!]!
+  user: UserType!
+}
+
 type DailyStandUpProjectStatType {
   id: ID!
   lastWorkingDate: Date!
@@ -182,6 +203,7 @@ type DailyStandUpType {
   fallbackConductor: UserType
   quote: QuoteType
   projectStat(pk: ID!): DailyStandUpProjectStatType
+  occupancy: DailyStandUpOccupancyType!
 }
 
 type DailySummaryType {

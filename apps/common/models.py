@@ -132,12 +132,13 @@ class Event(UserResource):
                 return []
             return [start_date]
 
+        holiday_dates = set() if include_holidays else set(cls.get_relative_event_dates())
         dates = []
         for x in range((end_date - start_date).days + 1):
             date = start_date + datetime.timedelta(days=x)
             if not include_weekends and cls.is_weekend(date):
                 continue
-            if not include_holidays and date in cls.get_relative_event_dates():
+            if date in holiday_dates:
                 continue
             dates.append(date)
         return sorted(set(dates))
