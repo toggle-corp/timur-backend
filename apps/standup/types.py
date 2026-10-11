@@ -135,6 +135,10 @@ class DailyStandUpOccupancyUserDayType:
     leave: JournalLeaveTypeEnum | None  # type: ignore[reportInvalidTypeForm]
     occupancy: float | None
 
+    @strawberry.field
+    def leave_display(self) -> str | None:
+        return self.leave.label if self.leave else None
+
 
 @strawberry.type
 class DailyStandUpOccupancyUserType:

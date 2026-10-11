@@ -50,6 +50,7 @@ class TestOccupancyQuery(TestCase):
                         date
                         hours
                         leave
+                        leaveDisplay
                         occupancy
                       }
                     }
@@ -122,11 +123,23 @@ class TestOccupancyQuery(TestCase):
                 {
                     "user": {"id": self.gID(self.user.pk)},
                     "days": [
-                        {"date": "2024-02-01", "hours": 7.0, "leave": None, "occupancy": 1.0},
-                        {"date": "2024-02-02", "hours": 1.0, "leave": "FULL", "occupancy": 0.0},
-                        {"date": "2024-02-05", "hours": 3.5, "leave": "FIRST_HALF", "occupancy": 1.0},
-                        {"date": "2024-02-07", "hours": None, "leave": None, "occupancy": None},
-                        {"date": "2024-02-08", "hours": None, "leave": "SECOND_HALF", "occupancy": None},
+                        {"date": "2024-02-01", "hours": 7.0, "leave": None, "leaveDisplay": None, "occupancy": 1.0},
+                        {"date": "2024-02-02", "hours": 1.0, "leave": "FULL", "leaveDisplay": "Full", "occupancy": 0.0},
+                        {
+                            "date": "2024-02-05",
+                            "hours": 3.5,
+                            "leave": "FIRST_HALF",
+                            "leaveDisplay": "First Half",
+                            "occupancy": 1.0,
+                        },
+                        {"date": "2024-02-07", "hours": None, "leave": None, "leaveDisplay": None, "occupancy": None},
+                        {
+                            "date": "2024-02-08",
+                            "hours": None,
+                            "leave": "SECOND_HALF",
+                            "leaveDisplay": "Second Half",
+                            "occupancy": None,
+                        },
                     ],
                 },
             ],

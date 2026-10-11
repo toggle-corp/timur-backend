@@ -170,6 +170,7 @@ type DailyStandUpOccupancyUserDayType {
   hours: Float
   leave: JournalLeaveTypeEnum
   occupancy: Float
+  leaveDisplay: String
 }
 
 type DailyStandUpOccupancyUserType {
