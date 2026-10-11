@@ -122,7 +122,7 @@ class DailyStandUpProjectStatType:
                 user_obj=user,
                 date=self.date,
                 last_active_date=time_entries_user_active_date_map[user.pk],
-                id=strawberry.ID(f"{user.pk}-{self.project_obj.pk}"),
+                id=strawberry.ID(f"{user.pk}-{self.project_obj.pk}-{self.date.isoformat()}"),
             )
             async for user in users_qs.all()
         ]
