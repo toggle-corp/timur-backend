@@ -24,9 +24,10 @@ class TestOccupancyDateRange(TestCase):
             ("2024-03-01", ("2024-02-01", "2024-02-29")),
             ("2024-03-07", ("2024-02-01", "2024-03-06")),
             ("2024-01-03", ("2023-12-01", "2024-01-02")),
-            # After the first week only the current month
-            ("2024-03-08", ("2024-03-01", "2024-03-07")),
+            # After the first week the last 30 days
+            ("2024-03-08", ("2024-02-07", "2024-03-07")),
             ("2024-03-31", ("2024-03-01", "2024-03-30")),
+            ("2024-01-15", ("2023-12-16", "2024-01-14")),
         ]:
             start_date, end_date = get_occupancy_date_range(datetime.date.fromisoformat(date))
             assert (start_date.isoformat(), end_date.isoformat()) == expected, date
@@ -115,14 +116,25 @@ class TestOccupancyQuery(TestCase):
             cache.clear()
             content = self.query_check(self.Query.DAILY_STANDUP_OCCUPANCY, variables={"date": "2024-02-09"})
 
+        # Working days of the last 30 days without any entries
+        empty_dates = [
+            "2024-01-10", "2024-01-11", "2024-01-12",
+            "2024-01-15", "2024-01-16", "2024-01-17", "2024-01-18", "2024-01-19",
+            "2024-01-22", "2024-01-23", "2024-01-24", "2024-01-25", "2024-01-26",
+            "2024-01-29", "2024-01-30", "2024-01-31",
+        ]  # fmt: skip
         assert content["data"]["private"]["dailyStandup"]["occupancy"] == {
-            "startDate": "2024-02-01",
+            "startDate": "2024-01-10",
             "endDate": "2024-02-08",
-            "dates": ["2024-02-01", "2024-02-02", "2024-02-05", "2024-02-07", "2024-02-08"],
+            "dates": [*empty_dates, "2024-02-01", "2024-02-02", "2024-02-05", "2024-02-07", "2024-02-08"],
             "users": [
                 {
                     "user": {"id": self.gID(self.user.pk)},
                     "days": [
+                        *(
+                            {"date": date, "hours": None, "leave": None, "leaveDisplay": None, "occupancy": None}
+                            for date in empty_dates
+                        ),
                         {"date": "2024-02-01", "hours": 7.0, "leave": None, "leaveDisplay": None, "occupancy": 1.0},
                         {"date": "2024-02-02", "hours": 1.0, "leave": "FULL", "leaveDisplay": "Full", "occupancy": 0.0},
                         {
