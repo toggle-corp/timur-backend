@@ -182,6 +182,100 @@ spec:
                 seconds: 8
 
 ---
+# Source: timur-backend-helm/charts/app/templates/worker/deployment.yaml
+# Queue: default
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: timur-worker-default
+  annotations:
+    argocd.argoproj.io/sync-wave: "30"
+    reloader.stakater.com/auto: "true"
+  labels:
+    app: timur
+    component: worker
+    queue: default
+    environment: ALPHA
+    release: release-name
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: timur
+      component: worker
+      queue: default
+  template:
+    metadata:
+      annotations:
+        checksum/secret: 7f4c5ca1e03df75d7011ed13fc32e54cfca906663ea388e334250bfefa7fb1b7
+        checksum/configmap: 82677682d51bb81bf5964d686fe8f7951f5fa16c9af054e275844bfb16a2c622
+      labels:
+        app: timur
+        component: worker
+        queue: default
+    spec:
+      containers:
+        - name: worker
+          command:
+            - celery
+            - -A
+            - main
+            - worker
+            - -l
+            - INFO
+            - -Q
+            - celery
+            - --concurrency
+            - "2"
+          image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          envFrom:
+            - secretRef:
+                name: timur-secret
+            - configMapRef:
+                name: timur-env-name
+          env:
+            - name: DJANGO_APP_TYPE
+              value: "worker"
+            - name: CELERY_REDIS_URL
+              value: redis://timur-dragonfly:6379/0
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  key: host
+                  name: cnpg-pg-app
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  key: dbname
+                  name: cnpg-pg-app
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: password
+                  name: cnpg-pg-app
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  key: port
+                  name: cnpg-pg-app
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  key: username
+                  name: cnpg-pg-app
+            - name: DJANGO_CACHE_REDIS_URL
+              value: redis://timur-dragonfly:6379/1
+            
+
+---
 # Source: timur-backend-helm/charts/app/templates/hooks/job.yaml
 # Hook: collect-static
 apiVersion: batch/v1
@@ -261,6 +355,9 @@ spec:
                   name: cnpg-pg-app
             - name: DJANGO_CACHE_REDIS_URL
               value: redis://timur-dragonfly:6379/1
+            
+
+
 ---
 # Source: timur-backend-helm/charts/app/templates/hooks/job.yaml
 # Hook: db-migrate
@@ -341,6 +438,9 @@ spec:
                   name: cnpg-pg-app
             - name: DJANGO_CACHE_REDIS_URL
               value: redis://timur-dragonfly:6379/1
+            
+
+
 ---
 # Source: timur-backend-helm/charts/app/templates/hooks/job.yaml
 # Hook: wait-for-resources
@@ -505,6 +605,9 @@ spec:
                       name: cnpg-pg-app
                 - name: DJANGO_CACHE_REDIS_URL
                   value: redis://timur-dragonfly:6379/1
+                
+
+
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
 # Job: process_not_done_time_entries
@@ -586,6 +689,9 @@ spec:
                       name: cnpg-pg-app
                 - name: DJANGO_CACHE_REDIS_URL
                   value: redis://timur-dragonfly:6379/1
+                
+
+
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
 # Job: standup_before_standup_reminder
@@ -668,6 +774,9 @@ spec:
                       name: cnpg-pg-app
                 - name: DJANGO_CACHE_REDIS_URL
                   value: redis://timur-dragonfly:6379/1
+                
+
+
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
 # Job: standup_morning_reminder
@@ -750,6 +859,9 @@ spec:
                       name: cnpg-pg-app
                 - name: DJANGO_CACHE_REDIS_URL
                   value: redis://timur-dragonfly:6379/1
+                
+
+
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
 # Job: standup_read_doc_reminder
@@ -832,6 +944,9 @@ spec:
                       name: cnpg-pg-app
                 - name: DJANGO_CACHE_REDIS_URL
                   value: redis://timur-dragonfly:6379/1
+                
+
+
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
 # Job: standup_setup_next_standup
@@ -914,6 +1029,9 @@ spec:
                       name: cnpg-pg-app
                 - name: DJANGO_CACHE_REDIS_URL
                   value: redis://timur-dragonfly:6379/1
+                
+
+
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
 # Job: user_sync_slack_users_id
@@ -1044,6 +1162,7 @@ spec:
       barmanObjectName: aws-s3-store
   storage:
     size: 1Gi
+
 ---
 # Source: timur-backend-helm/charts/app/templates/extraManifests.yaml
 # Manifest: dragonflydb-cluster
@@ -1093,6 +1212,7 @@ spec:
       compression: gzip
       maxParallel: 4
   retentionPolicy: 30d
+
 ---
 # Source: timur-backend-helm/charts/app/templates/extraManifests.yaml
 # Manifest: cnpg-scheduled-backup

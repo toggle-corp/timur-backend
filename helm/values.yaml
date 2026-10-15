@@ -32,7 +32,14 @@ app:
         memory: 1Gi
 
   worker:
-    enabled: false
+    enabled: true
+    queueDefaults:
+      commandPrefix: ["celery", "-A", "main", "worker", "-l", "INFO"]
+    queues:
+      default:
+        enabled: true
+        replicaCount: 1
+        celeryArgs: ["-Q", "celery", "--concurrency", "2"]
 
   hooks:
     enabled: true
