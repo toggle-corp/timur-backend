@@ -42,6 +42,8 @@ data:
   SENTRY_TRACES_SAMPLE_RATE: "0.2"
   SESSION_COOKIE_AGE: "2592000"
   SESSION_COOKIE_DOMAIN: ".example.com"
+  SLACK_AVAILABILITY_MODE: "off"
+  SLACK_AVAILABILITY_RETENTION_DAYS: "90"
 
 ---
 # Source: timur-backend-helm/charts/app/templates/api/service.yaml
@@ -88,7 +90,7 @@ spec:
     metadata:
       annotations:
         checksum/secret: 7ce5e09ecd151abb48f2c64458619e392b409f259d4d2f79a0acafdd0fdbbb41
-        checksum/configmap: 75e54172591f33fd52fbad4f36e80c9ecd6934abfc57c7e8b5ed9c618a503f7a
+        checksum/configmap: e630738ef1368b427c30bb7082eb5905118f56b2e58742ff645ea123b2784a66
       labels:
         app: timur
         component: api
@@ -203,7 +205,7 @@ spec:
     metadata:
       annotations:
         checksum/secret: 7ce5e09ecd151abb48f2c64458619e392b409f259d4d2f79a0acafdd0fdbbb41
-        checksum/configmap: 75e54172591f33fd52fbad4f36e80c9ecd6934abfc57c7e8b5ed9c618a503f7a
+        checksum/configmap: e630738ef1368b427c30bb7082eb5905118f56b2e58742ff645ea123b2784a66
       labels:
         app: timur
         component: worker
@@ -293,7 +295,7 @@ spec:
     metadata:
       annotations:
         checksum/secret: 7ce5e09ecd151abb48f2c64458619e392b409f259d4d2f79a0acafdd0fdbbb41
-        checksum/configmap: 75e54172591f33fd52fbad4f36e80c9ecd6934abfc57c7e8b5ed9c618a503f7a
+        checksum/configmap: e630738ef1368b427c30bb7082eb5905118f56b2e58742ff645ea123b2784a66
       labels:
         app: timur
         component: hook
@@ -379,7 +381,7 @@ spec:
     metadata:
       annotations:
         checksum/secret: 7ce5e09ecd151abb48f2c64458619e392b409f259d4d2f79a0acafdd0fdbbb41
-        checksum/configmap: 75e54172591f33fd52fbad4f36e80c9ecd6934abfc57c7e8b5ed9c618a503f7a
+        checksum/configmap: e630738ef1368b427c30bb7082eb5905118f56b2e58742ff645ea123b2784a66
       labels:
         app: timur
         component: hook
@@ -463,7 +465,7 @@ spec:
     metadata:
       annotations:
         checksum/secret: 7ce5e09ecd151abb48f2c64458619e392b409f259d4d2f79a0acafdd0fdbbb41
-        checksum/configmap: 75e54172591f33fd52fbad4f36e80c9ecd6934abfc57c7e8b5ed9c618a503f7a
+        checksum/configmap: e630738ef1368b427c30bb7082eb5905118f56b2e58742ff645ea123b2784a66
       labels:
         app: timur
         component: hook
@@ -648,6 +650,92 @@ spec:
               command:
                 - ./manage.py
                 - process_not_done_time_entries
+              image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
+              imagePullPolicy: IfNotPresent
+              resources:
+                limits:
+                  memory: 1Gi
+                requests:
+                  cpu: "0.1"
+                  memory: 0.5Gi
+              envFrom:
+                - secretRef:
+                    name: timur-secret
+                - secretRef:
+                    name: my-extra-secrets
+                - configMapRef:
+                    name: timur-env-name
+              env:
+                - name: DJANGO_APP_TYPE
+                  value: "cronjob"
+                - name: CELERY_REDIS_URL
+                  value: redis://timur-dragonfly:6379/0
+                - name: DB_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      key: host
+                      name: cnpg-pg-app
+                - name: DB_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      key: dbname
+                      name: cnpg-pg-app
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      key: password
+                      name: cnpg-pg-app
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      key: port
+                      name: cnpg-pg-app
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: cnpg-pg-app
+                - name: DJANGO_CACHE_REDIS_URL
+                  value: redis://timur-dragonfly:6379/1
+                
+
+
+---
+# Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
+# Job: slack_availability_purge
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: timur-job-slack-availability-purge
+  labels:
+    app: timur
+    component: cronjob
+    jobName: slack_availability_purge
+    environment: PROD
+    release: release-name
+spec:
+  schedule: "0 2 * * *"
+  timeZone: "Asia/Kathmandu"
+  concurrencyPolicy: "Forbid"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 7200  # 2 hours default
+      ttlSecondsAfterFinished: 604800
+      template:
+        metadata:
+          annotations:
+          labels:
+            app: timur
+            component: cronjob
+        spec:
+          restartPolicy: "Never"
+          containers:
+            - name: cronjob
+              command:
+                - ./manage.py
+                - slack_availability_purge
               image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
               imagePullPolicy: IfNotPresent
               resources:

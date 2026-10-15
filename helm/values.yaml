@@ -105,6 +105,11 @@ app:
         schedule: "55 16 * * 1,2,3,4,5"
         timeZone: "Asia/Kathmandu"
         command: ["./manage.py", "standup", "read-doc-reminder"]
+      slack_availability_purge:
+        enabled: true
+        schedule: "0 2 * * *"  # Every day at 2:00
+        timeZone: "Asia/Kathmandu"
+        command: ["./manage.py", "slack_availability_purge"]
 
   # NOTE: Check main/settings.py for all available options.
   # APP_DOMAIN, APP_FRONTEND_HOST, SESSION_COOKIE_DOMAIN, CSRF_COOKIE_DOMAIN and
@@ -128,6 +133,20 @@ app:
     # AWS_S3_ENDPOINT_URL:
     # AWS_S3_MEDIA_BUCKET_NAME:
     # AWS_S3_STATIC_BUCKET_NAME:
+    # -- Slack availability (#tc-availability -> Journal): off|shadow|live
+    # Other than off requires SLACK_BOT_*, SLACK_AVAILABILITY_CHANNEL_ID, OLLAMA_BASE_URL, OLLAMA_MODEL
+    # and the secrets SLACK_SIGNING_SECRET, OLLAMA_API_KEY (optional).
+    SLACK_AVAILABILITY_MODE: "off"
+    SLACK_AVAILABILITY_RETENTION_DAYS: "90"
+    # SLACK_AVAILABILITY_CHANNEL_ID:
+    # OLLAMA_BASE_URL:
+    # OLLAMA_MODEL:
+    # OLLAMA_NUM_CTX: "8192"
+    # OLLAMA_KEEP_ALIVE: "10m"
+    # With the Ollama-compatible Codex proxy (timur-utils codex_proxy, run with docker compose outside the
+    # cluster) instead of Ollama; its bearer token is the OLLAMA_API_KEY secret:
+    # OLLAMA_BASE_URL: https://<codex-proxy-host>
+    # OLLAMA_MODEL: gpt-5.6-terra
 
   # NOTE: Check main/settings.py for all available options.
   # Secrets are provided per-environment (env overlays / CICD / ExternalSecret).

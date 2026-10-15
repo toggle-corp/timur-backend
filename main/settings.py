@@ -17,6 +17,7 @@ if typing.TYPE_CHECKING:
 
 import environ
 from corsheaders.defaults import default_headers
+from django.core.exceptions import ImproperlyConfigured
 
 from main.logging import log_render_custom_field, skip_health_probe_logs
 from main.sentry import SentryConfig
@@ -111,6 +112,20 @@ env = environ.Env(
     SLACK_BOT_ICON=(str, None),
     SLACK_BOT_TOKEN=str,
     SLACK_BOT_CHANNEL=str,
+    SLACK_API_BASE_URL=(str, None),  # Override the Slack Web API URL (e.g. a local mock)
+    # Slack availability (#tc-availability -> Journal)
+    SLACK_AVAILABILITY_MODE=(str, "off"),  # off|shadow|live
+    SLACK_AVAILABILITY_CHANNEL_ID=str,
+    SLACK_AVAILABILITY_RETENTION_DAYS=(int, 90),
+    SLACK_AVAILABILITY_PARSER=(str, "ollama"),
+    SLACK_SIGNING_SECRET=(str, None),
+    # -- Ollama
+    OLLAMA_BASE_URL=str,
+    OLLAMA_MODEL=str,
+    OLLAMA_API_KEY=(str, None),
+    OLLAMA_TIMEOUT_SECONDS=(int, 60),
+    OLLAMA_NUM_CTX=(int, 8192),
+    OLLAMA_KEEP_ALIVE=(str, "10m"),
     # Daily Standup
     DAILY_STANDUP_DOCUMENTATION_REF=(str, None),
     DAILY_STANDUP_MEET_LINK=(str, None),
@@ -181,6 +196,7 @@ INSTALLED_APPS = [
     "apps.project",
     "apps.track",
     "apps.journal",
+    "apps.slack_availability",
 ]
 
 # health_check.storage does a save/read/delete round-trip against the default storage backend
@@ -573,6 +589,33 @@ if SLACK_BOT_ENABLED:
     SLACK_BOT_ICON = env("SLACK_BOT_ICON")
     SLACK_BOT_TOKEN = env("SLACK_BOT_TOKEN")
     SLACK_BOT_CHANNEL = env("SLACK_BOT_CHANNEL")
+SLACK_API_BASE_URL = env("SLACK_API_BASE_URL")
+
+# Slack availability
+SLACK_AVAILABILITY_MODES = ("off", "shadow", "live")
+SLACK_AVAILABILITY_PARSERS = ("ollama",)
+SLACK_AVAILABILITY_MODE = env("SLACK_AVAILABILITY_MODE")
+SLACK_AVAILABILITY_RETENTION_DAYS = env("SLACK_AVAILABILITY_RETENTION_DAYS")
+# Optional in off mode: lets the events endpoint answer Slack's URL verification
+SLACK_SIGNING_SECRET = env("SLACK_SIGNING_SECRET")
+if SLACK_AVAILABILITY_MODE not in SLACK_AVAILABILITY_MODES:
+    raise ImproperlyConfigured(f"Invalid SLACK_AVAILABILITY_MODE: {SLACK_AVAILABILITY_MODE}")
+if SLACK_AVAILABILITY_MODE != "off":
+    if not SLACK_BOT_ENABLED:
+        raise ImproperlyConfigured("SLACK_AVAILABILITY_MODE requires SLACK_BOT_ENABLED")
+    if not SLACK_SIGNING_SECRET:
+        raise ImproperlyConfigured("SLACK_AVAILABILITY_MODE requires SLACK_SIGNING_SECRET")
+    SLACK_AVAILABILITY_CHANNEL_ID = env("SLACK_AVAILABILITY_CHANNEL_ID")
+    SLACK_AVAILABILITY_PARSER = env("SLACK_AVAILABILITY_PARSER")
+    if SLACK_AVAILABILITY_PARSER not in SLACK_AVAILABILITY_PARSERS:
+        raise ImproperlyConfigured(f"Invalid SLACK_AVAILABILITY_PARSER: {SLACK_AVAILABILITY_PARSER}")
+    if SLACK_AVAILABILITY_PARSER == "ollama":
+        OLLAMA_BASE_URL = env("OLLAMA_BASE_URL")
+        OLLAMA_MODEL = env("OLLAMA_MODEL")
+        OLLAMA_API_KEY = env("OLLAMA_API_KEY")
+        OLLAMA_TIMEOUT_SECONDS = env("OLLAMA_TIMEOUT_SECONDS")
+        OLLAMA_NUM_CTX = env("OLLAMA_NUM_CTX")
+        OLLAMA_KEEP_ALIVE = env("OLLAMA_KEEP_ALIVE")
 
 # Daily Standup
 DAILY_STANDUP_DOCUMENTATION_REF = env("DAILY_STANDUP_DOCUMENTATION_REF")
