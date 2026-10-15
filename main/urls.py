@@ -5,6 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import RedirectView
 
 from apps.common.views import sso_sign_in
+from apps.slack_availability.views import slack_events, slack_interactions
 from main import config
 from main.graphql.schema import CustomAsyncGraphQLView
 from main.graphql.schema import schema as graphql_schema
@@ -33,6 +34,8 @@ urlpatterns = [
     ),
     path("accounts/", include("allauth.urls")),
     path("_allauth/", include("allauth.headless.urls")),
+    path("slack/events/", slack_events, name="slack-events"),
+    path("slack/interactions/", slack_interactions, name="slack-interactions"),
 ]
 
 if config.GOOGLE_SSO_ENABLED:

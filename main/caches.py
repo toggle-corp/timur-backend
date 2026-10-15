@@ -10,6 +10,7 @@ class CacheKey:
     TIMUR_EVENT_DATES = "timur-event-dates"
     URL_CACHED_FILE_FIELD_KEY_FORMAT = "url-cached-file-key-{0}"
     DJANGO_FILE_S3_KEY_FORMAT = "dj-s3-file-{0}"
+    SLACK_EVENT_ID_FORMAT = "slack-event-{0}"
 
     # Local (RAM) Cache
     TEMP_CLIENT_ID_KEY_FORMAT = "client-id-mixin-{request_hash}-{instance_type}-{instance_id}"

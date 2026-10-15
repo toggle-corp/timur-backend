@@ -141,6 +141,7 @@ class SentryMonitorConfig:
         STANDUP_BEFORE_STANDUP_REMINDER = "standup_before_standup_reminder"
         STANDUP_SETUP_NEXT_STANDUP = "standup_setup_next_standup"
         STANDUP_READ_DOC_REMINDER = "standup_read_doc_reminder"
+        SLACK_AVAILABILITY_PURGE = "slack_availability_purge"
 
     class CronConfig(typing.NamedTuple):
         checkin_margin: int = 5
