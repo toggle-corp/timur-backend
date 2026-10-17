@@ -111,7 +111,7 @@ env = environ.Env(
     SLACK_BOT_NAME=(str, None),
     SLACK_BOT_ICON=(str, None),
     SLACK_BOT_TOKEN=str,
-    SLACK_BOT_CHANNEL=str,
+    SLACK_STANDUP_CHANNEL_ID=str,  # Channel ID (C0...), not the name
     SLACK_API_BASE_URL=(str, None),  # Override the Slack Web API URL (e.g. a local mock)
     # Slack availability (#tc-availability -> Journal)
     SLACK_AVAILABILITY_MODE=(str, "off"),  # off|shadow|live
@@ -588,7 +588,7 @@ if SLACK_BOT_ENABLED:
     SLACK_BOT_NAME = env("SLACK_BOT_NAME")
     SLACK_BOT_ICON = env("SLACK_BOT_ICON")
     SLACK_BOT_TOKEN = env("SLACK_BOT_TOKEN")
-    SLACK_BOT_CHANNEL = env("SLACK_BOT_CHANNEL")
+    SLACK_STANDUP_CHANNEL_ID = env("SLACK_STANDUP_CHANNEL_ID")
 SLACK_API_BASE_URL = env("SLACK_API_BASE_URL")
 
 # Slack availability

@@ -75,7 +75,7 @@ class FakeSlack(TimurSlack):
         self.reactions: list[tuple[str, str]] = []
         self.posted: list[dict] = []
         self.views: list[tuple[str, dict]] = []
-        self.channel = "C-STANDUP"
+        self.standup_channel_id = "C-STANDUP"
 
     @typing.override
     def fetch_thread_messages(self, channel: str, thread_ts: str) -> list[dict]:

@@ -25,7 +25,7 @@ class TimurSlack:
             # WebClient joins method names onto base_url, so it needs a trailing slash
             base_url=(slack_config.api_base_url.rstrip("/") + "/") if slack_config.api_base_url else WebClient.BASE_URL,
         )
-        self.channel = slack_config.channel
+        self.standup_channel_id = slack_config.standup_channel_id
         self.bot_name = slack_config.bot_name
         self.bot_icon = slack_config.bot_icon
 
@@ -73,7 +73,7 @@ class TimurSlack:
         channel: str | None = None,
     ) -> SlackResponse:
         resp = self.client.chat_postMessage(
-            channel=channel or self.channel,
+            channel=channel or self.standup_channel_id,
             username=self.bot_name,
             icon_url=self.bot_icon,
             blocks=blocks,

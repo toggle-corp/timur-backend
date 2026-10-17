@@ -134,7 +134,7 @@ app:
     # AWS_S3_MEDIA_BUCKET_NAME:
     # AWS_S3_STATIC_BUCKET_NAME:
     # -- Slack availability (#tc-availability -> Journal): off|shadow|live
-    # Other than off requires SLACK_BOT_*, SLACK_AVAILABILITY_CHANNEL_ID, OLLAMA_BASE_URL, OLLAMA_MODEL
+    # Other than off requires SLACK_BOT_*, SLACK_STANDUP_CHANNEL_ID, SLACK_AVAILABILITY_CHANNEL_ID, OLLAMA_BASE_URL, OLLAMA_MODEL
     # and the secrets SLACK_SIGNING_SECRET, OLLAMA_API_KEY (optional).
     SLACK_AVAILABILITY_MODE: "off"
     SLACK_AVAILABILITY_RETENTION_DAYS: "90"

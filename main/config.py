@@ -54,7 +54,7 @@ class Slack:
     class SlackConfigEnabled:
         enabled: typing.Literal[True]
         token: str
-        channel: str
+        standup_channel_id: str
         bot_name: str | None
         bot_icon: str | None
         api_base_url: str | None
@@ -67,7 +67,7 @@ class Slack:
             return cls.SlackConfigEnabled(
                 enabled=True,
                 token=settings.SLACK_BOT_TOKEN,
-                channel=settings.SLACK_BOT_CHANNEL,
+                standup_channel_id=settings.SLACK_STANDUP_CHANNEL_ID,
                 bot_name=settings.SLACK_BOT_NAME,
                 bot_icon=settings.SLACK_BOT_ICON,
                 api_base_url=settings.SLACK_API_BASE_URL,
