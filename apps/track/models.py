@@ -122,6 +122,11 @@ class TimeEntry(models.Model):
     def __str__(self):
         return f"{self.pk} {self.task_id=} {self.type=} {self.status}"
 
+    @classmethod
+    def get_logged_qs(cls) -> models.QuerySet["TimeEntry"]:
+        """Entries that count as logged work. TODO entries are plans, not work done."""
+        return cls.objects.filter(duration__gt=0).exclude(status=cls.Status.TODO)
+
     @typing.override
     def clean(self):
         super().clean()
