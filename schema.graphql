@@ -169,7 +169,27 @@ type DailyStandUpOccupancyUserDayType {
   date: Date!
   hours: Float
   leave: JournalLeaveTypeEnum
+  workFromHome: JournalWorkFromHomeTypeEnum
   occupancy: Float
+  entries: Int!
+
+  """Zero before the user joined and after an inactive user left"""
+  expectedHours: Float!
+
+  """
+  Days from a working day to the creation of its first entry, when that is after 09:15 on the person's next working day
+  """
+  lateByDays: Int
+
+  """
+  The first entry of a working day was created during the 15 minutes of the standup, from the deadline
+  """
+  loggedDuringStandup: Boolean!
+
+  """
+  Before the deadline, so a day without entries is pending rather than missing
+  """
+  isPending: Boolean!
   leaveDisplay: String
 }
 
@@ -449,6 +469,176 @@ type MutationEmptyResponseType {
   errors: CustomErrorType
 }
 
+type OccupancyDaySummaryType {
+  date: Date!
+  isWorkingDay: Boolean!
+
+  """Names of the holidays and retreats on the day"""
+  eventName: String
+  summary: OccupancySummaryType!
+}
+
+type OccupancyEntryType {
+  id: ID!
+  date: Date!
+  hours: Float!
+  description: String!
+  project: ProjectType!
+  taskName: String!
+
+  """Logged with 6 hours or more"""
+  isLong: Boolean!
+
+  """
+  Logged with a description of at most 1 word, or of at most 2 words with 2 hours or more
+  """
+  isVague: Boolean!
+}
+
+type OccupancyMonthType {
+  startDate: Date!
+  hours: Float!
+  expectedHours: Float!
+  occupancy: Float
+
+  """Late days as a share of the due days"""
+  lateShare: Float
+
+  """Leave on working days, with a half day counted as half"""
+  leaveDays: Float!
+
+  """WFH on working days, with a half day counted as half"""
+  workFromHomeDays: Float!
+}
+
+type OccupancyPeriodType {
+  startDate: Date!
+  endDate: Date!
+  summary: OccupancySummaryType!
+  missingPeople: Int!
+}
+
+type OccupancyPersonType {
+  id: ID!
+
+  """The 12 months up to the end date, oldest first"""
+  months: [OccupancyMonthType!]!
+
+  """
+  Leave on working days from the start of the year up to the end date, with a half day counted as half
+  """
+  leaveDaysThisYear: Float!
+}
+
+type OccupancyProjectHoursType {
+  project: ProjectType!
+  hours: Float!
+
+  """Share of the hours the person logged within the range"""
+  share: Float
+}
+
+type OccupancySummaryType {
+  hours: Float!
+  expectedHours: Float!
+  occupancy: Float
+
+  """Days of leave, with a half day of leave counted as half"""
+  leaveDays: Float!
+  workFromHomeDays: Float!
+  missingDays: Int!
+
+  """Missing days as a share of the due days"""
+  missingShare: Float
+  entries: Int!
+
+  """Hours logged on weekends, holidays and retreats"""
+  nonWorkingDayHours: Float!
+
+  """Hours logged on days of full leave"""
+  onLeaveHours: Float!
+
+  """
+  Days with hours expected, past their deadline of 09:15 on the person's next working day
+  """
+  dueDays: Int!
+
+  """
+  Due days whose first entry was created after the deadline. Days without hours are missing, not late.
+  """
+  lateDays: Int!
+
+  """Late days as a share of the due days"""
+  lateShare: Float
+
+  """Due days whose first entry was created during the standup"""
+  standupDays: Int!
+
+  """Standup days as a share of the due days"""
+  standupShare: Float
+
+  """Days of full leave with hours logged"""
+  leaveConflictDays: Int!
+
+  """Projects per day with hours, other than Togglecorp"""
+  projectsPerDay: Float
+
+  """Entries with 6 hours or more"""
+  longEntries: Int!
+
+  """Hours of long entries as a share of the hours"""
+  longEntryShare: Float
+
+  """Logged entries with a vague description"""
+  vagueEntries: Int!
+
+  """Vague entries as a share of the entries"""
+  vagueEntryShare: Float
+}
+
+type OccupancyType {
+  id: ID!
+  startDate: Date!
+  endDate: Date!
+  dates: [Date!]!
+  users: [OccupancyUserType!]!
+  summary: OccupancySummaryType!
+
+  """People with at least one missing day"""
+  missingPeople: Int!
+
+  """
+  The same days of the previous month, or all of it for a range up to the end of a month, for the same people
+  """
+  previous: OccupancyPeriodType!
+  daySummaries: [OccupancyDaySummaryType!]!
+  miscEvents: [EventType!]!
+
+  """When the latest entry within the range was created"""
+  dataAsOf: DateTime
+}
+
+type OccupancyUserType {
+  id: ID!
+  days: [DailyStandUpOccupancyUserDayType!]!
+  user: UserType!
+  summary: OccupancySummaryType!
+
+  """Dates with more than 9 hours logged"""
+  longDates: [Date!]!
+
+  """Hours per project, most hours first, then the latest activity"""
+  projects: [OccupancyProjectHoursType!]!
+
+  """
+  The project with the most hours other than Togglecorp, with its share of the hours outside Togglecorp
+  """
+  topProject: OccupancyProjectHoursType
+
+  """Long and vague entries, by date"""
+  flaggedEntries: [OccupancyEntryType!]!
+}
+
 input OffsetPaginationInput {
   offset: Int! = 0
   limit: Int! = -1
@@ -475,6 +665,16 @@ type PrivateMutation {
 type PrivateQuery {
   users(filters: UserFilter, order: UserOrder, pagination: OffsetPaginationInput): UserTypeCountList!
   dailyStandup(date: Date!): DailyStandUpType!
+
+  """
+  Return occupancy for every day within the range, of the users on the standup slides who joined by its end
+  """
+  occupancy(startDate: Date!, endDate: Date!): OccupancyType!
+
+  """
+  Return the monthly occupancy of a person up to the end date, and their leave this year
+  """
+  occupancyPerson(userId: ID!, endDate: Date!): OccupancyPersonType
   clients(filters: ClientFilter, order: ClientOrder, pagination: OffsetPaginationInput): ClientTypeCountList!
   contractors(filters: ContractorFilter, order: ContractorOrder, pagination: OffsetPaginationInput): ContractorTypeCountList!
   projects(filters: ProjectFilter, order: ProjectOrder, pagination: OffsetPaginationInput): ProjectTypeCountList!
