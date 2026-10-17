@@ -12,7 +12,7 @@ LIVE_ENV = {
     "SLACK_BOT_NAME": "Timur",
     "SLACK_BOT_ICON": "https://example.com/icon.png",
     "SLACK_BOT_TOKEN": "xoxb-test",
-    "SLACK_BOT_CHANNEL": "C-STANDUP",
+    "SLACK_STANDUP_CHANNEL_ID": "C-STANDUP",
     "SLACK_AVAILABILITY_MODE": "live",
     "SLACK_AVAILABILITY_CHANNEL_ID": "C-AVAILABILITY",
     "SLACK_SIGNING_SECRET": "test-signing-secret",
