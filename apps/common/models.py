@@ -216,6 +216,24 @@ class Event(UserResource):
         )
 
     @classmethod
+    def get_non_working_dates(cls, start_date: datetime.date, end_date: datetime.date) -> set[datetime.date]:
+        """
+        Return holiday and retreat dates within the given range
+        """
+        dates = set()
+        qs = cls.objects.filter(
+            type__in=cls.Type.__NON_WORKING__,
+            start_date__lte=end_date,
+            end_date__gte=start_date,
+        )
+        for event_start_date, event_end_date in qs.values_list("start_date", "end_date"):
+            date = max(event_start_date, start_date)
+            while date <= min(event_end_date, end_date):
+                dates.add(date)
+                date += datetime.timedelta(days=1)
+        return dates
+
+    @classmethod
     def get_relative_event_dates(cls) -> list[datetime.date]:
         """
         Return list of dates with holiday relative to current date
