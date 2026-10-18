@@ -416,6 +416,8 @@ class AvailabilityProcessor:
                 blocks=build_reply_blocks(run.reply_text, run.pk) if has_viewable_trace(run.trace) else None,
                 thread_ts=thread.thread_ts,
                 channel=thread.channel_id,
+                # The reply links to the Timur frontend, whose preview adds noise to the thread
+                unfurl=False,
             )
             run.reply_ts = response.get("ts") or ""
             run.save(update_fields=("reply_ts",))

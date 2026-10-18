@@ -23,3 +23,18 @@ def test_fetch_thread_messages_skips_repeated_parent():
 
     assert [message["ts"] for message in messages] == [PARENT_TS, "1760000001.000100", "1760000002.000100"]
     assert [call.kwargs["cursor"] for call in slack.client.conversations_replies.call_args_list] == [None, "page-2"]
+
+
+def test_send_slack_message_unfurl():
+    slack = TimurSlack.__new__(TimurSlack)
+    slack.client = mock.Mock()
+    slack.standup_channel_id = "C-STANDUP"
+    slack.bot_name = "Timur"
+    slack.bot_icon = None
+
+    slack.send_slack_message(text="Hi")
+    slack.send_slack_message(text="Hi", channel="C1", unfurl=False)
+
+    first, second = slack.client.chat_postMessage.call_args_list
+    assert (first.kwargs["unfurl_links"], first.kwargs["unfurl_media"]) == (True, True)
+    assert (second.kwargs["unfurl_links"], second.kwargs["unfurl_media"]) == (False, False)

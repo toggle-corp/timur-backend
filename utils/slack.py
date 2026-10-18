@@ -71,6 +71,7 @@ class TimurSlack:
         blocks: str | typing.Sequence[dict | Block] | None = None,
         thread_ts: str | None = None,
         channel: str | None = None,
+        unfurl: bool = True,
     ) -> SlackResponse:
         resp = self.client.chat_postMessage(
             channel=channel or self.standup_channel_id,
@@ -79,6 +80,8 @@ class TimurSlack:
             blocks=blocks,
             text=text,
             thread_ts=thread_ts,
+            unfurl_links=unfurl,
+            unfurl_media=unfurl,
         )
 
         # TODO: Check if this is required

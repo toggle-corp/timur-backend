@@ -126,6 +126,7 @@ class TestAvailabilityProcessor(TestCase):
         posted = self.slack.posted[0]
         assert posted["thread_ts"] == self.parent_ts
         assert posted["channel"] == CHANNEL_ID
+        assert posted["unfurl"] is False
         assert posted["text"] == run.reply_text
         assert posted["text"].startswith("<@U-AUTHOR> I've updated your Timur journal:")
         assert "Leave (full)" in posted["text"]

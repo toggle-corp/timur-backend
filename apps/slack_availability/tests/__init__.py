@@ -101,8 +101,11 @@ class FakeSlack(TimurSlack):
         blocks: str | typing.Sequence[dict | Block] | None = None,
         thread_ts: str | None = None,
         channel: str | None = None,
+        unfurl: bool = True,
     ) -> SlackResponse:
-        self.posted.append({"text": text, "blocks": blocks, "thread_ts": thread_ts, "channel": channel})
+        self.posted.append(
+            {"text": text, "blocks": blocks, "thread_ts": thread_ts, "channel": channel, "unfurl": unfurl},
+        )
         return typing.cast("SlackResponse", {"ts": f"9999999999.{len(self.posted):06d}"})
 
 
