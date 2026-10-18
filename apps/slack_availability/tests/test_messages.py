@@ -6,6 +6,7 @@ from apps.slack_availability.messages import (
     WHY_ACTION_ID,
     StandupNote,
     StandupRole,
+    build_delete_notice,
     build_reply,
     build_reply_blocks,
 )
@@ -199,3 +200,14 @@ def test_build_reply_blocks_long_text():
     assert len(sections) > 1
     assert all(len(section) <= MAX_SECTION_TEXT_LENGTH for section in sections)
     assert "".join(sections).replace("\n", "") == text.replace("\n", "")
+
+
+def test_build_delete_notice():
+    assert build_delete_notice("U123", parent_deleted=False) == (
+        "<@U123> I don't handle deleted messages, so your Timur journal wasn't changed now."
+        " I'll leave that message out the next time I read this thread. To change or cancel, reply in this thread."
+    )
+    assert build_delete_notice("U123", parent_deleted=True) == (
+        "<@U123> I don't handle deleted messages, so your Timur journal wasn't changed."
+        " To change it, post a new message here. To cancel, update it in Timur."
+    )

@@ -133,6 +133,12 @@ button clicks to it over HTTPS, so it must be reachable from the internet.
    2. `SLACK_AVAILABILITY_MODE=live`: Timur reacts (`:eyes:` on every post it reads, `:white_check_mark:` when
       the journal changed, `:warning:` on failure or an unknown user), updates the journal and replies in the
       thread. Click "How did Timur decide?" on a reply to see the steps.
+      Deleting a message doesn't change the journal right away. Changes and cancellations go in a thread reply.
+      - A deleted reply is left out the next time Timur reads the thread (on its next reply or edit), so that
+        read can change the journal.
+      - A thread whose top-level message is deleted is no longer read. Its journal values stay.
+      - When the journal still holds values from the thread, Timur replies once to a deleted reply and once to a
+        deleted top-level message.
    3. Rollback: `SLACK_AVAILABILITY_MODE=off`. Events are then ignored.
 
 ### Troubleshooting

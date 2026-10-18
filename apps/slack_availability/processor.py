@@ -15,7 +15,7 @@ from utils.slack import TimurSlack
 from .dates import ExpandedAvailability, expand_ranges, local_datetime_from_ts
 from .events import SlackMessageEvent
 from .guards import GuardResult, apply_guards
-from .messages import StandupNote, StandupRole, build_reply, build_reply_blocks
+from .messages import StandupNote, StandupRole, build_delete_notice, build_reply, build_reply_blocks
 from .models import SlackAvailabilityRun, SlackAvailabilityThread
 from .parsers import AvailabilityParser, get_parser
 from .reconcile import (
@@ -48,6 +48,7 @@ def with_end_date_questions(unclear: list[UnclearPart], ranges: list[Availabilit
 
 
 Status = SlackAvailabilityRun.Status
+Trigger = SlackAvailabilityRun.Trigger
 
 # Runs below this parser confidence change nothing
 MIN_CONFIDENCE = 0.5
@@ -121,8 +122,8 @@ class AvailabilityProcessor:
         transaction that skips the run when a newer read of the thread was already applied.
         The DONE reaction and the thread reply are sent separately by notify(), after the journal is committed.
         """
-        if event.is_parent_deleted:
-            return self.process_parent_deleted(event)
+        if event.trigger == Trigger.DELETE:
+            return self.process_delete(event)
 
         snapshot_at = timezone.now()
         messages = self.fetch_thread_messages(event)
@@ -176,7 +177,14 @@ class AvailabilityProcessor:
             today=self._today(event),
         )
 
-    def process_parent_deleted(self, event: SlackMessageEvent) -> SlackAvailabilityRun | None:
+    def process_delete(self, event: SlackMessageEvent) -> SlackAvailabilityRun | None:
+        """
+        Record a deleted message of the poster without changing the journal
+
+        Deleting the top-level message stops the processing of the thread. When the thread changed the journal,
+        the first deleted reply and the deleted top-level message each get a run whose reply says that deletes
+        aren't handled.
+        """
         with transaction.atomic():
             thread = (
                 SlackAvailabilityThread.objects.select_for_update()
@@ -185,33 +193,45 @@ class AvailabilityProcessor:
             )
             if thread is None:
                 return None
-            thread.is_deleted = True
-            thread.desired_state = {}
-            thread.save(update_fields=("is_deleted", "desired_state", "modified_at"))
-            if thread.user is None:
+            if event.is_parent_deleted:
+                if thread.is_deleted:
+                    return None
+                thread.is_deleted = True
+                thread.save(update_fields=("is_deleted", "modified_at"))
+            # Replies of a deleted thread are no longer read
+            elif thread.is_deleted:
                 return None
-
-            today = self._today(event)
-            current, owned = load_journal_state(thread.user, thread, dates=set())
-            changes = plan_changes(
-                thread_id=thread.pk,
-                today=today,
-                desired={},
-                current=current,
-                owned=owned,
-                other_requests=load_other_requests(thread.user, thread, today),
-            )
-            if self.is_live:
-                apply_changes(thread.user, thread, changes)
+            # Messages of other users never change the thread
+            if event.slack_user_id != thread.slack_user_id or not self._changed_journal(thread):
+                return None
+            notices = thread.runs.filter(trigger=Trigger.DELETE, status=Status.NO_CHANGE, mode=self.config.mode)
+            # The notice for the top-level message is the run on its ts
+            if event.is_parent_deleted:
+                notices = notices.filter(trigger_ts=thread.thread_ts)
+            else:
+                notices = notices.exclude(trigger_ts=thread.thread_ts)
+            if notices.exists():
+                return None
             return SlackAvailabilityRun.objects.create(
                 thread=thread,
                 mode=self.config.mode,
                 trigger=event.trigger,
                 trigger_ts=event.deleted_ts or event.event_ts,
-                status=self._status(changes),
-                today=today,
-                planned_changes={"changes": [change.as_dict() for change in changes]},
+                status=Status.NO_CHANGE,
+                today=self._today(event),
+                reply_text=build_delete_notice(thread.slack_user_id, parent_deleted=event.is_parent_deleted),
             )
+
+    def _changed_journal(self, thread: SlackAvailabilityThread) -> bool:
+        """
+        Whether the journal still holds values the thread wrote, or in shadow mode, would hold them
+        """
+        if self.is_live:
+            return thread.journal_entries.exists()
+        latest_run = thread.runs.filter(status=Status.PLANNED).order_by("-id").first()
+        return latest_run is not None and any(
+            change["action"] in JOURNAL_CHANGING_ACTIONS for change in latest_run.planned_changes.get("changes", [])
+        )
 
     def _status(self, changes: list[PlannedChange]) -> int:
         if not self.is_live:
@@ -279,8 +299,8 @@ class AvailabilityProcessor:
         notice_key = self._notice_key(planned_changes)
         if not any(notice_key):
             return False
-        # Only replies that reached Slack count as told
-        previous_run = thread.runs.exclude(reply_ts="").order_by("-id").first()
+        # Only replies that reached Slack count as told. The delete notice tells nothing about dates
+        previous_run = thread.runs.exclude(reply_ts="").exclude(trigger=Trigger.DELETE).order_by("-id").first()
         return previous_run is None or self._notice_key(previous_run.planned_changes) != notice_key
 
     def process_thread(
@@ -307,7 +327,7 @@ class AvailabilityProcessor:
             thread=thread,
             mode=self.config.mode,
             trigger=event.trigger,
-            trigger_ts=event.trigger_ts or event.deleted_ts or event.event_ts,
+            trigger_ts=event.trigger_ts or event.event_ts,
             today=today,
             llm_input=parse_result.prompt,
             llm_model=parse_result.model,
@@ -403,11 +423,15 @@ class AvailabilityProcessor:
         Safe to call again: reactions are idempotent and the reply is sent once per run.
         """
         thread = run.thread
-        # The thread is gone once its top-level message is deleted
-        if run.mode != "live" or thread.is_deleted:
+        if run.mode != "live":
             return
-        # A deleted reply has no message to react on
-        if run.status == Status.APPLIED and run.trigger != SlackAvailabilityRun.Trigger.DELETE:
+        # A thread whose top-level message is deleted only gets the notice for that delete.
+        # The delete can land between processing and a retried notify
+        thread.refresh_from_db(fields=("is_deleted",))
+        if thread.is_deleted and (run.trigger != Trigger.DELETE or run.trigger_ts != thread.thread_ts):
+            return
+        # A deleted message has nothing to react on
+        if run.status == Status.APPLIED and run.trigger != Trigger.DELETE:
             self.slack.add_reaction(thread.channel_id, run.trigger_ts, Reaction.DONE)
         if run.reply_text and not run.reply_ts:
             response = self.slack.send_slack_message(
@@ -501,7 +525,8 @@ def mark_notify_failed(slack: TimurSlack | None, run: SlackAvailabilityRun, erro
         exc_info=error,
         extra=log_extra({"run_id": run.pk, "thread_id": run.thread_id}),
     )
-    if slack is not None:
+    # A deleted message has nothing to react on
+    if slack is not None and run.trigger != Trigger.DELETE:
         try:
             slack.add_reaction(run.thread.channel_id, run.trigger_ts, Reaction.FAILED)
         except Exception:

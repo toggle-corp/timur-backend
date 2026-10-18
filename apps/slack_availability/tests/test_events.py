@@ -115,7 +115,7 @@ def test_delete():
     )
     assert classified.is_parent_deleted
 
-    # Reply deleted: the thread is processed again
+    # Reply deleted
     reply = slack_message("U1", "second half", REPLY_TS, thread_ts=PARENT_TS)
     classified = classify_event({**event, "deleted_ts": REPLY_TS, "previous_message": reply}, CHANNEL_ID)
     assert classified is not None

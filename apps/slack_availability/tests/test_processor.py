@@ -9,7 +9,7 @@ from slack_sdk.errors import SlackApiError
 from apps.journal.factories import JournalFactory
 from apps.journal.models import Journal
 from apps.slack_availability.events import classify_event
-from apps.slack_availability.messages import WHY_ACTION_ID, build_reply_blocks, format_date
+from apps.slack_availability.messages import WHY_ACTION_ID, build_delete_notice, build_reply_blocks, format_date
 from apps.slack_availability.models import (
     SlackAvailabilityJournalEntry,
     SlackAvailabilityRun,
@@ -314,58 +314,44 @@ class TestAvailabilityProcessor(TestCase):
         assert run.status == Status.NO_CHANGE
         assert len(self.slack.posted) == 1
 
-    def test_parent_deleted(self):
-        self.process(self.parent_event(), self.default_parser())
-        self.slack.threads = {}
+    def assert_delete_notice(self, posted: dict, *, parent_deleted: bool):
+        assert posted["thread_ts"] == self.parent_ts
+        assert posted["channel"] == CHANNEL_ID
+        assert posted["unfurl"] is False
+        assert posted["blocks"] is None
+        assert posted["text"] == build_delete_notice("U-AUTHOR", parent_deleted=parent_deleted)
 
-        delete_ts = ts_at(self.monday, 13)
-        run = self.process(
-            {
-                "type": "message",
-                "subtype": "message_deleted",
-                "channel": CHANNEL_ID,
-                "ts": delete_ts,
-                "event_ts": delete_ts,
-                "deleted_ts": self.parent_ts,
-                "previous_message": self.parent,
-            },
-            self.default_parser(),
-        )
+    def test_parent_deleted_keeps_journal_and_notifies(self):
+        self.process(self.parent_event(), self.default_parser())
+        reactions_before = list(self.slack.reactions)
+
+        run = self.process(self.delete_event(self.parent_ts, self.parent, ts_at(self.monday, 13)), FakeParser())
 
         assert run is not None
         assert run.trigger == SlackAvailabilityRun.Trigger.DELETE
-        assert run.status == Status.APPLIED
-        assert self.journal_state(self.tuesday) == DayState()
-        assert self.journal_state(self.wednesday) == DayState()
-        assert SlackAvailabilityThread.objects.get(thread_ts=self.parent_ts).is_deleted
-        assert not SlackAvailabilityJournalEntry.objects.exists()
-        # No reaction or reply for a deleted message
-        assert len(self.slack.posted) == 1
-        assert len(self.slack.reactions) == 2
-
-    def test_parent_deleted_keeps_manual_changes_and_past_dates(self):
-        self.process(self.parent_event(), self.default_parser())
-        Journal.objects.filter(user=self.user, date=self.wednesday).update(wfh_type=WT.FIRST_HALF)
-
-        # Deleted on Wednesday: Tuesday is in the past
-        delete_ts = ts_at(self.wednesday, 9)
-        self.process(
-            {
-                "type": "message",
-                "subtype": "message_deleted",
-                "channel": CHANNEL_ID,
-                "ts": delete_ts,
-                "event_ts": delete_ts,
-                "deleted_ts": self.parent_ts,
-                "previous_message": self.parent,
-            },
-            self.default_parser(),
-        )
-
+        assert run.trigger_ts == self.parent_ts
+        assert run.status == Status.NO_CHANGE
+        assert run.reply_ts
         assert self.journal_state(self.tuesday) == DayState(leave_type=LT.FULL)
-        assert self.journal_state(self.wednesday) == DayState(wfh_type=WT.FIRST_HALF)
+        assert self.journal_state(self.wednesday) == DayState(wfh_type=WT.FULL)
+        assert SlackAvailabilityJournalEntry.objects.count() == 2
+        assert SlackAvailabilityThread.objects.get(thread_ts=self.parent_ts).is_deleted
+        assert len(self.slack.posted) == 2
+        self.assert_delete_notice(self.slack.posted[-1], parent_deleted=True)
+        assert "To cancel, update it in Timur." in self.slack.posted[-1]["text"]
+        # Nothing to react on
+        assert self.slack.reactions == reactions_before
 
-    def test_reply_deleted_updates_and_replies(self):
+    def test_parent_deleted_without_journal_changes(self):
+        self.process(self.parent_event(), FakeParser(is_about_availability=False))
+
+        run = self.process(self.delete_event(self.parent_ts, self.parent, ts_at(self.monday, 13)), FakeParser())
+
+        assert run is None
+        assert SlackAvailabilityThread.objects.get(thread_ts=self.parent_ts).is_deleted
+        assert self.slack.posted == []
+
+    def test_reply_deleted_keeps_journal_and_notifies(self):
         reply_ts = ts_at(self.monday, 11)
         reply = slack_message("U-AUTHOR", "and thursday too", reply_ts, thread_ts=self.parent_ts)
         self.slack.threads[self.parent_ts].append(reply)
@@ -378,16 +364,153 @@ class TestAvailabilityProcessor(TestCase):
         reactions_before = list(self.slack.reactions)
 
         self.slack.threads[self.parent_ts] = [self.parent]
-        run = self.process(self.delete_event(reply_ts, reply, ts_at(self.monday, 12)), self.default_parser())
+        parser = self.default_parser()
+        run = self.process(self.delete_event(reply_ts, reply, ts_at(self.monday, 12)), parser)
 
         assert run is not None
         assert run.trigger == SlackAvailabilityRun.Trigger.DELETE
         assert run.trigger_ts == reply_ts
+        assert run.status == Status.NO_CHANGE
+        assert parser.calls == []
+        assert self.journal_state(thursday) == DayState(leave_type=LT.FULL)
+        assert not SlackAvailabilityThread.objects.get(thread_ts=self.parent_ts).is_deleted
+        self.assert_delete_notice(self.slack.posted[-1], parent_deleted=False)
+        assert "leave that message out the next time" in self.slack.posted[-1]["text"]
+        assert self.slack.reactions == reactions_before
+
+    def test_reply_of_other_user_deleted(self):
+        self.process(self.parent_event(), self.default_parser())
+        reply_ts = ts_at(self.monday, 11)
+        reply = slack_message("U-OTHER", "enjoy", reply_ts, thread_ts=self.parent_ts)
+
+        run = self.process(self.delete_event(reply_ts, reply, ts_at(self.monday, 12)), FakeParser())
+
+        assert run is None
+        assert len(self.slack.posted) == 1
+
+    def test_repeated_deletes_notify_once(self):
+        self.process(self.parent_event(), self.default_parser())
+        replies = [
+            slack_message("U-AUTHOR", text, ts_at(self.monday, hour), thread_ts=self.parent_ts)
+            for text, hour in (("and thursday too", 10), ("and friday too", 11))
+        ]
+
+        runs = [
+            self.process(self.delete_event(reply["ts"], reply, ts_at(self.monday, 12)), FakeParser()) for reply in replies
+        ]
+        assert runs[0] is not None
+        assert runs[1] is None
+        assert len(self.slack.posted) == 2
+
+        # The deleted top-level message closes the thread, which gets its own notice once
+        parent_runs = [
+            self.process(self.delete_event(self.parent_ts, self.parent, ts_at(self.monday, hour)), FakeParser())
+            for hour in (13, 14)
+        ]
+        assert parent_runs[0] is not None
+        assert parent_runs[1] is None
+        assert len(self.slack.posted) == 3
+        self.assert_delete_notice(self.slack.posted[-1], parent_deleted=True)
+
+        # Replies of the deleted thread are no longer read
+        reply = slack_message("U-AUTHOR", "and monday too", ts_at(self.monday, 15), thread_ts=self.parent_ts)
+        assert self.process(self.delete_event(reply["ts"], reply, ts_at(self.monday, 16)), FakeParser()) is None
+        assert len(self.slack.posted) == 3
+
+    def test_deleted_reply_is_left_out_of_the_next_read(self):
+        reply_ts = ts_at(self.monday, 10)
+        reply = slack_message("U-AUTHOR", "and thursday too", reply_ts, thread_ts=self.parent_ts)
+        self.slack.threads[self.parent_ts].append(reply)
+        thursday = self.monday + datetime.timedelta(days=3)
+        self.process(
+            message_event("U-AUTHOR", reply["text"], reply_ts, thread_ts=self.parent_ts),
+            FakeParser(ranges=[*self.default_parser().ranges, AvailabilityRange(thursday, thursday, leave=Half.FULL)]),
+        )
+
+        self.slack.threads[self.parent_ts] = [self.parent]
+        self.process(self.delete_event(reply_ts, reply, ts_at(self.monday, 11)), FakeParser())
+        assert self.journal_state(thursday) == DayState(leave_type=LT.FULL)
+
+        # The next read of the thread no longer has the deleted reply
+        later_ts = ts_at(self.monday, 12)
+        later = slack_message("U-AUTHOR", "back on friday", later_ts, thread_ts=self.parent_ts)
+        self.slack.threads[self.parent_ts].append(later)
+        parser = self.default_parser()
+        run = self.process(message_event("U-AUTHOR", later["text"], later_ts, thread_ts=self.parent_ts), parser)
+
+        assert run is not None
         assert run.status == Status.APPLIED
+        assert [message.text for message in parser.calls[0][0]] == [self.parent["text"], later["text"]]
         assert self.journal_state(thursday) == DayState()
-        assert "Removed from your Timur journal:" in self.slack.posted[-1]["text"]
-        assert run.reply_ts
-        # Nothing to react on
+        assert self.journal_state(self.tuesday) == DayState(leave_type=LT.FULL)
+
+    def test_reply_delete_notice_is_not_sent_after_parent_deleted(self):
+        self.process(self.parent_event(), self.default_parser())
+        reply_ts = ts_at(self.monday, 11)
+        reply = slack_message("U-AUTHOR", "and thursday too", reply_ts, thread_ts=self.parent_ts)
+        processor = AvailabilityProcessor(self.slack, parser_factory=FakeParser)
+        # Its post failed, so the notice is still pending when the top-level message is deleted
+        reply_event = classify_event(self.delete_event(reply_ts, reply, ts_at(self.monday, 12)), CHANNEL_ID)
+        assert reply_event is not None
+        reply_run = processor.process(reply_event)
+        assert reply_run is not None
+
+        self.process(self.delete_event(self.parent_ts, self.parent, ts_at(self.monday, 13)), FakeParser())
+        assert len(self.slack.posted) == 2
+        processor.notify(reply_run)
+
+        reply_run.refresh_from_db()
+        assert reply_run.reply_ts == ""
+        assert len(self.slack.posted) == 2
+        self.assert_delete_notice(self.slack.posted[-1], parent_deleted=True)
+
+    def test_delete_after_dates_were_cancelled(self):
+        self.process(self.parent_event(), self.default_parser())
+        reply_ts = ts_at(self.monday, 11)
+        self.slack.threads[self.parent_ts].append(
+            slack_message("U-AUTHOR", "cancel all", reply_ts, thread_ts=self.parent_ts),
+        )
+        self.process(
+            message_event("U-AUTHOR", "cancel all", reply_ts, thread_ts=self.parent_ts),
+            FakeParser(is_about_availability=False),
+        )
+        assert not SlackAvailabilityJournalEntry.objects.exists()
+        posted_before = len(self.slack.posted)
+
+        run = self.process(self.delete_event(self.parent_ts, self.parent, ts_at(self.monday, 13)), FakeParser())
+
+        assert run is None
+        assert len(self.slack.posted) == posted_before
+
+    @override_settings(SLACK_AVAILABILITY_MODE="shadow")
+    def test_delete_in_shadow_mode(self):
+        self.process(self.parent_event(), self.default_parser())
+        assert self.journal_state(self.tuesday) is None
+
+        run = self.process(self.delete_event(self.parent_ts, self.parent, ts_at(self.monday, 13)), FakeParser())
+
+        assert run is not None
+        assert run.mode == "shadow"
+        assert run.reply_text == build_delete_notice("U-AUTHOR", parent_deleted=True)
+        assert run.reply_ts == ""
+        assert self.slack.posted == []
+
+    def test_delete_notice_post_failure_has_no_reaction(self):
+        self.process(self.parent_event(), self.default_parser())
+        reactions_before = list(self.slack.reactions)
+        message_event_ = classify_event(
+            self.delete_event(self.parent_ts, self.parent, ts_at(self.monday, 13)),
+            CHANNEL_ID,
+        )
+        assert message_event_ is not None
+        run = AvailabilityProcessor(self.slack, parser_factory=FakeParser).process(message_event_)
+        assert run is not None
+
+        with self.assertLogs("apps.slack_availability.processor", level="ERROR"):
+            mark_notify_failed(self.slack, run, RuntimeError("thread_not_found"))
+
+        run.refresh_from_db()
+        assert "thread_not_found" in run.error
         assert self.slack.reactions == reactions_before
 
     def test_unknown_parent_deleted(self):
@@ -798,9 +921,11 @@ class TestAvailabilityProcessor(TestCase):
 
         assert run is not None
         assert run.status == Status.STALE
-        assert self.journal_state(self.tuesday) == DayState()
-        assert self.journal_state(self.wednesday) == DayState()
-        assert not SlackAvailabilityJournalEntry.objects.exists()
+        assert self.journal_state(self.tuesday) == DayState(leave_type=LT.FULL)
+        assert self.journal_state(self.wednesday) == DayState(wfh_type=WT.FULL)
+        # Only the delete notice was sent after the first reply
+        assert len(self.slack.posted) == 2
+        self.assert_delete_notice(self.slack.posted[-1], parent_deleted=True)
 
     def _second_thread(self, text: str) -> tuple[str, dict]:
         second_ts = ts_at(self.monday, 10)
@@ -808,27 +933,8 @@ class TestAvailabilityProcessor(TestCase):
         self.slack.threads[second_ts] = [second]
         return second_ts, second
 
-    def test_deleting_duplicate_thread_keeps_value_of_first_thread(self):
-        first = self.process(self.parent_event(), self.default_parser())
-        assert first is not None
-
-        # Same leave posted again: the second thread takes ownership of Tuesday
-        second_ts, second = self._second_thread("Reminder: on leave tomorrow")
-        self.process(
-            message_event("U-AUTHOR", second["text"], second_ts),
-            FakeParser(ranges=[AvailabilityRange(self.tuesday, self.tuesday, leave=Half.FULL)]),
-        )
-        assert SlackAvailabilityJournalEntry.objects.get(journal__date=self.tuesday).thread.thread_ts == second_ts
-
-        self.process(self.delete_event(second_ts, second, ts_at(self.monday, 13)), FakeParser())
-
-        assert self.journal_state(self.tuesday) == DayState(leave_type=LT.FULL)
-        entry = SlackAvailabilityJournalEntry.objects.get(journal__date=self.tuesday)
-        assert entry.thread_id == first.thread_id
-
-    def test_deleting_overriding_thread_restores_value_of_first_thread(self):
-        first = self.process(self.parent_event(), self.default_parser())
-        assert first is not None
+    def test_deleting_overriding_thread_keeps_its_value(self):
+        self.process(self.parent_event(), self.default_parser())
 
         second_ts, second = self._second_thread("WFH tomorrow instead")
         self.process(
@@ -839,9 +945,9 @@ class TestAvailabilityProcessor(TestCase):
 
         self.process(self.delete_event(second_ts, second, ts_at(self.monday, 13)), FakeParser())
 
-        assert self.journal_state(self.tuesday) == DayState(leave_type=LT.FULL)
+        assert self.journal_state(self.tuesday) == DayState(wfh_type=WT.FULL)
         entry = SlackAvailabilityJournalEntry.objects.get(journal__date=self.tuesday)
-        assert entry.thread_id == first.thread_id
+        assert entry.thread.thread_ts == second_ts
 
     def test_mark_event_failed(self):
         message_event_ = classify_event(self.parent_event(), CHANNEL_ID)

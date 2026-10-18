@@ -134,6 +134,25 @@ def build_reply(
     return f"<@{slack_user_id}> " + "\n".join(sections) + f"\n\n{disclaimer}"
 
 
+def build_delete_notice(slack_user_id: str, *, parent_deleted: bool) -> str:
+    """
+    Thread reply when the poster deletes a message of a thread that changed their journal
+
+    A thread whose top-level message is deleted is no longer read. A new thread can set its dates, but only
+    removes dates it wrote itself, so cancelling them is done in Timur.
+    A thread with a deleted reply is read again on its next event, without that reply.
+    """
+    if parent_deleted:
+        return (
+            f"<@{slack_user_id}> I don't handle deleted messages, so your Timur journal wasn't changed."
+            " To change it, post a new message here. To cancel, update it in Timur."
+        )
+    return (
+        f"<@{slack_user_id}> I don't handle deleted messages, so your Timur journal wasn't changed now."
+        " I'll leave that message out the next time I read this thread. To change or cancel, reply in this thread."
+    )
+
+
 WHY_ACTION_ID = "slack_availability_why"
 # https://docs.slack.dev/reference/block-kit/blocks/section-block/
 MAX_SECTION_TEXT_LENGTH = 3000
