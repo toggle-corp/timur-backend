@@ -127,11 +127,6 @@ class Event(UserResource):
         include_holidays=False,
         include_weekends=False,
     ) -> list[datetime.date]:
-        if start_date == end_date:
-            if not include_weekends and cls.is_weekend(start_date):
-                return []
-            return [start_date]
-
         holiday_dates = set() if include_holidays else set(cls.get_relative_event_dates())
         dates = []
         for x in range((end_date - start_date).days + 1):

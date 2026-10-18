@@ -84,6 +84,10 @@ services:
     ports:
       - 127.0.0.1:8100:8100
 
+  worker:
+    <<: *base_server_setup
+    command: bash -c 'wait-for-it $$DB_HOST:$$DB_PORT && celery -A main worker -l INFO'
+
 volumes:
   postgres-data15:
   redis-data:

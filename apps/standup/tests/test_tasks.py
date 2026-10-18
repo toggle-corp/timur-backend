@@ -85,6 +85,7 @@ class TimurSlackMock(TimurSlack):
         text: str | None = None,
         blocks: str | typing.Sequence[dict | Block] | None = None,
         thread_ts: str | None = None,
+        channel: str | None = None,
     ) -> SlackResponse:
         print(  # noqa: T201
             {"text": text, "blocks": blocks, "thread_ts": thread_ts},

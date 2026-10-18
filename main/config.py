@@ -54,9 +54,10 @@ class Slack:
     class SlackConfigEnabled:
         enabled: typing.Literal[True]
         token: str
-        channel: str
+        standup_channel_id: str
         bot_name: str | None
         bot_icon: str | None
+        api_base_url: str | None
 
     SlackConfig = SlackConfigEnabled | SlackConfigDisabled
 
@@ -66,8 +67,60 @@ class Slack:
             return cls.SlackConfigEnabled(
                 enabled=True,
                 token=settings.SLACK_BOT_TOKEN,
-                channel=settings.SLACK_BOT_CHANNEL,
+                standup_channel_id=settings.SLACK_STANDUP_CHANNEL_ID,
                 bot_name=settings.SLACK_BOT_NAME,
                 bot_icon=settings.SLACK_BOT_ICON,
+                api_base_url=settings.SLACK_API_BASE_URL,
             )
         return cls.SlackConfigDisabled(enabled=False)
+
+
+# Slack availability
+class SlackAvailability:
+    type Mode = typing.Literal["off", "shadow", "live"]
+
+    @dataclass
+    class OllamaConfig:
+        base_url: str
+        model: str
+        api_key: str | None
+        timeout_seconds: int
+        num_ctx: int
+        keep_alive: str
+
+    @dataclass
+    class SlackAvailabilityConfig:
+        mode: "SlackAvailability.Mode"
+        channel_id: str | None
+        signing_secret: str | None
+        parser: str | None
+        retention_days: int
+
+        @property
+        def is_off(self) -> bool:
+            return self.mode == "off"
+
+        @property
+        def is_live(self) -> bool:
+            return self.mode == "live"
+
+    @staticmethod
+    def load_config() -> SlackAvailabilityConfig:
+        return SlackAvailability.SlackAvailabilityConfig(
+            mode=settings.SLACK_AVAILABILITY_MODE,
+            channel_id=getattr(settings, "SLACK_AVAILABILITY_CHANNEL_ID", None),
+            signing_secret=getattr(settings, "SLACK_SIGNING_SECRET", None),
+            parser=getattr(settings, "SLACK_AVAILABILITY_PARSER", None),
+            retention_days=settings.SLACK_AVAILABILITY_RETENTION_DAYS,
+        )
+
+    @staticmethod
+    def load_ollama_config() -> OllamaConfig:
+        return SlackAvailability.OllamaConfig(
+            base_url=settings.OLLAMA_BASE_URL,
+            model=settings.OLLAMA_MODEL,
+            api_key=getattr(settings, "OLLAMA_API_KEY", None),
+            timeout_seconds=getattr(settings, "OLLAMA_TIMEOUT_SECONDS", 60),
+            num_ctx=getattr(settings, "OLLAMA_NUM_CTX", 8192),
+            keep_alive=getattr(settings, "OLLAMA_KEEP_ALIVE", "10m"),
+        )
