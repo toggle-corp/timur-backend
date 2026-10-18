@@ -319,7 +319,7 @@ class TestAvailabilityProcessor(TestCase):
         assert posted["channel"] == CHANNEL_ID
         assert posted["unfurl"] is False
         assert posted["blocks"] is None
-        assert posted["text"] == build_delete_notice("U-AUTHOR", parent_deleted=parent_deleted)
+        assert posted["text"] == build_delete_notice("U-AUTHOR", CHANNEL_ID, parent_deleted=parent_deleted)
 
     def test_parent_deleted_keeps_journal_and_notifies(self):
         self.process(self.parent_event(), self.default_parser())
@@ -491,7 +491,7 @@ class TestAvailabilityProcessor(TestCase):
 
         assert run is not None
         assert run.mode == "shadow"
-        assert run.reply_text == build_delete_notice("U-AUTHOR", parent_deleted=True)
+        assert run.reply_text == build_delete_notice("U-AUTHOR", CHANNEL_ID, parent_deleted=True)
         assert run.reply_ts == ""
         assert self.slack.posted == []
 

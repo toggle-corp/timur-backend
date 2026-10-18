@@ -134,7 +134,7 @@ def build_reply(
     return f"<@{slack_user_id}> " + "\n".join(sections) + f"\n\n{disclaimer}"
 
 
-def build_delete_notice(slack_user_id: str, *, parent_deleted: bool) -> str:
+def build_delete_notice(slack_user_id: str, channel_id: str, *, parent_deleted: bool) -> str:
     """
     Thread reply when the poster deletes a message of a thread that changed their journal
 
@@ -145,7 +145,8 @@ def build_delete_notice(slack_user_id: str, *, parent_deleted: bool) -> str:
     if parent_deleted:
         return (
             f"<@{slack_user_id}> I don't handle deleted messages, so your Timur journal wasn't changed."
-            " To change it, post a new message here. To cancel, update it in Timur."
+            f" I no longer read this thread. To change it, post a new message in <#{channel_id}>."
+            " To cancel, update it in Timur."
         )
     return (
         f"<@{slack_user_id}> I don't handle deleted messages, so your Timur journal wasn't changed now."

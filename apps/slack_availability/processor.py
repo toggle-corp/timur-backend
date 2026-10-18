@@ -219,7 +219,11 @@ class AvailabilityProcessor:
                 trigger_ts=event.deleted_ts or event.event_ts,
                 status=Status.NO_CHANGE,
                 today=self._today(event),
-                reply_text=build_delete_notice(thread.slack_user_id, parent_deleted=event.is_parent_deleted),
+                reply_text=build_delete_notice(
+                    thread.slack_user_id,
+                    thread.channel_id,
+                    parent_deleted=event.is_parent_deleted,
+                ),
             )
 
     def _changed_journal(self, thread: SlackAvailabilityThread) -> bool:

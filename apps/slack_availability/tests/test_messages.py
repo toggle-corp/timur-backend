@@ -203,11 +203,11 @@ def test_build_reply_blocks_long_text():
 
 
 def test_build_delete_notice():
-    assert build_delete_notice("U123", parent_deleted=False) == (
+    assert build_delete_notice("U123", "C123", parent_deleted=False) == (
         "<@U123> I don't handle deleted messages, so your Timur journal wasn't changed now."
         " I'll leave that message out the next time I read this thread. To change or cancel, reply in this thread."
     )
-    assert build_delete_notice("U123", parent_deleted=True) == (
+    assert build_delete_notice("U123", "C123", parent_deleted=True) == (
         "<@U123> I don't handle deleted messages, so your Timur journal wasn't changed."
-        " To change it, post a new message here. To cancel, update it in Timur."
+        " I no longer read this thread. To change it, post a new message in <#C123>. To cancel, update it in Timur."
     )
