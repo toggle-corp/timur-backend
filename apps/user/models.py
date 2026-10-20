@@ -54,8 +54,12 @@ class User(AbstractUser):
             super().save(*args, **kwargs)
             # Remove force_insert since we have already inserted
             kwargs.pop("force_insert", None)
-        self.display_name = self.get_full_name() or f"User#{self.pk}"
+        self.display_name = self.get_display_name(self.pk, self.get_full_name())
         return super().save(*args, **kwargs)
+
+    @classmethod
+    def get_display_name(cls, pk: int, name: str | None) -> str:
+        return name or f"User#{pk}"
 
     @classmethod
     def get_active_user_qs(cls) -> models.QuerySet[typing.Self]:

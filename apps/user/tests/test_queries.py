@@ -1,6 +1,7 @@
 import typing
 
 from apps.user.factories import UserFactory
+from apps.user.models import User
 from main.tests import TestCase
 
 
@@ -50,3 +51,12 @@ class TestUserQuery(TestCase):
             lastName=user.last_name,
             displayName=f"{user.first_name} {user.last_name}",
         )
+
+    def test_me_display_name_fallback(self):
+        user = UserFactory.create(first_name="", last_name="")
+        # Bypass save() so the stored value is empty
+        User.objects.filter(pk=user.pk).update(display_name="")
+
+        self.force_login(user)
+        content = self.query_check(self.Query.ME)
+        assert content["data"]["public"]["me"]["displayName"] == f"User#{user.pk}"
