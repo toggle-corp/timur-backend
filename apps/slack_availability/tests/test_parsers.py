@@ -290,6 +290,12 @@ def flat_system_prompt() -> str:
         "2026-10-13..2026-10-13 leave full",
         # This week ends on its Friday
         '"Working from home this entire week" -> 2026-10-12..2026-10-16 wfh full',
+        # A reply adding the other half of the same type makes a full day
+        '"Leave for the first half, will join in the second half if I feel better", then reply "Still not better, '
+        'taking the second half off as well" -> 2026-10-12..2026-10-12 leave full',
+        # A reply replacing the half keeps only the new half
+        '"First half leave today", then reply "change it to the second half instead" -> 2026-10-12..2026-10-12 '
+        "leave second_half",
     ],
 )
 def test_system_prompt_examples(example):
@@ -315,3 +321,5 @@ def test_system_prompt_half_and_date_rules():
     assert "false for conditional or uncertain plans" in prompt
     assert "Take each range's dates only from its source_phrase" in prompt
     assert "whatever the time of day" in prompt
+    assert 'makes that day "full": return one range for it, not one per half' in prompt
+    assert "A reply that replaces the half" in prompt

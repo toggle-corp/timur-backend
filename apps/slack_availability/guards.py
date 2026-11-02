@@ -327,6 +327,10 @@ _FULL_DAY_RE = re.compile(r"\b(?:full|whole|all|entire)\s+day\b")
 _HALF_MARKER_RE = re.compile(
     r"\b(?:half|morning|afternoon|after\s+lunch|rest\s+of\s+the\s+day|bihana|diuso|beluka)\b",
 )
+# Words of a reply that adds to the earlier half ("today too", "the rest of today also")
+_ADDITIVE_RE = re.compile(
+    r"\b(?:too|also|as\s+well|rest\s+of\s+(?:the\s+)?day|rest\s+of\s+today|whole\s+day|entire\s+day)\b",
+)
 
 
 _FIRST_HALF_RE = re.compile(r"\b(?:first|1st)\s+half\b|\bmorning\b|\bbihana\b")
@@ -400,15 +404,16 @@ def keep_specific_half(
     """
     The range with the half from an earlier message when it only confirms the same type for the same days
 
-    "I'll work from home for the second half", then "done, working from home" stays WFH second half. The half
-    comes from an earlier range of the same parse, or, when the parser returned only the final state, from an
-    earlier message of the thread that gives a half for that type and day.
+    "I'll work from home for the second half", then "done, working from home" stays WFH second half. A reply that
+    adds to it ("today too", "the rest of today also") stays full. The half comes from an earlier range of the
+    same parse, or, when the parser returned only the final state, from an earlier message of the thread that
+    gives a half for that type and day.
     """
     current = _single_type(availability_range)
     if current is None or current[1] != Half.FULL or context.message_index is None:
         return None
     text = " ".join(context.sentences)
-    if _FULL_DAY_RE.search(text) or _HALF_MARKER_RE.search(text):
+    if _FULL_DAY_RE.search(text) or _HALF_MARKER_RE.search(text) or _ADDITIVE_RE.search(text):
         return None
     for earlier_range, earlier_context in reversed(earlier):
         earlier_type = _single_type(earlier_range)

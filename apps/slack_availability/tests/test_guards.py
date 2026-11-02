@@ -255,6 +255,31 @@ def test_confirmation_guard_with_final_state_only_leaves_full(earlier, reply, da
     assert apply_guards(ranges, messages).ranges == ranges
 
 
+@pytest.mark.parametrize(
+    ("earlier", "reply", "make"),
+    [
+        ("First half leave today", "Still not better, taking leave for today too", leave),
+        ("WFH in the morning", "Will WFH the rest of today also", wfh),
+        ("WFH in the morning", "Working from home in the afternoon as well", wfh),
+    ],
+)
+def test_confirmation_guard_reply_adding_the_other_half(earlier, reply, make):
+    messages = [message(earlier, hour=9), message(reply, hour=13, index=1)]
+    half = Half.FIRST_HALF
+
+    # The parser returns only the final state
+    ranges = [make(THU, reply)]
+    result = apply_guards(ranges, messages)
+    assert result.ranges == ranges
+    assert result.corrections == []
+
+    # The parser returns the earlier half and the reply
+    ranges = [make(THU, earlier, half), make(THU, reply)]
+    result = apply_guards(ranges, messages)
+    assert result.ranges == ranges
+    assert result.corrections == []
+
+
 def test_confirmation_guard_needs_a_reply():
     # A single message has no earlier message to take a half from
     messages = [message("Working from home in the afternoon. Working from home today.", hour=9)]

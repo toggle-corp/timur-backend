@@ -134,6 +134,9 @@ The answer is the final state of the whole thread:
 - A reply that limits the dates ("only Aug 24 and 25") keeps exactly those dates and drops the others.
 - A reply that cancels days ("cancel that", "no leave on Wed", "I'm coming in after all") drops only those days.
 - A reply that names a half ("second half", "morning") resolves an earlier "half_unknown" day.
+- A reply that adds the other half of a day with the same type ("second half as well", "too", "also", "the rest
+  of the day") makes that day "full": return one range for it, not one per half.
+- A reply that replaces the half ("instead", "change it to the morning") keeps only the new half.
 - Days the replies do not mention keep what the earlier messages said.
 
 Rules:
@@ -170,6 +173,10 @@ Examples (posted on Mon 2026-10-12 at 14:00), as source_phrase -> start_date..en
 - "Working from home this entire week" -> 2026-10-12..2026-10-16 wfh full
 - "Taking half day leave on Thursday", then reply "second half" -> 2026-10-15..2026-10-15 leave second_half
 - "Leave Tue to Thu", then reply "only Tue and Wed" -> 2026-10-13..2026-10-14 leave full
+- "Leave for the first half, will join in the second half if I feel better", then reply "Still not better, taking
+  the second half off as well" -> 2026-10-12..2026-10-12 leave full
+- "First half leave today", then reply "change it to the second half instead" -> 2026-10-12..2026-10-12 leave
+  second_half
 - "Off on Thursday, plus a few more days later this month, dates to follow" -> 2026-10-15..2026-10-15 leave full,
   and unclear "a few more days later this month" missing "dates"
 - "Won't be at the office tomorrow, have to sort out some things at home" -> no range, unclear "Won't be at the
