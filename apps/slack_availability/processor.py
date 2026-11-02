@@ -17,7 +17,7 @@ from .events import SlackMessageEvent
 from .guards import GuardResult, apply_guards
 from .messages import StandupNote, StandupRole, build_delete_notice, build_reply, build_reply_blocks
 from .models import SlackAvailabilityRun, SlackAvailabilityThread
-from .parsers import AvailabilityParser, get_parser
+from .parsers import AvailabilityParser, get_parser, load_prompt_events
 from .reconcile import (
     JOURNAL_CHANGING_ACTIONS,
     MANUAL_VALUE_ACTIONS,
@@ -325,7 +325,7 @@ class AvailabilityProcessor:
             for message in raw_messages
             if _is_thread_message(message, event.slack_user_id)
         ]
-        parse_result = self.parser_factory().parse(messages, today)
+        parse_result = self.parser_factory().parse(messages, today, load_prompt_events(messages, today))
 
         run = SlackAvailabilityRun(
             thread=thread,

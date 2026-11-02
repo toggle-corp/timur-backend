@@ -1,4 +1,5 @@
 import abc
+import dataclasses
 import datetime
 import json
 import logging
@@ -6,6 +7,7 @@ import typing
 
 import requests
 
+from apps.common.models import Event
 from main import config
 from main.logging import log_extra
 
@@ -23,7 +25,10 @@ class AvailabilityParser(abc.ABC):
     """
 
     @abc.abstractmethod
-    def parse(self, messages: list[ThreadMessage], today: datetime.date) -> ParseResult: ...
+    def parse(self, messages: list[ThreadMessage], today: datetime.date, events: list[Event]) -> ParseResult:
+        """
+        events: holidays and events near the thread (load_prompt_events)
+        """
 
 
 HALF_VALUES = [half.value for half in Half]
@@ -76,6 +81,7 @@ Work out the author's own leave and work-from-home (WFH) days.
 
 Input:
 - A calendar listing every date with its weekday. Always look dates up in it; never compute weekdays yourself.
+- A list of holidays and events with their dates, to resolve them when a message names one.
 - The messages of one thread, oldest first. The first message is the original post, the rest are the author's replies.
 - Each message starts with [time it was posted | today = ... | tomorrow = ... | day after tomorrow = ...].
 
@@ -107,6 +113,13 @@ Resolve dates:
 - "This week" / "this entire week" means the posting date to Friday of that week, never later.
 - "Next week" means Monday to Friday of the week after the posting date. Saturday and Sunday are the weekend.
 - Dates far in the future are fine: output them with the correct year. They are never unclear.
+- A holiday or event named in a phrase ("Dashain", "Tihar") takes its dates from the holidays and events list.
+  "till X" / "until X" ends the day before X starts, "after X" starts on the first working day after X ends, and
+  "during X" is the dates of X. When X is not in the list, do not guess its dates: "till X" / "until X" follows the
+  open-end rule below, and "during X" / "after X" is an "unclear" entry with missing "dates".
+- A number of days ("for 2 days", "3 days leave") counts working days from the start: skip Saturdays, Sundays and
+  the listed holidays and retreats when counting to the end. "after X for 2 days" is the first two working days
+  after X ends.
 - An absence with a start but no end ("till further notice", "until I recover", "for a while") is a range for its
   start day only (the posting date unless a start is given) with open_end true, plus an "unclear" entry for the
   rest with missing "end_date". Every other range has open_end false.
@@ -173,6 +186,9 @@ Examples (posted on Mon 2026-10-12 at 14:00), as source_phrase -> start_date..en
 - "WFH second half today, leave tomorrow" -> 2026-10-12..2026-10-12 wfh second_half and
   2026-10-13..2026-10-13 leave full
 - "Working from home this entire week" -> 2026-10-12..2026-10-16 wfh full
+- "WFH from Jhapa till Founders Day", with Founders Day listed as Thu 2026-11-05..Mon 2026-11-09 ->
+  2026-10-12..2026-11-04 wfh full
+- "Leave from Thursday for 3 days" -> 2026-10-15..2026-10-19 leave full
 - "Leave next next Monday" -> 2026-10-26..2026-10-26 leave full
 - "Taking half day leave on Thursday", then reply "second half" -> 2026-10-15..2026-10-15 leave second_half
 - "Leave Tue to Thu", then reply "only Tue and Wed" -> 2026-10-13..2026-10-14 leave full
@@ -188,12 +204,22 @@ Examples (posted on Mon 2026-10-12 at 14:00), as source_phrase -> start_date..en
   "off until things settle" missing "end_date", needs_care true
 - "Down with the flu since Friday, off until I recover" -> 2026-10-09..2026-10-09 leave full open_end, unclear
   "off until I recover" missing "end_date", needs_care true
+- "WFH until Lantern Fest", with Lantern Fest not listed -> 2026-10-12..2026-10-12 wfh full open_end, unclear
+  "WFH until Lantern Fest" missing "end_date"
 - is_about_poster_availability false: "Running 30 mins late", "Will miss the standup today", "Heading out early
   to rest", "In office today but leaving at 4", "Might WFH tomorrow if the plumber comes",
   "<@U0123> is sick today, they asked me to post"
 """.strip()
 
 CALENDAR_DAYS_AHEAD = 21
+# Holidays and events window: before the first message (for "since/after X"), and ahead (for "till X")
+EVENTS_DAYS_BEFORE = 14
+EVENTS_DAYS_AHEAD = 90
+EVENT_TYPE_SUFFIX: dict[int, str] = {
+    Event.Type.HOLIDAY: "",
+    Event.Type.RETREAT: " (retreat)",
+    Event.Type.MISC: " (event)",
+}
 
 
 def format_date(date: datetime.date) -> str:
@@ -233,13 +259,64 @@ def format_thread(messages: list[ThreadMessage]) -> str:
     return "\n".join(format_message(message) for message in messages)
 
 
-def build_user_prompt(messages: list[ThreadMessage], today: datetime.date) -> str:
+def load_prompt_events(messages: list[ThreadMessage], today: datetime.date) -> list[Event]:
+    """
+    Events overlapping EVENTS_DAYS_BEFORE days before the first message to EVENTS_DAYS_AHEAD days after the latest
+    of today and the last message
+    """
+    posted_dates = [message.posted_at.date() for message in messages]
+    start_date = min([today, *posted_dates]) - datetime.timedelta(days=EVENTS_DAYS_BEFORE)
+    end_date = max([today, *posted_dates]) + datetime.timedelta(days=EVENTS_DAYS_AHEAD)
+    return list(
+        Event.objects.filter(start_date__lte=end_date, end_date__gte=start_date).order_by("start_date", "name", "id"),
+    )
+
+
+@dataclasses.dataclass
+class _EventSpan:
+    name: str
+    type: int
+    start_date: datetime.date
+    end_date: datetime.date
+
+
+def format_events(events: list[Event]) -> str:
+    """
+    One line per event, sorted by date. Rows with the same name and type on consecutive or overlapping days are
+    one line.
+    """
+    spans: list[_EventSpan] = []
+    for event in sorted(events, key=lambda event: (event.name.strip(), event.type, event.start_date, event.end_date)):
+        name = event.name.strip()
+        last = spans[-1] if spans else None
+        if (
+            last is not None
+            and (last.name, last.type) == (name, event.type)
+            and event.start_date <= last.end_date + datetime.timedelta(days=1)
+        ):
+            last.end_date = max(last.end_date, event.end_date)
+            continue
+        spans.append(_EventSpan(name, event.type, event.start_date, event.end_date))
+    if not spans:
+        return "- none"
+
+    lines = []
+    for span in sorted(spans, key=lambda span: (span.start_date, span.end_date, span.name)):
+        dates = format_date(span.start_date)
+        if span.end_date != span.start_date:
+            dates += f"..{format_date(span.end_date)}"
+        lines.append(f"- {span.name}{EVENT_TYPE_SUFFIX.get(span.type, '')}: {dates}")
+    return "\n".join(lines)
+
+
+def build_user_prompt(messages: list[ThreadMessage], today: datetime.date, events: list[Event]) -> str:
     posted_dates = [message.posted_at.date() for message in messages]
     calendar_start = min([today, *posted_dates])
     calendar_end = max([today, *posted_dates]) + datetime.timedelta(days=CALENDAR_DAYS_AHEAD)
     return (
         f"Today is {format_date(today)} ({config.TIME_ZONE}).\n\n"
         f"Calendar:\n{format_calendar(calendar_start, calendar_end)}\n\n"
+        f"Holidays and events (holidays and retreats are not working days):\n{format_events(events)}\n\n"
         f"Messages:\n{format_thread(messages)}"
     )
 
@@ -330,8 +407,8 @@ class OllamaAvailabilityParser(AvailabilityParser):
         self.config = ollama_config
 
     @typing.override
-    def parse(self, messages: list[ThreadMessage], today: datetime.date) -> ParseResult:
-        prompt = build_user_prompt(messages, today)
+    def parse(self, messages: list[ThreadMessage], today: datetime.date, events: list[Event]) -> ParseResult:
+        prompt = build_user_prompt(messages, today, events)
         headers = {}
         if self.config.api_key:
             headers["Authorization"] = f"Bearer {self.config.api_key}"

@@ -224,6 +224,12 @@ _WEEKDAY_RANGE_RE = re.compile(
     + "|".join(_WEEKDAYS_FULL)
     + r")\b",
 )
+# Words after a single weekday that give the range an end elsewhere ("from Monday till Tihar")
+_END_CUE_RE = re.compile(r"\b(?:till|until|upto|up\s+to|through|thru|before|after|during)\b")
+# A number of days anywhere in the phrase sets the end ("from Monday for 6 days", "6 days leave from Monday")
+_DAY_COUNT_RE = re.compile(
+    r"\b(?:\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:working\s+)?days?\b",
+)
 _MONTHS = (
     r"jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?"
     r"|nov(?:ember)?|dec(?:ember)?"
@@ -294,6 +300,17 @@ def resolve_weekdays(text: str, posted_on: datetime.date) -> WeekdayDates | None
     return WeekdayDates(named=named, dates=dates, span=span)
 
 
+def _has_end_elsewhere(phrase: str) -> bool:
+    """
+    True when the phrase gives the end of a range in words other than its weekday: a number of days, or an end
+    word after the weekday
+    """
+    if _DAY_COUNT_RE.search(phrase):
+        return True
+    match = _WEEKDAY_RE.search(phrase)
+    return match is not None and bool(_END_CUE_RE.search(phrase, match.end()))
+
+
 def correct_weekdays(availability_range: AvailabilityRange, context: PhraseContext) -> AvailabilityRange | None:
     """
     The range with dates resolved from the weekdays its phrase names, or None when nothing changes
@@ -318,11 +335,17 @@ def correct_weekdays(availability_range: AvailabilityRange, context: PhraseConte
         new_start = new_end = weekday_dates.dates[start_date.weekday()]
     elif start_date < end_date and start_date.weekday() == first and end_date.weekday() == last:
         new_start = weekday_dates.dates[first]
-        if weekday_dates.dates[last] >= new_start:
+        if weekday_dates.span is None and len(weekday_dates.named) == 1 and _has_end_elsewhere(phrase):
+            # One named weekday with an end given elsewhere only pins the start: the end comes from that part
+            new_end = end_date
+        elif weekday_dates.dates[last] >= new_start:
             new_end = weekday_dates.dates[last]
         else:
             new_end = _weekday_after(last, new_start, inclusive=True)
     else:
+        return None
+
+    if new_end < new_start:
         return None
 
     if (new_start, new_end) == (start_date, end_date):

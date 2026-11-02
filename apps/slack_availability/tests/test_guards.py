@@ -197,6 +197,62 @@ def test_weekday_guard():
     assert apply_guards(ranges, messages).ranges == ranges
 
 
+def test_weekday_guard_single_weekday_keeps_end():
+    fri = datetime.date(2026, 10, 30)
+    mon, next_mon = datetime.date(2026, 11, 2), datetime.date(2026, 11, 9)
+
+    # The end comes from elsewhere ("till Tihar") and happens to fall on the named weekday
+    messages = [message("WFH from Monday till Tihar", date=fri)]
+    ranges = [wfh(mon, "WFH from Monday till Tihar", end=next_mon)]
+    result = apply_guards(ranges, messages)
+    assert result.ranges == ranges
+    assert result.corrections == []
+
+    # A single day on the wrong week is still corrected
+    messages = [message("Leave on Monday", date=fri)]
+    ranges = [leave(next_mon, "Leave on Monday")]
+    assert apply_guards(ranges, messages).ranges == [leave(mon, "Leave on Monday")]
+
+    # Without an end word after the weekday, the range is that one day
+    ranges = [leave(mon, "Leave on Monday", end=next_mon)]
+    assert apply_guards(ranges, messages).ranges == [leave(mon, "Leave on Monday")]
+    ranges = [leave(next_mon, "Leave on Monday", end=next_mon + datetime.timedelta(days=7))]
+    assert apply_guards(ranges, messages).ranges == [leave(mon, "Leave on Monday")]
+
+
+@pytest.mark.parametrize(
+    ("phrase", "posted_on", "start", "end"),
+    [
+        # Working days across the weekend
+        (
+            "Leave from Thursday for 3 days",
+            datetime.date(2026, 10, 12),
+            datetime.date(2026, 10, 15),
+            datetime.date(2026, 10, 19),
+        ),
+        # The end falls on the named weekday
+        (
+            "Leave from Monday for 6 days",
+            datetime.date(2026, 10, 30),
+            datetime.date(2026, 11, 2),
+            datetime.date(2026, 11, 9),
+        ),
+        ("6 days leave from Monday", datetime.date(2026, 10, 30), datetime.date(2026, 11, 2), datetime.date(2026, 11, 9)),
+        (
+            "Off from Thursday for six days",
+            datetime.date(2026, 10, 12),
+            datetime.date(2026, 10, 15),
+            datetime.date(2026, 10, 22),
+        ),
+    ],
+)
+def test_weekday_guard_single_weekday_with_day_count_keeps_end(phrase, posted_on, start, end):
+    ranges = [leave(start, phrase, end=end)]
+    result = apply_guards(ranges, [message(phrase, date=posted_on)])
+    assert result.ranges == ranges
+    assert result.corrections == []
+
+
 def test_weekday_guard_next_next():
     wed = datetime.date(2026, 10, 14)
     next_mon, next_next_mon = datetime.date(2026, 10, 19), datetime.date(2026, 10, 26)

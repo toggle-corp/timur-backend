@@ -6,6 +6,8 @@ from django.test import override_settings
 from django.utils import timezone
 from slack_sdk.errors import SlackApiError
 
+from apps.common.factories import EventFactory
+from apps.common.models import Event
 from apps.journal.factories import JournalFactory
 from apps.journal.models import Journal
 from apps.slack_availability.events import classify_event
@@ -113,9 +115,11 @@ class TestAvailabilityProcessor(TestCase):
         assert run.llm_output == {"fake": True}
 
         # Parser gets the thread text and the event date
-        messages, today = parser.calls[0]
+        messages, today, events = parser.calls[0]
         assert [message.text for message in messages] == [self.parent["text"]]
         assert today == self.monday
+        assert events == []
+        assert "Holidays and events (holidays and retreats are not working days):\n- none\n" in run.llm_input
 
         assert self.journal_state(self.tuesday) == DayState(leave_type=LT.FULL)
         assert self.journal_state(self.wednesday) == DayState(wfh_type=WT.FULL)
@@ -271,8 +275,26 @@ class TestAvailabilityProcessor(TestCase):
         parser = self.default_parser()
         self.process(self.parent_event(), parser)
 
-        messages, _ = parser.calls[0]
+        messages, _, _ = parser.calls[0]
         assert [message.text for message in messages] == [self.parent["text"], "Make wednesday leave too"]
+
+    def test_parser_gets_events(self):
+        thursday = self.monday + datetime.timedelta(days=3)
+        EventFactory.create(
+            name="Tihar",
+            type=Event.Type.HOLIDAY,
+            start_date=thursday,
+            end_date=thursday + datetime.timedelta(days=4),
+            created_by=self.user,
+            modified_by=self.user,
+        )
+        parser = self.default_parser()
+        run = self.process(self.parent_event(), parser)
+
+        assert run is not None
+        _, _, events = parser.calls[0]
+        assert [event.name for event in events] == ["Tihar"]
+        assert f"- Tihar: {thursday:%a %Y-%m-%d}.." in run.llm_input
 
     def test_thread_reply_updates(self):
         self.process(self.parent_event(), self.default_parser())

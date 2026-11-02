@@ -5,6 +5,7 @@ from django.utils import timezone
 from slack_sdk.models.blocks.blocks import Block
 from slack_sdk.web.slack_response import SlackResponse
 
+from apps.common.models import Event
 from apps.slack_availability.parsers import AvailabilityParser, build_user_prompt
 from apps.slack_availability.structs import AvailabilityRange, ParseResult, ThreadMessage, UnclearPart
 from utils.slack import TimurSlack
@@ -123,18 +124,18 @@ class FakeParser(AvailabilityParser):
         self.unclear = [UnclearPart(part) if isinstance(part, str) else part for part in unclear or []]
         self.needs_care = needs_care
         self.confidence = confidence
-        self.calls: list[tuple[list[ThreadMessage], datetime.date]] = []
+        self.calls: list[tuple[list[ThreadMessage], datetime.date, list[Event]]] = []
 
     @typing.override
-    def parse(self, messages: list[ThreadMessage], today: datetime.date) -> ParseResult:
-        self.calls.append((messages, today))
+    def parse(self, messages: list[ThreadMessage], today: datetime.date, events: list[Event]) -> ParseResult:
+        self.calls.append((messages, today, events))
         return ParseResult(
             is_about_availability=self.is_about_availability,
             ranges=self.ranges,
             unclear=self.unclear,
             confidence=self.confidence,
             raw={"fake": True},
-            prompt=build_user_prompt(messages, today),
+            prompt=build_user_prompt(messages, today, events),
             model="fake-model",
             needs_care=self.needs_care,
         )
