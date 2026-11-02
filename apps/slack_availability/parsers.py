@@ -102,6 +102,8 @@ Resolve dates:
   "tomorrow" and "day after tomorrow" are also in the header.
 - A weekday name ("Monday", "on Thursday", "next Tuesday", "this Friday") means the first date with that weekday
   after the posting date. In a range ("Thursday to next Tuesday"), the end is the first such weekday after the start.
+- Each extra "next" adds a week: "next next Monday" is 7 days after "next Monday". "next to next Monday" is the
+  same as "next next Monday".
 - "This week" / "this entire week" means the posting date to Friday of that week, never later.
 - "Next week" means Monday to Friday of the week after the posting date. Saturday and Sunday are the weekend.
 - Dates far in the future are fine: output them with the correct year. They are never unclear.
@@ -171,6 +173,7 @@ Examples (posted on Mon 2026-10-12 at 14:00), as source_phrase -> start_date..en
 - "WFH second half today, leave tomorrow" -> 2026-10-12..2026-10-12 wfh second_half and
   2026-10-13..2026-10-13 leave full
 - "Working from home this entire week" -> 2026-10-12..2026-10-16 wfh full
+- "Leave next next Monday" -> 2026-10-26..2026-10-26 leave full
 - "Taking half day leave on Thursday", then reply "second half" -> 2026-10-15..2026-10-15 leave second_half
 - "Leave Tue to Thu", then reply "only Tue and Wed" -> 2026-10-13..2026-10-14 leave full
 - "Leave for the first half, will join in the second half if I feel better", then reply "Still not better, taking

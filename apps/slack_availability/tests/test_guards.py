@@ -1,4 +1,5 @@
 import datetime
+import time
 
 import pytest
 from django.utils import timezone
@@ -145,6 +146,17 @@ def test_resolve_weekdays():
     span_dates = weekday_dates("leave from friday to tuesday")
     assert span_dates.dates == {4: FRI, 1: MON + datetime.timedelta(days=1)}
     assert span_dates.span == (4, 1)
+    # Each extra "next" is one more week
+    assert weekday_dates("leave next next monday").dates == {0: NEXT_MON}
+    assert weekday_dates("leave next next next monday").dates == {0: NEXT_MON + datetime.timedelta(days=7)}
+    assert weekday_dates("leave next next thursday").dates == {3: THU + datetime.timedelta(days=14)}
+    assert weekday_dates("leave from next next monday to wednesday").dates == {
+        0: NEXT_MON,
+        2: NEXT_MON + datetime.timedelta(days=2),
+    }
+    # "next to next" is "next next"
+    assert weekday_dates("leave next to next monday").dates == {0: NEXT_MON}
+    assert weekday_dates("leave next to next next monday").dates == {0: NEXT_MON + datetime.timedelta(days=7)}
     # Dated another way
     assert resolve_weekdays("leave tomorrow (friday)", THU) is None
     assert resolve_weekdays("leave on monday oct 12", THU) is None
@@ -183,6 +195,65 @@ def test_weekday_guard():
     # Dates that don't fall on the named weekday are left alone
     ranges = [wfh(MON + datetime.timedelta(days=1), "WFH on Monday")]
     assert apply_guards(ranges, messages).ranges == ranges
+
+
+def test_weekday_guard_next_next():
+    wed = datetime.date(2026, 10, 14)
+    next_mon, next_next_mon = datetime.date(2026, 10, 19), datetime.date(2026, 10, 26)
+
+    messages = [message("WFH next Monday", date=wed)]
+    ranges = [wfh(next_next_mon, "WFH next Monday")]
+    assert apply_guards(ranges, messages).ranges == [wfh(next_mon, "WFH next Monday")]
+
+    # Already right
+    messages = [message("Leave on Next  next Monday", date=wed)]
+    ranges = [leave(next_next_mon, "Leave on Next  next Monday")]
+    result = apply_guards(ranges, messages)
+    assert result.ranges == ranges
+    assert result.corrections == []
+
+    # A week early
+    ranges = [leave(next_mon, "Leave on Next  next Monday")]
+    assert apply_guards(ranges, messages).ranges == [leave(next_next_mon, "Leave on Next  next Monday")]
+
+
+def test_weekday_guard_next_next_span():
+    wed = datetime.date(2026, 10, 14)
+    mon, next_next_fri = datetime.date(2026, 10, 19), datetime.date(2026, 10, 30)
+    messages = [message("Leave from Monday to next next Friday", date=wed)]
+
+    # Already right
+    ranges = [leave(mon, "Leave from Monday to next next Friday", end=next_next_fri)]
+    result = apply_guards(ranges, messages)
+    assert result.ranges == ranges
+    assert result.corrections == []
+
+    # The end a week early
+    ranges = [leave(mon, "Leave from Monday to next next Friday", end=datetime.date(2026, 10, 23))]
+    assert apply_guards(ranges, messages).ranges == [
+        leave(mon, "Leave from Monday to next next Friday", end=next_next_fri),
+    ]
+
+
+def test_weekday_guard_next_to_next():
+    wed = datetime.date(2026, 10, 14)
+    next_mon, next_next_mon = datetime.date(2026, 10, 19), datetime.date(2026, 10, 26)
+    messages = [message("Leave next to next Monday", date=wed)]
+
+    ranges = [leave(next_next_mon, "Leave next to next Monday")]
+    result = apply_guards(ranges, messages)
+    assert result.ranges == ranges
+    assert result.corrections == []
+
+    ranges = [leave(next_mon, "Leave next to next Monday")]
+    assert apply_guards(ranges, messages).ranges == [leave(next_next_mon, "Leave next to next Monday")]
+
+
+def test_resolve_weekdays_long_next_run_is_fast():
+    for ending in ["monday", "month"]:
+        start = time.perf_counter()
+        resolve_weekdays("next " * 5000 + ending, THU)
+        assert time.perf_counter() - start < 0.5
 
 
 def test_confirmation_guard():

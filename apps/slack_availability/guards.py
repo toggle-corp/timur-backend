@@ -212,8 +212,10 @@ def is_early_departure(context: PhraseContext) -> bool:
 # -- Weekdays
 
 _WEEKDAYS_FULL = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+# Group 1: the "next" words before the qualifier ("next next Monday", "next to next Monday"), at most three so a long
+# run of "next" stays linear; group 2: the qualifier; group 3: the weekday
 _WEEKDAY_RE = re.compile(
-    r"\b(?:(next|this|coming)\s+)?(" + "|".join(_WEEKDAYS_FULL) + r")\b",
+    r"\b((?:next\s+(?:to\s+)?){0,3}?)(?:(next|this|coming)\s+)?(" + "|".join(_WEEKDAYS_FULL) + r")\b",
 )
 _WEEKDAY_RANGE_RE = re.compile(
     r"\b("
@@ -257,18 +259,21 @@ def resolve_weekdays(text: str, posted_on: datetime.date) -> WeekdayDates | None
     Dates of the weekdays named in the text
 
     The first weekday is the first such date after the posting date ("this Friday" posted on a Friday is that day).
-    Each following weekday is the first such date on or after the previous one. None when the text has no weekday
-    or also dates itself another way ("tomorrow", "Oct 5", "next week").
+    Each following weekday is the first such date on or after the previous one. Each "next" beyond the first adds
+    a week ("next next Monday" and "next to next Monday" are a week after "next Monday"). None when the text has
+    no weekday or also dates itself another way ("tomorrow", "Oct 5", "next week").
     """
     if _OTHER_DATE_RE.search(text):
         return None
     named: list[int] = []
     qualifiers: dict[int, str | None] = {}
+    extra_weeks: dict[int, int] = {}
     for match in _WEEKDAY_RE.finditer(text):
-        weekday = _WEEKDAYS_FULL.index(match.group(2))
+        weekday = _WEEKDAYS_FULL.index(match.group(3))
         if weekday not in named:
             named.append(weekday)
-            qualifiers[weekday] = match.group(1)
+            qualifiers[weekday] = match.group(2)
+            extra_weeks[weekday] = match.group(1).split().count("next") if match.group(2) == "next" else 0
     if not named:
         return None
 
@@ -280,6 +285,7 @@ def resolve_weekdays(text: str, posted_on: datetime.date) -> WeekdayDates | None
             previous = _weekday_after(weekday, posted_on, inclusive=same_day)
         else:
             previous = _weekday_after(weekday, previous, inclusive=True)
+        previous += datetime.timedelta(weeks=extra_weeks[weekday])
         dates[weekday] = previous
 
     span = None
@@ -312,7 +318,10 @@ def correct_weekdays(availability_range: AvailabilityRange, context: PhraseConte
         new_start = new_end = weekday_dates.dates[start_date.weekday()]
     elif start_date < end_date and start_date.weekday() == first and end_date.weekday() == last:
         new_start = weekday_dates.dates[first]
-        new_end = _weekday_after(last, new_start, inclusive=True)
+        if weekday_dates.dates[last] >= new_start:
+            new_end = weekday_dates.dates[last]
+        else:
+            new_end = _weekday_after(last, new_start, inclusive=True)
     else:
         return None
 
