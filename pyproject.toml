@@ -50,7 +50,7 @@ dev = [
     "pytest-profiling",
     "pytest-ordering",
     "pytest-django",
-    "django-stubs==4.2.6",
+    "django-stubs==4.2.7",
     "djangorestframework-stubs",
     "google-api-python-client-stubs",
     "celery-types",
