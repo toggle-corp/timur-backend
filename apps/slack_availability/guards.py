@@ -212,8 +212,10 @@ def is_early_departure(context: PhraseContext) -> bool:
 # -- Weekdays
 
 _WEEKDAYS_FULL = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+# Group 1: the "next" words before the qualifier ("next next Monday", "next to next Monday"), at most three so a long
+# run of "next" stays linear; group 2: the qualifier; group 3: the weekday
 _WEEKDAY_RE = re.compile(
-    r"\b(?:(next|this|coming)\s+)?(" + "|".join(_WEEKDAYS_FULL) + r")\b",
+    r"\b((?:next\s+(?:to\s+)?){0,3}?)(?:(next|this|coming)\s+)?(" + "|".join(_WEEKDAYS_FULL) + r")\b",
 )
 _WEEKDAY_RANGE_RE = re.compile(
     r"\b("
@@ -221,6 +223,12 @@ _WEEKDAY_RANGE_RE = re.compile(
     + r")\s*(?:to|till|until|through|thru|-|–)\s*(?:(?:next|this|coming)\s+)?("
     + "|".join(_WEEKDAYS_FULL)
     + r")\b",
+)
+# Words after a single weekday that give the range an end elsewhere ("from Monday till Tihar")
+_END_CUE_RE = re.compile(r"\b(?:till|until|upto|up\s+to|through|thru|before|after|during)\b")
+# A number of days anywhere in the phrase sets the end ("from Monday for 6 days", "6 days leave from Monday")
+_DAY_COUNT_RE = re.compile(
+    r"\b(?:\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:working\s+)?days?\b",
 )
 _MONTHS = (
     r"jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?"
@@ -257,18 +265,21 @@ def resolve_weekdays(text: str, posted_on: datetime.date) -> WeekdayDates | None
     Dates of the weekdays named in the text
 
     The first weekday is the first such date after the posting date ("this Friday" posted on a Friday is that day).
-    Each following weekday is the first such date on or after the previous one. None when the text has no weekday
-    or also dates itself another way ("tomorrow", "Oct 5", "next week").
+    Each following weekday is the first such date on or after the previous one. Each "next" beyond the first adds
+    a week ("next next Monday" and "next to next Monday" are a week after "next Monday"). None when the text has
+    no weekday or also dates itself another way ("tomorrow", "Oct 5", "next week").
     """
     if _OTHER_DATE_RE.search(text):
         return None
     named: list[int] = []
     qualifiers: dict[int, str | None] = {}
+    extra_weeks: dict[int, int] = {}
     for match in _WEEKDAY_RE.finditer(text):
-        weekday = _WEEKDAYS_FULL.index(match.group(2))
+        weekday = _WEEKDAYS_FULL.index(match.group(3))
         if weekday not in named:
             named.append(weekday)
-            qualifiers[weekday] = match.group(1)
+            qualifiers[weekday] = match.group(2)
+            extra_weeks[weekday] = match.group(1).split().count("next") if match.group(2) == "next" else 0
     if not named:
         return None
 
@@ -280,12 +291,24 @@ def resolve_weekdays(text: str, posted_on: datetime.date) -> WeekdayDates | None
             previous = _weekday_after(weekday, posted_on, inclusive=same_day)
         else:
             previous = _weekday_after(weekday, previous, inclusive=True)
+        previous += datetime.timedelta(weeks=extra_weeks[weekday])
         dates[weekday] = previous
 
     span = None
     if match := _WEEKDAY_RANGE_RE.search(text):
         span = (_WEEKDAYS_FULL.index(match.group(1)), _WEEKDAYS_FULL.index(match.group(2)))
     return WeekdayDates(named=named, dates=dates, span=span)
+
+
+def _has_end_elsewhere(phrase: str) -> bool:
+    """
+    True when the phrase gives the end of a range in words other than its weekday: a number of days, or an end
+    word after the weekday
+    """
+    if _DAY_COUNT_RE.search(phrase):
+        return True
+    match = _WEEKDAY_RE.search(phrase)
+    return match is not None and bool(_END_CUE_RE.search(phrase, match.end()))
 
 
 def correct_weekdays(availability_range: AvailabilityRange, context: PhraseContext) -> AvailabilityRange | None:
@@ -312,8 +335,17 @@ def correct_weekdays(availability_range: AvailabilityRange, context: PhraseConte
         new_start = new_end = weekday_dates.dates[start_date.weekday()]
     elif start_date < end_date and start_date.weekday() == first and end_date.weekday() == last:
         new_start = weekday_dates.dates[first]
-        new_end = _weekday_after(last, new_start, inclusive=True)
+        if weekday_dates.span is None and len(weekday_dates.named) == 1 and _has_end_elsewhere(phrase):
+            # One named weekday with an end given elsewhere only pins the start: the end comes from that part
+            new_end = end_date
+        elif weekday_dates.dates[last] >= new_start:
+            new_end = weekday_dates.dates[last]
+        else:
+            new_end = _weekday_after(last, new_start, inclusive=True)
     else:
+        return None
+
+    if new_end < new_start:
         return None
 
     if (new_start, new_end) == (start_date, end_date):
@@ -326,6 +358,10 @@ def correct_weekdays(availability_range: AvailabilityRange, context: PhraseConte
 _FULL_DAY_RE = re.compile(r"\b(?:full|whole|all|entire)\s+day\b")
 _HALF_MARKER_RE = re.compile(
     r"\b(?:half|morning|afternoon|after\s+lunch|rest\s+of\s+the\s+day|bihana|diuso|beluka)\b",
+)
+# Words of a reply that adds to the earlier half ("today too", "the rest of today also")
+_ADDITIVE_RE = re.compile(
+    r"\b(?:too|also|as\s+well|rest\s+of\s+(?:the\s+)?day|rest\s+of\s+today|whole\s+day|entire\s+day)\b",
 )
 
 
@@ -400,15 +436,16 @@ def keep_specific_half(
     """
     The range with the half from an earlier message when it only confirms the same type for the same days
 
-    "I'll work from home for the second half", then "done, working from home" stays WFH second half. The half
-    comes from an earlier range of the same parse, or, when the parser returned only the final state, from an
-    earlier message of the thread that gives a half for that type and day.
+    "I'll work from home for the second half", then "done, working from home" stays WFH second half. A reply that
+    adds to it ("today too", "the rest of today also") stays full. The half comes from an earlier range of the
+    same parse, or, when the parser returned only the final state, from an earlier message of the thread that
+    gives a half for that type and day.
     """
     current = _single_type(availability_range)
     if current is None or current[1] != Half.FULL or context.message_index is None:
         return None
     text = " ".join(context.sentences)
-    if _FULL_DAY_RE.search(text) or _HALF_MARKER_RE.search(text):
+    if _FULL_DAY_RE.search(text) or _HALF_MARKER_RE.search(text) or _ADDITIVE_RE.search(text):
         return None
     for earlier_range, earlier_context in reversed(earlier):
         earlier_type = _single_type(earlier_range)

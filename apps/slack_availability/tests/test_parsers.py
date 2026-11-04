@@ -7,6 +7,8 @@ import pytest
 import requests
 from django.test import override_settings
 
+from apps.common.factories import EventFactory
+from apps.common.models import Event
 from apps.slack_availability.parsers import (
     OUTPUT_SCHEMA,
     SYSTEM_PROMPT,
@@ -14,10 +16,13 @@ from apps.slack_availability.parsers import (
     OllamaAvailabilityParser,
     build_user_prompt,
     format_calendar,
+    format_events,
     get_parser,
+    load_prompt_events,
     parse_output,
 )
 from apps.slack_availability.structs import AvailabilityRange, Half, MissingDetail, ThreadMessage, UnclearPart
+from apps.user.factories import UserFactory
 from main import config
 from main.tests import TestCase
 
@@ -158,7 +163,7 @@ class TestOllamaAvailabilityParser(TestCase):
     def test_parse(self, post_mock):
         post_mock.return_value = ollama_response(json.dumps(VALID_OUTPUT))
 
-        result = self.parser.parse(self.messages, TODAY)
+        result = self.parser.parse(self.messages, TODAY, [])
 
         assert len(result.ranges) == 4
         assert result.model == "test-model"
@@ -191,7 +196,7 @@ class TestOllamaAvailabilityParser(TestCase):
     def test_parse_without_api_key(self, post_mock):
         post_mock.return_value = ollama_response(json.dumps(VALID_OUTPUT))
         parser = OllamaAvailabilityParser(config.SlackAvailability.load_ollama_config())
-        parser.parse(self.messages, TODAY)
+        parser.parse(self.messages, TODAY, [])
         assert post_mock.call_args.kwargs["headers"] == {}
 
     @mock.patch("apps.slack_availability.parsers.requests.post")
@@ -208,7 +213,7 @@ class TestOllamaAvailabilityParser(TestCase):
             else:
                 post_mock.side_effect = side_effect
             with self.assertLogs("apps.slack_availability.parsers", level="WARNING"), pytest.raises(AvailabilityParserError):
-                self.parser.parse(self.messages, TODAY)
+                self.parser.parse(self.messages, TODAY, [])
 
     def test_get_parser(self):
         assert isinstance(get_parser(), OllamaAvailabilityParser)
@@ -241,7 +246,7 @@ def test_build_user_prompt_calendar_covers_thread_and_today():
             text="only till Monday",
         ),
     ]
-    prompt = build_user_prompt(messages, datetime.date(2026, 8, 14))
+    prompt = build_user_prompt(messages, datetime.date(2026, 8, 14), [])
 
     calendar = prompt.split("Calendar:\n")[1].split("\n\n")[0].splitlines()
     # From the week of the first message to 21 days after the latest of today and the last message
@@ -256,6 +261,101 @@ def test_build_user_prompt_calendar_covers_thread_and_today():
         "[Fri 2026-08-14 10:00 | today = Fri 2026-08-14 | tomorrow = Sat 2026-08-15 | day after tomorrow = Sun 2026-08-16]"
         in prompt
     )
+
+
+def calendar_event(
+    name: str,
+    start_date: datetime.date,
+    end_date: datetime.date | None = None,
+    event_type: Event.Type = Event.Type.HOLIDAY,
+) -> Event:
+    return Event(name=name, type=event_type, start_date=start_date, end_date=end_date or start_date)
+
+
+def test_format_events():
+    events = [
+        calendar_event("Tihar", datetime.date(2026, 11, 8), datetime.date(2026, 11, 9)),
+        calendar_event("Retreat", datetime.date(2026, 12, 3), datetime.date(2026, 12, 4), Event.Type.RETREAT),
+        calendar_event("Tihar", datetime.date(2026, 11, 5)),
+        # Overlapping and adjacent rows of the same name are one item
+        calendar_event("Tihar", datetime.date(2026, 11, 6), datetime.date(2026, 11, 8)),
+        calendar_event("Town hall", datetime.date(2026, 11, 20), event_type=Event.Type.MISC),
+        calendar_event("Chhath", datetime.date(2026, 11, 13)),
+        calendar_event("Book fair", datetime.date(2026, 11, 13), event_type=Event.Type.MISC),
+        # Same name, a year later
+        calendar_event("Tihar", datetime.date(2027, 10, 27)),
+    ]
+    assert format_events(events).splitlines() == [
+        "- Tihar: Thu 2026-11-05..Mon 2026-11-09",
+        "- Book fair (event): Fri 2026-11-13",
+        "- Chhath: Fri 2026-11-13",
+        "- Town hall (event): Fri 2026-11-20",
+        "- Retreat (retreat): Thu 2026-12-03..Fri 2026-12-04",
+        "- Tihar: Wed 2027-10-27",
+    ]
+
+
+def test_format_events_empty():
+    assert format_events([]) == "- none"
+
+
+def test_build_user_prompt_lists_events():
+    messages = [
+        ThreadMessage(
+            ts="1",
+            posted_at=datetime.datetime(2026, 11, 2, 10, 0, tzinfo=datetime.UTC),
+            text="I will be working from home (Jhapa) till Tihar.",
+        ),
+    ]
+    today = datetime.date(2026, 11, 2)
+    events = [calendar_event("Tihar", datetime.date(2026, 11, 5), datetime.date(2026, 11, 9))]
+
+    prompt = build_user_prompt(messages, today, events)
+    assert (
+        "\n\nHolidays and events (holidays and retreats are not working days):\n"
+        "- Tihar: Thu 2026-11-05..Mon 2026-11-09\n\nMessages:\n"
+    ) in prompt
+    assert prompt.index("Calendar:") < prompt.index("Holidays and events") < prompt.index("Messages:")
+
+    prompt = build_user_prompt(messages, today, [])
+    assert "Holidays and events (holidays and retreats are not working days):\n- none\n\nMessages:\n" in prompt
+
+
+class TestLoadPromptEvents(TestCase):
+    def test_window(self):
+        user = UserFactory.create()
+        for name, start_date, end_date in [
+            ("Ended before", datetime.date(2026, 10, 1), datetime.date(2026, 10, 15)),
+            ("Ends on the first day", datetime.date(2026, 10, 10), datetime.date(2026, 10, 16)),
+            ("Starts on the last day", datetime.date(2027, 1, 31), datetime.date(2027, 2, 2)),
+            ("Starts after", datetime.date(2027, 2, 1), datetime.date(2027, 2, 1)),
+            ("Retreat", datetime.date(2026, 11, 20), datetime.date(2026, 11, 20)),
+        ]:
+            EventFactory.create(
+                name=name,
+                type=Event.Type.RETREAT if name == "Retreat" else Event.Type.HOLIDAY,
+                start_date=start_date,
+                end_date=end_date,
+                created_by=user,
+                modified_by=user,
+            )
+        messages = [
+            ThreadMessage(
+                ts="1",
+                posted_at=datetime.datetime(2026, 10, 30, 10, 0, tzinfo=datetime.UTC),
+                text="WFH till Tihar",
+            ),
+            ThreadMessage(
+                ts="2",
+                posted_at=datetime.datetime(2026, 11, 2, 10, 0, tzinfo=datetime.UTC),
+                text="make it leave",
+            ),
+        ]
+
+        # 14 days before the first message to 90 days after today
+        events = load_prompt_events(messages, datetime.date(2026, 11, 2))
+
+        assert [event.name for event in events] == ["Ends on the first day", "Retreat", "Starts on the last day"]
 
 
 def test_system_prompt_mentions_nepali_terms():
@@ -290,6 +390,22 @@ def flat_system_prompt() -> str:
         "2026-10-13..2026-10-13 leave full",
         # This week ends on its Friday
         '"Working from home this entire week" -> 2026-10-12..2026-10-16 wfh full',
+        # A listed holiday name gives the dates: "till" ends the day before it starts
+        '"WFH from Jhapa till Founders Day", with Founders Day listed as Thu 2026-11-05..Mon 2026-11-09 -> '
+        "2026-10-12..2026-11-04 wfh full",
+        # "until" an unlisted holiday has an open end
+        '"WFH until Lantern Fest", with Lantern Fest not listed -> 2026-10-12..2026-10-12 wfh full open_end, '
+        'unclear "WFH until Lantern Fest" missing "end_date"',
+        # A number of days counts working days
+        '"Leave from Thursday for 3 days" -> 2026-10-15..2026-10-19 leave full',
+        # Each extra "next" is one more week
+        '"Leave next next Monday" -> 2026-10-26..2026-10-26 leave full',
+        # A reply adding the other half of the same type makes a full day
+        '"Leave for the first half, will join in the second half if I feel better", then reply "Still not better, '
+        'taking the second half off as well" -> 2026-10-12..2026-10-12 leave full',
+        # A reply replacing the half keeps only the new half
+        '"First half leave today", then reply "change it to the second half instead" -> 2026-10-12..2026-10-12 '
+        "leave second_half",
     ],
 )
 def test_system_prompt_examples(example):
@@ -309,9 +425,25 @@ def test_system_prompt_not_about_availability_examples(phrase):
     assert phrase in not_about
 
 
+def test_system_prompt_holiday_rules():
+    prompt = flat_system_prompt()
+    assert "A list of holidays and events" in prompt
+    assert '"till X" / "until X" ends the day before X starts' in prompt
+    assert '"after X" starts on the first working day after X ends' in prompt
+    assert "not in the list, do not guess its dates" in prompt
+    assert '"till X" / "until X" follows the open-end rule below' in prompt
+    assert '"during X" / "after X" is an "unclear" entry with missing "dates"' in prompt
+    assert "A number of days" in prompt
+    assert "counts working days" in prompt
+
+
 def test_system_prompt_half_and_date_rules():
     prompt = flat_system_prompt()
     assert '"half_unknown" only when "half day" is stated with no marker at all' in prompt
     assert "false for conditional or uncertain plans" in prompt
     assert "Take each range's dates only from its source_phrase" in prompt
     assert "whatever the time of day" in prompt
+    assert 'Each extra "next" adds a week' in prompt
+    assert '"next to next Monday" is the same as "next next Monday"' in prompt
+    assert 'makes that day "full": return one range for it, not one per half' in prompt
+    assert "A reply that replaces the half" in prompt
