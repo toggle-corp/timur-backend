@@ -9,6 +9,7 @@ from apps.journal.models import Journal
 from apps.standup.occupancy import (
     get_leave_days,
     get_occupancy,
+    get_ratio,
     get_work_from_home_days,
     get_working_dates,
 )
@@ -17,10 +18,6 @@ from apps.user.models import User
 
 # Months of history of a person, ending with the month of the end date
 PERSON_HISTORY_MONTHS = 12
-
-
-def get_ratio(value: float, total: float) -> float | None:
-    return round(value / total, 4) if total else None
 
 
 def add_months(month: datetime.date, count: int) -> datetime.date:

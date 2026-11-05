@@ -149,13 +149,13 @@ class UserOccupancy:
     flagged_entries: list[FlaggedEntry] = dataclasses.field(default_factory=list)
 
     @property
-    def top_project(self) -> tuple[ProjectHours, float] | None:
+    def top_project(self) -> tuple[ProjectHours, float | None] | None:
         """The project with the most hours other than the blanket project, and its share of the hours outside it."""
         projects = [item for item in self.projects if not item.is_blanket]
         hours = sum(item.hours for item in projects)
         if not hours:
             return None
-        return projects[0], round(projects[0].hours / hours, 4)
+        return projects[0], get_ratio(projects[0].hours, hours)
 
     @property
     def long_dates(self) -> list[datetime.date]:
@@ -269,6 +269,10 @@ def get_working_dates(start_date: datetime.date, end_date: datetime.date) -> lis
     ]
 
 
+def get_ratio(value: float, total: float) -> float | None:
+    return round(value / total, 4) if total else None
+
+
 def get_leave_days(leave: Journal.LeaveType | None) -> float:
     if leave is None:
         return 0
@@ -313,7 +317,7 @@ def summarize_occupancy(
         leave_days=sum(get_leave_days(day.leave) for day in days),
         work_from_home_days=sum(get_work_from_home_days(day.work_from_home) for day in days),
         missing_days=missing_days,
-        missing_share=round(missing_days / due_days, 4) if due_days else None,
+        missing_share=get_ratio(missing_days, due_days),
         entries=entries,
         non_working_day_hours=round(
             sum(day.hours or 0 for day in days if not day.is_working_day) + non_working_day_hours,
@@ -322,15 +326,15 @@ def summarize_occupancy(
         on_leave_hours=round(sum(day.hours or 0 for day in days if day.leave == Journal.LeaveType.FULL), 2),
         due_days=due_days,
         late_days=late_days,
-        late_share=round(late_days / due_days, 4) if due_days else None,
+        late_share=get_ratio(late_days, due_days),
         standup_days=standup_days,
-        standup_share=round(standup_days / due_days, 4) if due_days else None,
+        standup_share=get_ratio(standup_days, due_days),
         leave_conflict_days=sum(day.leave == Journal.LeaveType.FULL and day.hours is not None for day in days),
         projects_per_day=(round(sum(day.projects for day in logged_days) / len(logged_days), 2) if logged_days else None),
         long_entries=sum(entry.is_long for entry in flagged_entries),
-        long_entry_share=round(long_entry_hours / hours, 4) if hours else None,
+        long_entry_share=get_ratio(long_entry_hours, hours),
         vague_entries=vague_entries,
-        vague_entry_share=round(vague_entries / entries, 4) if entries else None,
+        vague_entry_share=get_ratio(vague_entries, entries),
     )
 
 

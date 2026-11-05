@@ -29,6 +29,7 @@ from apps.standup.occupancy import (
     UserDayOccupancy,
     UserOccupancy,
     get_range_occupancy,
+    get_ratio,
     get_standup_occupancy,
 )
 from apps.track.models import TimeEntry
@@ -364,7 +365,7 @@ def get_occupancy_user(
             OccupancyProjectHoursType(
                 project=projects_by_id[item.project_id],  # type: ignore[reportArgumentType]
                 hours=item.hours,
-                share=round(item.hours / summary.hours, 4) if summary.hours else None,
+                share=get_ratio(item.hours, summary.hours),
             )
             for item in user_occupancy.projects
         ],
