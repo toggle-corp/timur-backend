@@ -525,6 +525,28 @@ class TestEntryCudMutation(TestCase):
             ignore_keys=["id", "task"],
         )
 
+    def test_cud_time_entry_create_again(self):
+        self.force_login(self.user)
+        item = dict(
+            task=self.gID(self.active_tasks[0].pk),
+            date="2021-01-01",
+            type=self.genum(TimeEntry.Type.DEVELOPMENT),
+            description="Normal description",
+            status=self.genum(TimeEntry.Status.DOING),
+            duration=30,
+            startTime="09:30:00",
+            clientId="client-id-1001",
+        )
+        first = self._query({"createItems": [item]})["data"]["private"]["cudTimeEntry"]
+
+        # Sent again with other values, as when the first response was lost after another session edited it
+        again = self._query({"createItems": [{**item, "duration": 45}]})["data"]["private"]["cudTimeEntry"]
+
+        assert again["errors"] == []
+        assert again["createItems"][0]["id"] == first["createItems"][0]["id"]
+        assert again["createItems"][0]["duration"] == 30
+        assert TimeEntry.objects.filter(user=self.user, client_id="client-id-1001").count() == 1
+
     def test_cud_time_entry_update(self):
         # With authentication -----
         self.force_login(self.user)

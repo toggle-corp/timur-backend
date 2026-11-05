@@ -461,6 +461,11 @@ class ModelMutation:
             assert isinstance(_data, dict)
             _client_id = _data.get("client_id", None)
             assert _client_id is not None, "client_id should not be None when creating"
+            # A create can be sent again when its response was lost. The saved one is kept as it is,
+            # since another session may have edited it since.
+            if existing_instance := await base_queryset.filter(client_id=_client_id).afirst():
+                create_results.append(existing_instance)
+                continue
             _errors, _saved_instance = await self.handle_mutation(
                 self.serializer_class,
                 _data,
