@@ -11,6 +11,8 @@ from apps.user.models import User
 WORKING_HOURS_PER_DAY = 7
 # Number of days into a month during which the previous month is also included
 PREVIOUS_MONTH_GRACE_DAYS = 7
+# Number of days shown after the first week of a month
+ROLLING_WINDOW_DAYS = 30
 
 
 @dataclasses.dataclass
@@ -39,12 +41,13 @@ class Occupancy:
 def get_occupancy_date_range(date: datetime.date) -> tuple[datetime.date, datetime.date]:
     """
     Return (start_date, end_date) for the occupancy shown on the standup of the given date.
-    Covers the current month up to the previous day, plus the previous month during the first week.
+    Covers the whole previous month and the current month up to the previous day during the first week,
+    and the last ROLLING_WINDOW_DAYS days otherwise.
     """
-    start_date = date.replace(day=1)
+    end_date = date - datetime.timedelta(days=1)
     if date.day <= PREVIOUS_MONTH_GRACE_DAYS:
-        start_date = (start_date - datetime.timedelta(days=1)).replace(day=1)
-    return start_date, date - datetime.timedelta(days=1)
+        return (date.replace(day=1) - datetime.timedelta(days=1)).replace(day=1), end_date
+    return date - datetime.timedelta(days=ROLLING_WINDOW_DAYS), end_date
 
 
 def calculate_occupancy(hours: float | None, leave: Journal.LeaveType | None) -> float | None:

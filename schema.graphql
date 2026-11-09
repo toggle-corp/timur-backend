@@ -170,6 +170,7 @@ type DailyStandUpOccupancyUserDayType {
   hours: Float
   leave: JournalLeaveTypeEnum
   occupancy: Float
+  leaveDisplay: String
 }
 
 type DailyStandUpOccupancyUserType {
@@ -809,7 +810,7 @@ interface UserBaseType {
   id: ID!
   firstName: String
   lastName: String
-  displayName: String
+  displayName: String!
   displayPicture: String
   department: UserDepartmentTypeEnum
   departmentDisplay: String
@@ -840,7 +841,7 @@ type UserMeType implements UserBaseType {
   id: ID!
   firstName: String
   lastName: String
-  displayName: String
+  displayName: String!
   displayPicture: String
   department: UserDepartmentTypeEnum
   departmentDisplay: String
@@ -876,7 +877,7 @@ type UserType implements UserBaseType {
   id: ID!
   firstName: String
   lastName: String
-  displayName: String
+  displayName: String!
   displayPicture: String
   department: UserDepartmentTypeEnum
   departmentDisplay: String
