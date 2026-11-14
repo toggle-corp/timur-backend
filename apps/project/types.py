@@ -3,6 +3,7 @@ import strawberry_django
 from django.db import models
 from django.utils import timezone
 
+from apps.api_token.scopes import ApiTokenScope, type_scope
 from apps.common.models import Event
 from apps.common.types import UserResourceTypeMixin
 from main.graphql.context import Info
@@ -12,6 +13,7 @@ from utils.strawberry.types import string_field
 from .models import Client, Contractor, Deadline, Project
 
 
+@type_scope(ApiTokenScope.PROJECT_READ)
 @strawberry_django.type(Client)
 class ClientType(UserResourceTypeMixin):
     id: strawberry.ID
@@ -23,6 +25,7 @@ class ClientType(UserResourceTypeMixin):
         return get_queryset_for_model(Client, queryset)
 
 
+@type_scope(ApiTokenScope.PROJECT_READ)
 @strawberry_django.type(Contractor)
 class ContractorType(UserResourceTypeMixin):
     id: strawberry.ID
@@ -34,6 +37,7 @@ class ContractorType(UserResourceTypeMixin):
         return get_queryset_for_model(Contractor, queryset)
 
 
+@type_scope(ApiTokenScope.PROJECT_READ)
 @strawberry_django.type(Deadline)
 class DeadlineType(UserResourceTypeMixin):
     id: strawberry.ID
@@ -68,6 +72,7 @@ class DeadlineType(UserResourceTypeMixin):
         return total_days - used_days
 
 
+@type_scope(ApiTokenScope.PROJECT_READ)
 @strawberry_django.type(Project)
 class ProjectType(UserResourceTypeMixin):
     id: strawberry.ID

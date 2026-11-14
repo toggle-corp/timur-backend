@@ -4,6 +4,7 @@ import strawberry
 import strawberry_django
 from django.utils import timezone
 
+from apps.api_token.scopes import ApiTokenScope, field_scope
 from utils.strawberry.paginations import CountList, pagination_field
 
 from .filters import EventFilter
@@ -19,10 +20,11 @@ class PrivateQuery:
         pagination=True,
         filters=EventFilter,
         order=EventOrder,
+        metadata=field_scope(ApiTokenScope.EVENT_READ),
     )
 
     # Unbound ----------------------------
-    @strawberry_django.field
+    @strawberry_django.field(metadata=field_scope(ApiTokenScope.EVENT_READ))
     async def relative_events(self) -> list[EventType]:
         now = timezone.now().date()
         threshold = now + datetime.timedelta(days=30)

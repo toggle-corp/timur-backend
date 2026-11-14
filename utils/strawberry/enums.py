@@ -87,7 +87,7 @@ def get_enum_name_from_django_field(
     raise Exception(f"{serializer_name=} should have a value")
 
 
-def enum_display_field(field) -> typing.Callable[..., str]:  # type: ignore[reportGeneralTypeIssues] FIXME
+def enum_display_field(field, metadata: dict | None = None) -> typing.Callable[..., str]:  # type: ignore[reportGeneralTypeIssues] FIXME
     field: DjangoBaseField
 
     _field = field
@@ -108,18 +108,18 @@ def enum_display_field(field) -> typing.Callable[..., str]:  # type: ignore[repo
             return [force_str(choices_dict.get(make_hashable(v), v), strings_only=True) for v in value or []]
         return force_str(choices_dict.get(make_hashable(value), value), strings_only=True)
 
-    @strawberry.field
+    @strawberry.field(metadata=metadata)
     def array_field_(root) -> list[str]:
         return _get_value(root)  # type: ignore[reportGeneralTypeIssues]
 
     if is_array:
         return array_field_  # type: ignore[reportGeneralTypeIssues]
 
-    @strawberry.field
+    @strawberry.field(metadata=metadata)
     def field_(root) -> str:
         return _get_value(root)  # type: ignore[reportGeneralTypeIssues]
 
-    @strawberry.field
+    @strawberry.field(metadata=metadata)
     def nullable_field_(root) -> str | None:
         return _get_value(root)  # type: ignore[reportGeneralTypeIssues]
 
@@ -128,7 +128,7 @@ def enum_display_field(field) -> typing.Callable[..., str]:  # type: ignore[repo
     return field_  # type: ignore[reportGeneralTypeIssues]
 
 
-def enum_field(field):  # type: ignore[reportGeneralTypeIssues] FIXME
+def enum_field(field, metadata: dict | None = None):  # type: ignore[reportGeneralTypeIssues] FIXME
     field: DjangoBaseField
 
     # NOTE: To avoid circular import
@@ -150,18 +150,18 @@ def enum_field(field):  # type: ignore[reportGeneralTypeIssues] FIXME
             return [FieldEnum(v) for v in value or []]
         return FieldEnum(value)
 
-    @strawberry.field
+    @strawberry.field(metadata=metadata)
     def array_field_(root) -> list[FieldEnum]:  # type: ignore[reportGeneralTypeIssues]
         return _get_value(root)  # type: ignore[reportGeneralTypeIssues]
 
     if is_array:
         return array_field_
 
-    @strawberry.field
+    @strawberry.field(metadata=metadata)
     def field_(root) -> FieldEnum:  # type: ignore[reportGeneralTypeIssues]
         return _get_value(root)
 
-    @strawberry.field
+    @strawberry.field(metadata=metadata)
     def nullable_field_(root) -> FieldEnum | None:  # type: ignore[reportGeneralTypeIssues]
         return _get_value(root)
 

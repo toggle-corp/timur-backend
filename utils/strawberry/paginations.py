@@ -19,6 +19,7 @@ from strawberry_django.resolvers import django_resolver
 from strawberry_django.utils.typing import unwrap_type
 
 import strawberry
+from apps.api_token.scopes import ScopeTag, type_scope
 
 if typing.TYPE_CHECKING:
     from strawberry.types import Info
@@ -71,6 +72,7 @@ OffsetPaginationInput.limit = 1  # TODO: This is not working
 DjangoModelTypeVar = TypeVar("DjangoModelTypeVar")
 
 
+@type_scope(ScopeTag.NO_SCOPE)
 @strawberry.type
 class CountList(Generic[DjangoModelTypeVar]):
     limit: int

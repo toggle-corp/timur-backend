@@ -1,0 +1,19 @@
+{% autoescape off %}Hi {{ user_name }},
+
+Your API token "{{ token_name }}" expired on {{ expires_on }}.
+
+  Token:     {{ token_name }}
+  Prefix:    {{ token_prefix }}…
+  Expired:   {{ expires_at }}
+  Last used: {% if last_used %}{{ last_used }}{% else %}Never{% endif %}
+
+{% if last_used %}Requests that use it now fail with a 401 error. To get your scripts working again, create a new token and put it in place of the old one.
+
+Create a new token:{% else %}It was never used, so it seems like it isn't used. You don't need to do anything.
+
+Manage tokens:{% endif %}
+{{ api_tokens_url }}
+
+--
+Sent by Timur. You get this because you owned this API token. This is the last email about it.
+{% endautoescape %}

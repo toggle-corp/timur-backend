@@ -97,6 +97,8 @@ env = environ.Env(
     SMTP_EMAIL_PORT=int,
     SMTP_EMAIL_USERNAME=str,
     SMTP_EMAIL_PASSWORD=str,
+    EMAIL_USE_TLS=(bool, False),  # STARTTLS
+    EMAIL_TIMEOUT=(int, 30),  # seconds, for blocking SMTP operations
     # Google SSO
     GOOGLE_SSO_ENABLED=(bool, False),
     GOOGLE_SSO_ALLOWED_DOMAINS=(str, None),
@@ -197,6 +199,7 @@ INSTALLED_APPS = [
     "apps.track",
     "apps.journal",
     "apps.slack_availability",
+    "apps.api_token",
 ]
 
 # health_check.storage does a save/read/delete round-trip against the default storage backend
@@ -210,6 +213,7 @@ MIDDLEWARE = [
     # /healthz/ready/ (bypassing ALLOWED_HOSTS); keep it first.
     "banjo_utils.health.HealthProbeMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "main.middlewares.GraphQLCacheHeadersMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -459,6 +463,8 @@ TOKEN_DEFAULT_RESET_TIMEOUT_DAYS = 7
 # EMAIL
 SPECIFED_EMAIL_BACKEND: str = env("EMAIL_BACKEND").upper()  # type: ignore[assignment]
 EMAIL_FROM = env("EMAIL_FROM")
+DEFAULT_FROM_EMAIL = EMAIL_FROM
+EMAIL_TIMEOUT = env("EMAIL_TIMEOUT")
 
 if not TESTING and SPECIFED_EMAIL_BACKEND == "SES":
     EMAIL_BACKEND = "django_ses.SESBackend"
@@ -471,6 +477,7 @@ elif not TESTING and SPECIFED_EMAIL_BACKEND == "SMTP":
     EMAIL_PORT = env("SMTP_EMAIL_PORT")
     EMAIL_HOST_USER = env("SMTP_EMAIL_USERNAME")
     EMAIL_HOST_PASSWORD = env("SMTP_EMAIL_PASSWORD")
+    EMAIL_USE_TLS = env("EMAIL_USE_TLS")
 else:
     # DUMP EMAILS TO CONSOLE
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

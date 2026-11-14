@@ -5,6 +5,7 @@ import strawberry_django
 from django.db import models
 from django.utils import timezone
 
+from apps.api_token.scopes import ApiTokenScope, ScopeTag, type_scope
 from apps.common.serializers import TempClientIdMixin
 from apps.user.types import UserType
 from main.caches import local_cache
@@ -16,6 +17,7 @@ from .models import Event, UserResource
 
 
 # -- Interfaces
+@type_scope(ScopeTag.NO_SCOPE)
 @strawberry.interface
 class UserResourceTypeMixin:
     created_at: datetime.datetime
@@ -30,6 +32,7 @@ class UserResourceTypeMixin:
         return await info.context.dl.user.load_user.load(root.modified_by_id)
 
 
+@type_scope(ScopeTag.NO_SCOPE)
 @strawberry.interface
 class ClientIdMixin:
     @strawberry_django.field
@@ -43,6 +46,7 @@ class ClientIdMixin:
 
 
 # -- Common models type
+@type_scope(ApiTokenScope.EVENT_READ)
 @strawberry_django.type(Event)
 class EventType(UserResourceTypeMixin):
     id: strawberry.ID

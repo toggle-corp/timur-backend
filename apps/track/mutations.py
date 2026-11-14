@@ -1,5 +1,6 @@
 import strawberry
 
+from apps.api_token.scopes import ApiTokenScope, field_scope
 from main.graphql.context import Info
 from utils.common import get_object_or_404_async
 from utils.strawberry.mutations import (
@@ -20,7 +21,7 @@ TimeEntryCudMutation = ModelMutation("TimeEntryCud", TimeEntryBulkSerializer)
 
 @strawberry.type
 class PrivateMutation:
-    @strawberry.mutation
+    @strawberry.mutation(metadata=field_scope(ApiTokenScope.TIME_ENTRY_WRITE))
     async def create_time_entry(
         self,
         data: TimeEntryMutation.InputType,  # type: ignore[reportInvalidTypeForm]
@@ -28,7 +29,7 @@ class PrivateMutation:
     ) -> MutationResponseType[TimeEntryType]:
         return await TimeEntryMutation.handle_create_mutation(data, info, None)
 
-    @strawberry.mutation
+    @strawberry.mutation(metadata=field_scope(ApiTokenScope.TIME_ENTRY_WRITE))
     async def update_time_entry(
         self,
         id: strawberry.ID,  # noqa: A002
@@ -40,7 +41,7 @@ class PrivateMutation:
         return await TimeEntryMutation.handle_update_mutation(data, info, None, instance)
 
     # FIXME: remove this later
-    @strawberry.mutation
+    @strawberry.mutation(metadata=field_scope(ApiTokenScope.TIME_ENTRY_WRITE))
     async def bulk_time_entry(
         self,
         info: Info,
@@ -57,7 +58,7 @@ class PrivateMutation:
             None,
         )
 
-    @strawberry.mutation
+    @strawberry.mutation(metadata=field_scope(ApiTokenScope.TIME_ENTRY_WRITE))
     async def cud_time_entry(
         self,
         info: Info,

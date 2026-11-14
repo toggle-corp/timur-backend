@@ -1,0 +1,7 @@
+{% extends "api_token/emails/_layout.html" %}
+{% block preheader %}{% if last_used %}Requests that use it now fail. Create a new token to keep your scripts working.{% else %}It was never used, so nothing should break.{% endif %}{% endblock %}
+{% block heading %}{{ token_name }} has expired{% endblock %}
+{% block intro %}Your API token <b>{{ token_name }}</b> expired on <b>{{ expires_on }}</b>.{% endblock %}
+{% block expiry_label %}Expired{% endblock %}
+{% block message %}{% if last_used %}Requests that use it now fail with a 401 error. To get your scripts working again, create a new token and put it in place of the old one.{% else %}It was never used, so it seems like it isn't used. You don't need to do anything.{% endif %}{% endblock %}
+{% block footer %}Sent by Timur. You get this because you owned this API token. This is the last email about it.{% endblock %}

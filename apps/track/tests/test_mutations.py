@@ -1,5 +1,7 @@
 import typing
 
+from apps.api_token.factories import ApiTokenFactory
+from apps.api_token.scopes import ApiTokenScope
 from apps.project.factories import ClientFactory, ContractorFactory, ProjectFactory
 from apps.track.factories import ContractFactory, TaskFactory, TimeEntryFactory
 from apps.track.models import TimeEntry
@@ -295,7 +297,7 @@ class TestEntryBulkMutation(TestCase):
                     startTime="09:32:00",
                     clientId="client-id-02",
                 ),
-                # -- NOTE: This will be deleted and re-created
+                # -- NOTE: Deleted above, so this update fails
                 dict(
                     id=self.gID(time_entries[2].pk),
                     task=self.gID(self.active_tasks[0].pk),
@@ -322,30 +324,29 @@ class TestEntryBulkMutation(TestCase):
 
         content = self._query(data)
         resp_data = content["data"]["private"]["bulkTimeEntry"]
-        assert resp_data["errors"] == []
+        assert resp_data["errors"] == [
+            {
+                "client_id": "client-id-03",
+                "field": "nonFieldErrors",
+                "messages": "Could not update because instance not found",
+                "object_errors": None,
+                "array_errors": None,
+            },
+        ]
+        assert len(resp_data["results"]) == 3
+        assert not TimeEntry.objects.filter(client_id="client-id-03").exists()
 
         # Create
         self.assertListDictEqual(
-            [
-                resp_data["results"][0],
-                resp_data["results"][3],
-            ],
+            [resp_data["results"][0]],
             [
                 {
                     **default_time_entry_kwargs,
                     **data["items"][0],
                 },
-                {
-                    **default_time_entry_kwargs,
-                    **data["items"][3],
-                    "startTime": None,
-                    "duration": None,
-                },
             ],
             ignore_keys=["id", "task"],
         )
-        # As this is deleted the id should be new
-        assert resp_data["results"][3]["id"] > data["items"][3]["id"]
 
         # Update -- id should be same
         self.assertListDictEqual(
@@ -380,6 +381,90 @@ class TestEntryBulkMutation(TestCase):
         assert set(self._get_ids(needs_to_be_preserved)).issubset(current_time_entry_ids), (
             "All other user's time_entry should't be deleted"
         )
+
+    def test_bulk_time_entry_rejects_ids_not_owned(self):
+        self.force_login(self.user)
+        own_time_entry = TimeEntryFactory.create(**self.common_time_entry_kwargs, user=self.user)
+        others_time_entry = TimeEntryFactory.create(**self.common_time_entry_kwargs, user=self.user_02)
+        missing_id = TimeEntry.objects.order_by("-id").values_list("id", flat=True)[0] + 100
+        item_kwargs = dict(
+            task=self.gID(self.active_tasks[0].pk),
+            date="2021-01-01",
+            type=self.genum(TimeEntry.Type.DESIGN),
+            description="Updated",
+            status=self.genum(TimeEntry.Status.DOING),
+        )
+        count = TimeEntry.objects.count()
+
+        content = self._query(
+            {
+                "items": [
+                    dict(id=self.gID(others_time_entry.pk), clientId="client-others", **item_kwargs),
+                    dict(id=self.gID(missing_id), clientId="client-missing", **item_kwargs),
+                    dict(id=self.gID(own_time_entry.pk), clientId="client-own", **item_kwargs),
+                ],
+            },
+        )
+        resp_data = content["data"]["private"]["bulkTimeEntry"]
+        assert resp_data["errors"] == [
+            {
+                "client_id": client_id,
+                "field": "nonFieldErrors",
+                "messages": "Could not update because instance not found",
+                "object_errors": None,
+                "array_errors": None,
+            }
+            for client_id in ["client-others", "client-missing"]
+        ]
+        assert [item["id"] for item in resp_data["results"]] == [self.gID(own_time_entry.pk)]
+        assert TimeEntry.objects.count() == count
+        others_time_entry.refresh_from_db()
+        assert others_time_entry.description == self.common_time_entry_kwargs["description"]
+        assert others_time_entry.user == self.user_02
+
+    def test_bulk_time_entry_rejects_id_deleted_in_same_request(self):
+        """
+        An item whose id is deleted earlier in the same request is not created again (session and token).
+        """
+        token = ApiTokenFactory.create(user=self.user, scopes=[ApiTokenScope.TIME_ENTRY_WRITE.value])
+        for auth in [{}, {"HTTP_AUTHORIZATION": f"Bearer {token.secret}"}]:
+            if not auth:
+                self.force_login(self.user)
+            else:
+                self.logout()
+            time_entry = TimeEntryFactory.create(**self.common_time_entry_kwargs, user=self.user)
+            count = TimeEntry.objects.count()
+            content = self._query(
+                {
+                    "deleteIds": [self.gID(time_entry.pk)],
+                    "items": [
+                        dict(
+                            id=self.gID(time_entry.pk),
+                            task=self.gID(self.active_tasks[0].pk),
+                            date="2021-01-01",
+                            type=self.genum(TimeEntry.Type.DESIGN),
+                            description="Re-created?",
+                            status=self.genum(TimeEntry.Status.DOING),
+                            clientId="client-recreate",
+                        ),
+                    ],
+                },
+                **auth,
+            )
+            resp_data = content["data"]["private"]["bulkTimeEntry"]
+            assert resp_data["errors"] == [
+                {
+                    "client_id": "client-recreate",
+                    "field": "nonFieldErrors",
+                    "messages": "Could not update because instance not found",
+                    "object_errors": None,
+                    "array_errors": None,
+                },
+            ], auth
+            assert resp_data["results"] == []
+            assert [item["id"] for item in resp_data["deleted"]] == [self.gID(time_entry.pk)]
+            assert TimeEntry.objects.count() == count - 1
+            assert not TimeEntry.objects.filter(client_id="client-recreate").exists()
 
     # TODO: Add mutation to check client_id preserve for TimeEntry
     # TODO: Test createdAt field as well

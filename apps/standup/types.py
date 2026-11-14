@@ -6,6 +6,7 @@ import strawberry_django
 from asgiref.sync import sync_to_async
 from django.db import models
 
+from apps.api_token.scopes import ScopeTag, type_scope
 from apps.common.models import Event
 from apps.common.types import UserResourceTypeMixin
 from apps.journal.enums import JournalLeaveTypeEnum, JournalWorkFromHomeTypeEnum
@@ -21,6 +22,7 @@ from utils.common import get_queryset_for_model
 from utils.strawberry.types import string_field
 
 
+@type_scope(ScopeTag.SESSION_ONLY)
 @strawberry_django.type(Quote)
 class QuoteType(UserResourceTypeMixin):
     id: strawberry.ID
@@ -33,6 +35,7 @@ class QuoteType(UserResourceTypeMixin):
         return get_queryset_for_model(Quote, queryset)
 
 
+@type_scope(ScopeTag.SESSION_ONLY)
 @strawberry.type
 class DailyStandUpProjectStatUserType:
     user_obj: strawberry.Private[User]
@@ -62,6 +65,7 @@ class DailyStandUpProjectStatUserType:
         return await info.context.dl.journal.load_user_work_from_home.load((self.user_obj.pk, self.date))
 
 
+@type_scope(ScopeTag.SESSION_ONLY)
 @strawberry.type
 class DailyStandUpProjectStatType:
     id: strawberry.ID
@@ -128,6 +132,7 @@ class DailyStandUpProjectStatType:
         ]
 
 
+@type_scope(ScopeTag.SESSION_ONLY)
 @strawberry.type
 class DailyStandUpOccupancyUserDayType:
     date: datetime.date
@@ -140,6 +145,7 @@ class DailyStandUpOccupancyUserDayType:
         return self.leave.label if self.leave else None
 
 
+@type_scope(ScopeTag.SESSION_ONLY)
 @strawberry.type
 class DailyStandUpOccupancyUserType:
     user_obj: strawberry.Private[User]
@@ -152,6 +158,7 @@ class DailyStandUpOccupancyUserType:
         return self.user_obj  # type: ignore[reportReturnType]
 
 
+@type_scope(ScopeTag.SESSION_ONLY)
 @strawberry.type
 class DailyStandUpOccupancyType:
     id: strawberry.ID
@@ -161,6 +168,7 @@ class DailyStandUpOccupancyType:
     users: list[DailyStandUpOccupancyUserType]
 
 
+@type_scope(ScopeTag.SESSION_ONLY)
 @strawberry_django.type(DailyUserStandup)
 class DailyStandUpType:
     id: strawberry.ID

@@ -3,6 +3,7 @@ from asgiref.sync import sync_to_async
 from django.contrib.auth import login, logout
 from strawberry.types import Info
 
+from apps.api_token.scopes import ScopeTag, field_scope
 from utils.strawberry.mutations import (
     MutationEmptyResponseType,
     MutationResponseType,
@@ -19,7 +20,7 @@ LoginInput = convert_serializer_to_type(LoginSerializer, name="LoginInput")
 
 @strawberry.type
 class PublicMutation:
-    @strawberry.mutation
+    @strawberry.mutation(metadata=field_scope(ScopeTag.SESSION_ONLY))
     @sync_to_async
     def login(
         self,
@@ -38,7 +39,7 @@ class PublicMutation:
             result=user,
         )
 
-    @strawberry.mutation
+    @strawberry.mutation(metadata=field_scope(ScopeTag.SESSION_ONLY))
     @sync_to_async
     def logout(self, info: Info) -> MutationEmptyResponseType:
         if info.context.request.user.is_authenticated:

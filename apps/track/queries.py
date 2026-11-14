@@ -4,8 +4,11 @@ import strawberry
 import strawberry_django
 from django.db.models import IntegerField, Sum, Value
 from django.db.models.functions import Coalesce
+from graphql import GraphQLError
 from strawberry_django.filters import apply as apply_filters
+from strawberry_django.permissions import IsSuperuser
 
+from apps.api_token.scopes import ApiTokenScope, ScopeTag, field_scope
 from main.graphql.context import Info
 from utils.strawberry.paginations import CountList, pagination_field
 
@@ -33,6 +36,13 @@ from .types import ContractType, DailySummaryType, TaskType, TimeEntryType
 #     return queryset
 
 
+DAILY_SUMMARY_MAX_DAYS = 366
+
+
+def superuser_only() -> IsSuperuser:
+    return IsSuperuser(message="Only superusers can access this", use_directives=False, fail_silently=False)
+
+
 @strawberry.type
 class PrivateQuery:
     # Paginated ----------------------------
@@ -40,32 +50,37 @@ class PrivateQuery:
         pagination=True,
         filters=ContractFilter,
         order=ContractOrder,
+        metadata=field_scope(ApiTokenScope.PROJECT_READ),
     )
 
     tasks: CountList[TaskType] = pagination_field(
         pagination=True,
         filters=TaskFilter,
         order=TaskOrder,
+        metadata=field_scope(ApiTokenScope.PROJECT_READ),
     )
 
     time_entries: CountList[TimeEntryType] = pagination_field(
         pagination=True,
         filters=TimeEntryFilter,
         order=TimeEntryOrder,
+        description="Time entries of all users. Superusers only.",
+        extensions=[superuser_only()],
+        metadata=field_scope(ScopeTag.SESSION_ONLY),
     )
 
     # Unbounded ----------------------------
-    @strawberry_django.field(description="Return all UnArchived contracts")
+    @strawberry_django.field(description="Return all UnArchived contracts", metadata=field_scope(ApiTokenScope.PROJECT_READ))
     async def all_active_contracts(self, info: Info) -> list[ContractType]:
         qs = ContractType.get_queryset(None, None, info).filter(is_archived=False).order_by("-id")
         return [contract async for contract in qs]
 
-    @strawberry_django.field(description="Return all UnArchived tasks")
+    @strawberry_django.field(description="Return all UnArchived tasks", metadata=field_scope(ApiTokenScope.PROJECT_READ))
     async def all_active_tasks(self, info: Info) -> list[TaskType]:
         qs = TaskType.get_queryset(None, None, info).filter(is_archived=False, contract__is_archived=False).order_by("-id")
         return [task async for task in qs]
 
-    @strawberry_django.field
+    @strawberry_django.field(metadata=field_scope(ApiTokenScope.TIME_ENTRY_READ))
     async def my_time_entries(self, info: Info, date: datetime.date) -> list[TimeEntryType]:
         qs = (
             TimeEntryType.get_queryset(None, None, info)
@@ -77,7 +92,11 @@ class PrivateQuery:
         )
         return [time_entry async for time_entry in qs]
 
-    @strawberry_django.field
+    @strawberry_django.field(
+        description="Time entries of all users. Superusers only.",
+        extensions=[superuser_only()],
+        metadata=field_scope(ScopeTag.SESSION_ONLY),
+    )
     async def all_time_entries(
         self,
         info: Info,
@@ -90,11 +109,15 @@ class PrivateQuery:
         # queryset = await custom_time_entries_filters_apply(queryset, date_gte, date_lte)
         count = await queryset.acount()
         if count > 3000:  # TODO: Is this fine?
-            raise Exception(f"Try using filters. To much data to return (Row count: {count})")
+            raise GraphQLError(f"Try using filters. To much data to return (Row count: {count})")
         return [time_entry async for time_entry in queryset]
 
     @strawberry_django.field(
-        description="Return total minutes and target minutes per day for the user within the given date range.",
+        description=(
+            "Return total minutes and target minutes per day for the user within the given date range"
+            f" (at most {DAILY_SUMMARY_MAX_DAYS} days)."
+        ),
+        metadata=field_scope(ApiTokenScope.TIME_ENTRY_READ, ApiTokenScope.JOURNAL_READ),
     )
     async def daily_summary(
         self,
@@ -106,6 +129,9 @@ class PrivateQuery:
         from apps.journal.models import Journal
 
         from .models import TimeEntry
+
+        if (date_lte - date_gte).days + 1 > DAILY_SUMMARY_MAX_DAYS:
+            raise GraphQLError(f"Date range can be at most {DAILY_SUMMARY_MAX_DAYS} days.")
 
         # Recorded minutes per date
         qs = (
@@ -167,10 +193,10 @@ class PrivateQuery:
         return result
 
     # Single ----------------------------
-    @strawberry_django.field
+    @strawberry_django.field(metadata=field_scope(ApiTokenScope.PROJECT_READ))
     async def contract(self, info: Info, pk: strawberry.ID) -> ContractType | None:
         return await ContractType.get_queryset(None, None, info).filter(pk=pk).afirst()
 
-    @strawberry_django.field
+    @strawberry_django.field(metadata=field_scope(ApiTokenScope.PROJECT_READ))
     async def task(self, info: Info, pk: strawberry.ID) -> TaskType | None:
         return await TaskType.get_queryset(None, None, info).filter(pk=pk).afirst()

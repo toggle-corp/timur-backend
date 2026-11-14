@@ -4,6 +4,7 @@ import strawberry
 import strawberry_django
 from django.db import models
 
+from apps.api_token.scopes import ApiTokenScope, type_scope
 from apps.common.types import ClientIdMixin, UserResourceTypeMixin
 from apps.journal.enums import JournalLeaveTypeEnum, JournalWorkFromHomeTypeEnum
 from apps.project.types import ProjectType
@@ -16,6 +17,7 @@ from utils.strawberry.types import TimeDuration, string_field
 from .models import Contract, Task, TimeEntry
 
 
+@type_scope(ApiTokenScope.TIME_ENTRY_READ)
 @strawberry.type
 class DailySummaryType:
     date: datetime.date
@@ -30,6 +32,7 @@ class DailySummaryType:
         return strawberry.ID(self.date.isoformat())
 
 
+@type_scope(ApiTokenScope.PROJECT_READ)
 @strawberry_django.type(Contract)
 class ContractType(UserResourceTypeMixin):
     id: strawberry.ID
@@ -53,6 +56,7 @@ class ContractType(UserResourceTypeMixin):
         return await info.context.dl.track.load_total_tasks_estimated_hours_by_contract.load(root.pk)
 
 
+@type_scope(ApiTokenScope.PROJECT_READ)
 @strawberry_django.type(Task)
 class TaskType(UserResourceTypeMixin):
     id: strawberry.ID
@@ -72,6 +76,7 @@ class TaskType(UserResourceTypeMixin):
 
 
 # FIXME: Do not extend ClientIdMixin later and define client_id as strawberry.auto
+@type_scope(ApiTokenScope.TIME_ENTRY_READ)
 @strawberry_django.type(TimeEntry)
 class TimeEntryType(ClientIdMixin):
     id: strawberry.ID

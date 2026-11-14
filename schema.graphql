@@ -1,3 +1,43 @@
+input ApiTokenCreateInput {
+  name: String!
+  scopes: [ApiTokenScopeEnum!]!
+  expiresAt: DateTime!
+}
+
+enum ApiTokenScopeEnum {
+  TIME_ENTRY_READ
+  TIME_ENTRY_WRITE
+  JOURNAL_READ
+  JOURNAL_WRITE
+  PROJECT_READ
+  USER_READ
+  EVENT_READ
+}
+
+enum ApiTokenStatusEnum {
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+type ApiTokenType {
+  id: ID!
+  prefix: String!
+  createdAt: DateTime!
+  expiresAt: DateTime!
+  lastUsedAt: DateTime
+  revokedAt: DateTime
+  name: String!
+  scopes: [ApiTokenScopeEnum!]!
+  status: ApiTokenStatusEnum!
+}
+
+type ApiTokenTypeMutationResponseType {
+  ok: Boolean!
+  errors: CustomErrorType
+  result: ApiTokenType
+}
+
 type AppEnumCollection {
   EventType: [AppEnumCollectionEventType!]!
   UserDepartment: [AppEnumCollectionUserDepartment!]!
@@ -5,6 +45,22 @@ type AppEnumCollection {
   TimeEntryStatus: [AppEnumCollectionTimeEntryStatus!]!
   JournalLeaveType: [AppEnumCollectionJournalLeaveType!]!
   JournalWfhType: [AppEnumCollectionJournalWfhType!]!
+  ApiTokenScopes: [AppEnumCollectionApiTokenScopes!]!
+  ApiTokenStatus: [AppEnumCollectionApiTokenStatus!]!
+}
+
+type AppEnumCollectionApiTokenScopes {
+  key: ApiTokenScopeEnum!
+  label: String!
+  description: String!
+  resource: String!
+  resourceLabel: String!
+  resourceDescription: String!
+}
+
+type AppEnumCollectionApiTokenStatus {
+  key: ApiTokenStatusEnum!
+  label: String!
 }
 
 type AppEnumCollectionEventType {
@@ -152,6 +208,19 @@ type ContractorTypeCountList {
   offset: Int!
   count: Int!
   items: [ContractorType!]!
+}
+
+type CreatedApiTokenType {
+  token: ApiTokenType!
+
+  """The full token. It is returned only once, on creation."""
+  secret: String!
+}
+
+type CreatedApiTokenTypeMutationResponseType {
+  ok: Boolean!
+  errors: CustomErrorType
+  result: CreatedApiTokenType
 }
 
 """A generic type to return error messages"""
@@ -469,6 +538,8 @@ type PrivateMutation {
   bulkTimeEntry(items: [TimeEntryBulkCreateInput!] = [], deleteIds: [ID!] = []): TimeEntryTypeBulkMutationResponseType!
   cudTimeEntry(createItems: [TimeEntryBulkCreateInput!] = [], updateItems: [TimeEntryBulkUpdateInput!] = [], deleteIds: [ID!] = []): TimeEntryTypeCudMutationResponseType!
   updateJournal(date: Date!, data: JournalUpdateInput!): JournalTypeMutationResponseType!
+  createApiToken(data: ApiTokenCreateInput!): CreatedApiTokenTypeMutationResponseType!
+  revokeApiToken(id: ID!): ApiTokenTypeMutationResponseType!
   id: ID!
 }
 
@@ -485,6 +556,8 @@ type PrivateQuery {
   project(pk: ID!): ProjectType
   contracts(filters: ContractFilter, order: ContractOrder, pagination: OffsetPaginationInput): ContractTypeCountList!
   tasks(filters: TaskFilter, order: TaskOrder, pagination: OffsetPaginationInput): TaskTypeCountList!
+
+  """Time entries of all users. Superusers only."""
   timeEntries(filters: TimeEntryFilter, order: TimeEntryOrder, pagination: OffsetPaginationInput): TimeEntryTypeCountList!
 
   """Return all UnArchived contracts"""
@@ -493,10 +566,12 @@ type PrivateQuery {
   """Return all UnArchived tasks"""
   allActiveTasks: [TaskType!]!
   myTimeEntries(date: Date!): [TimeEntryType!]!
+
+  """Time entries of all users. Superusers only."""
   allTimeEntries(filters: TimeEntryFilter!): [TimeEntryType!]!
 
   """
-  Return total minutes and target minutes per day for the user within the given date range.
+  Return total minutes and target minutes per day for the user within the given date range (at most 366 days).
   """
   dailySummary(dateGte: Date!, dateLte: Date!): [DailySummaryType!]!
   contract(pk: ID!): ContractType
@@ -504,6 +579,9 @@ type PrivateQuery {
   journal(date: Date!): JournalType
   events(filters: EventFilter, order: EventOrder, pagination: OffsetPaginationInput): EventTypeCountList!
   relativeEvents: [EventType!]!
+
+  """Your tokens: active, and expired or revoked within the last 30 days."""
+  myApiTokens: [ApiTokenType!]!
   id: ID!
 }
 

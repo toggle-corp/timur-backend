@@ -244,3 +244,99 @@ class TestEntryQuery(TestCase):
     # - Contractors
     # - Contractor
     # - TimeEntrys
+
+
+class TestAllUsersTimeEntriesQuery(TestCase):
+    """
+    `timeEntries` and `allTimeEntries` return every user's entries, so they are superuser only.
+    """
+
+    TIME_ENTRIES = """
+        query {
+          private {
+            timeEntries {
+              count
+              items {
+                id
+              }
+            }
+          }
+        }
+    """
+
+    ALL_TIME_ENTRIES = """
+        query ($filters: TimeEntryFilter!) {
+          private {
+            allTimeEntries(filters: $filters) {
+              id
+            }
+          }
+        }
+    """
+
+    @classmethod
+    @typing.override
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = UserFactory.create()
+        cls.superuser = UserFactory.create(is_superuser=True)
+        ur_kwargs = dict(created_by=cls.user, modified_by=cls.user)
+        project = ProjectFactory.create(
+            project_client=ClientFactory.create(**ur_kwargs),
+            contractor=ContractorFactory.create(**ur_kwargs),
+            **ur_kwargs,
+        )
+        task = TaskFactory.create(contract=ContractFactory.create(project=project, **ur_kwargs), **ur_kwargs)
+        cls.time_entries = [
+            TimeEntryFactory.create(user=cls.user, task=task, date="2024-01-10"),
+            TimeEntryFactory.create(user=cls.superuser, task=task, date="2024-01-10"),
+        ]
+
+    def _queries(self):
+        return [
+            (self.TIME_ENTRIES, None),
+            (self.ALL_TIME_ENTRIES, {"filters": {}}),
+        ]
+
+    def test_denied_for_non_superusers(self):
+        self.force_login(self.user)
+        for query, variables in self._queries():
+            content = self.query_check(query, variables=variables, assert_errors=True)
+            assert content["data"] is None
+            assert [error["message"] for error in content["errors"]] == ["Only superusers can access this"]
+
+    def test_allowed_for_superusers(self):
+        self.force_login(self.superuser)
+        content = self.query_check(self.TIME_ENTRIES)
+        assert content["data"]["private"]["timeEntries"]["count"] == 2
+        content = self.query_check(self.ALL_TIME_ENTRIES, variables={"filters": {}})
+        assert len(content["data"]["private"]["allTimeEntries"]) == 2
+
+
+class TestDailySummaryQuery(TestCase):
+    DAILY_SUMMARY = """
+        query ($dateGte: Date!, $dateLte: Date!) {
+          private {
+            dailySummary(dateGte: $dateGte, dateLte: $dateLte) {
+              id
+            }
+          }
+        }
+    """
+
+    @typing.override
+    def setUp(self):
+        super().setUp()
+        self.force_login(UserFactory.create())
+
+    def test_range_up_to_366_days(self):
+        content = self.query_check(self.DAILY_SUMMARY, variables={"dateGte": "2024-01-01", "dateLte": "2024-12-31"})
+        assert len(content["data"]["private"]["dailySummary"]) == 366
+
+    def test_range_over_366_days_rejected(self):
+        content = self.query_check(
+            self.DAILY_SUMMARY,
+            variables={"dateGte": "2024-01-01", "dateLte": "2025-01-01"},
+            assert_errors=True,
+        )
+        assert [error["message"] for error in content["errors"]] == ["Date range can be at most 366 days."]

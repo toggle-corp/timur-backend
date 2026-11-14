@@ -12,6 +12,7 @@ from django.db.models.fields import files
 from strawberry_django.fields.types import field_type_map
 
 import strawberry
+from apps.api_token.scopes import ScopeTag, type_scope
 from main.caches import CacheKey
 from main.graphql.context import Info
 
@@ -58,6 +59,7 @@ def string_field(
         models.query_utils.DeferredAttribute,
         "_FieldDescriptor",
     ],
+    metadata: dict | None = None,
 ):
     """
     Behaviour:
@@ -76,11 +78,11 @@ def string_field(
     def _get_value(root) -> None | str:
         return getattr(root, _field.attname)  # type: ignore[reportGeneralTypeIssues] FIXME
 
-    @strawberry.field
+    @strawberry.field(metadata=metadata)
     def string_(root) -> str:
         return _get_value(root)  # type: ignore[reportGeneralTypeIssues] FIXME
 
-    @strawberry.field
+    @strawberry.field(metadata=metadata)
     def nullable_string_(root) -> str | None:
         _value = _get_value(root)
         if _value == "":
@@ -92,6 +94,7 @@ def string_field(
     return string_
 
 
+@type_scope(ScopeTag.NO_SCOPE)
 @strawberry.type
 class DjangoFileType:
     name: str
@@ -116,6 +119,7 @@ class DjangoFileType:
         return cls._cached_s3_url(root)
 
 
+@type_scope(ScopeTag.NO_SCOPE)
 @strawberry.type
 class DjangoImageType(DjangoFileType):
     width: int

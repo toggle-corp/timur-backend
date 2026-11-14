@@ -110,6 +110,11 @@ app:
         schedule: "0 2 * * *"  # Every day at 2:00
         timeZone: "Asia/Kathmandu"
         command: ["./manage.py", "slack_availability_purge"]
+      api_token_expiry_notify:
+        enabled: true
+        schedule: "0 9 * * *"  # Every day at 9:00
+        timeZone: "Asia/Kathmandu"
+        command: ["./manage.py", "api_token_expiry_notify"]
 
   # NOTE: Check main/settings.py for all available options.
   # APP_DOMAIN, APP_FRONTEND_HOST, SESSION_COOKIE_DOMAIN, CSRF_COOKIE_DOMAIN and
