@@ -7,6 +7,7 @@ from django.db import models, transaction
 from rest_framework import serializers
 
 import strawberry
+from apps.api_token.scopes import ScopeTag, type_scope
 from main.graphql.context import Info
 from strawberry.utils.str_converters import to_camel_case
 from utils.common import to_snake_case
@@ -59,6 +60,7 @@ def process_input_data(data) -> dict | list:
     return native_dict
 
 
+@type_scope(ScopeTag.NO_SCOPE)
 @strawberry.type
 class ArrayNestedErrorType:
     client_id: str
@@ -75,6 +77,7 @@ class ArrayNestedErrorType:
         return getattr(self, key)
 
 
+@type_scope(ScopeTag.NO_SCOPE)
 @strawberry.type
 class _CustomErrorType:
     field: str
@@ -199,6 +202,7 @@ def mutation_is_not_valid(serializer) -> CustomErrorType | None:
     return None
 
 
+@type_scope(ScopeTag.NO_SCOPE)
 @strawberry.type
 class MutationResponseType(typing.Generic[ResultTypeVar]):
     ok: bool = True
@@ -206,6 +210,7 @@ class MutationResponseType(typing.Generic[ResultTypeVar]):
     result: ResultTypeVar | None = None
 
 
+@type_scope(ScopeTag.NO_SCOPE)
 @strawberry.type
 class BulkBasicMutationResponseType(typing.Generic[ResultTypeVar]):
     errors: list[CustomErrorType] | None = None
@@ -213,6 +218,7 @@ class BulkBasicMutationResponseType(typing.Generic[ResultTypeVar]):
 
 
 # FIXME: remove this later
+@type_scope(ScopeTag.NO_SCOPE)
 @strawberry.type
 class BulkMutationResponseType(typing.Generic[ResultTypeVar]):
     errors: list[CustomErrorType] | None = None
@@ -220,6 +226,7 @@ class BulkMutationResponseType(typing.Generic[ResultTypeVar]):
     deleted: list[ResultTypeVar] | None = None
 
 
+@type_scope(ScopeTag.NO_SCOPE)
 @strawberry.type
 class CudMutationResponseType(typing.Generic[ResultTypeVar]):
     errors: list[CustomErrorType] | None = None
@@ -228,6 +235,7 @@ class CudMutationResponseType(typing.Generic[ResultTypeVar]):
     deleted: list[ResultTypeVar] | None = None
 
 
+@type_scope(ScopeTag.NO_SCOPE)
 @strawberry.type
 class MutationEmptyResponseType:
     ok: bool = True
@@ -405,7 +413,23 @@ class ModelMutation:
             _id = _data.pop("id", None)
             instance = None
             if _id:
+                # An id outside base_queryset (missing, deleted above, or not owned by the caller) is an error
                 instance = await base_queryset.filter(id=_id).afirst()
+                if not instance:
+                    errors.append(
+                        CustomErrorType(
+                            dict(
+                                _CustomErrorType(
+                                    client_id=_data.get("client_id"),
+                                    field="nonFieldErrors",
+                                    messages="Could not update because instance not found",
+                                    object_errors=None,
+                                    array_errors=None,
+                                ),
+                            ),
+                        ),
+                    )
+                    continue
             partial = False
             if instance:
                 partial = True

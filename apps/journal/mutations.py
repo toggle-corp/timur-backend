@@ -2,6 +2,7 @@ import datetime
 
 import strawberry
 
+from apps.api_token.scopes import ApiTokenScope, field_scope
 from main.graphql.context import Info
 from utils.strawberry.mutations import ModelMutation, MutationResponseType
 
@@ -13,7 +14,7 @@ JournalMutation = ModelMutation("Journal", JournalSerializer)
 
 @strawberry.type
 class PrivateMutation:
-    @strawberry.mutation
+    @strawberry.mutation(metadata=field_scope(ApiTokenScope.JOURNAL_WRITE))
     async def update_journal(
         self,
         date: datetime.date,

@@ -524,6 +524,89 @@ spec:
 
 ---
 # Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
+# Job: api_token_expiry_notify
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: timur-job-api-token-expiry-notify
+  labels:
+    app: timur
+    component: cronjob
+    jobName: api_token_expiry_notify
+    environment: PROD
+    release: release-name
+spec:
+  schedule: "0 9 * * *"
+  timeZone: "Asia/Kathmandu"
+  concurrencyPolicy: "Forbid"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 7200  # 2 hours default
+      ttlSecondsAfterFinished: 604800
+      template:
+        metadata:
+          annotations:
+          labels:
+            app: timur
+            component: cronjob
+        spec:
+          restartPolicy: "Never"
+          containers:
+            - name: cronjob
+              command:
+                - ./manage.py
+                - api_token_expiry_notify
+              image: "SET-BY-CICD-IMAGE:SET-BY-CICD-TAG"
+              imagePullPolicy: IfNotPresent
+              resources:
+                limits:
+                  memory: 1Gi
+                requests:
+                  cpu: "0.1"
+                  memory: 0.5Gi
+              envFrom:
+                - secretRef:
+                    name: timur-secret
+                - secretRef:
+                    name: my-extra-secrets
+                - configMapRef:
+                    name: timur-env-name
+              env:
+                - name: DJANGO_APP_TYPE
+                  value: "cronjob"
+                - name: CELERY_REDIS_URL
+                  value: redis://timur-dragonfly:6379/0
+                - name: DB_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      key: host
+                      name: cnpg-pg-app
+                - name: DB_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      key: dbname
+                      name: cnpg-pg-app
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      key: password
+                      name: cnpg-pg-app
+                - name: DB_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      key: port
+                      name: cnpg-pg-app
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      key: username
+                      name: cnpg-pg-app
+                - name: DJANGO_CACHE_REDIS_URL
+                  value: redis://timur-dragonfly:6379/1
+---
+# Source: timur-backend-helm/charts/app/templates/cronjobs/deployment.yaml
 # Job: clearsessions
 apiVersion: batch/v1
 kind: CronJob
