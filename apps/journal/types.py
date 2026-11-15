@@ -2,6 +2,7 @@ import strawberry
 import strawberry_django
 from django.db import models
 
+from apps.api_token.scopes import ApiTokenScope, type_scope
 from apps.user.types import UserType
 from main.graphql.context import Info
 from utils.common import get_queryset_for_model
@@ -11,6 +12,7 @@ from utils.strawberry.types import string_field
 from .models import Journal
 
 
+@type_scope(ApiTokenScope.JOURNAL_READ)
 @strawberry_django.type(Journal)
 class JournalType:
     id: strawberry.ID

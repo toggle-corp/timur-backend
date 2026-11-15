@@ -1,0 +1,8 @@
+{% extends "api_token/emails/_layout.html" %}
+{% block preheader %}It stops working on {{ expires_on }}. {% if last_used %}Create a new one before then.{% else %}It has never been used.{% endif %}{% endblock %}
+{% block heading %}{{ token_name }} expires {{ expires_in }}{% endblock %}
+{% block intro %}Your API token <b>{{ token_name }}</b> expires on <b>{{ expires_on }}</b>.{% endblock %}
+{% block expiry_label %}Expires{% endblock %}
+{% block message %}{% if last_used %}Tokens can't be extended. To keep your scripts working, create a new token, put it in your scripts, then revoke this one.{% else %}It has never been used, so it seems like it isn't used. You can let it expire, or revoke it now.{% endif %}{% endblock %}
+{% block note %}<p style="margin:24px 0 0;font-family:'Fira Sans', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:14px;line-height:21px;color:#77736c;">After it expires, requests that use it fail with a 401 error.</p>{% endblock %}
+{% block footer %}Sent by Timur. You get this because you own this API token. You'll get one more email when it expires.{% endblock %}
