@@ -18,6 +18,7 @@ from .guards import GuardResult, apply_guards
 from .messages import StandupNote, StandupRole, build_delete_notice, build_reply, build_reply_blocks
 from .models import SlackAvailabilityRun, SlackAvailabilityThread
 from .parsers import AvailabilityParser, get_parser, load_prompt_events
+from .reactions import add_seen_reaction, set_outcome_reaction
 from .reconcile import (
     JOURNAL_CHANGING_ACTIONS,
     MANUAL_VALUE_ACTIONS,
@@ -54,12 +55,6 @@ Trigger = SlackAvailabilityRun.Trigger
 MIN_CONFIDENCE = 0.5
 
 
-class Reaction:
-    SEEN = "eyes"
-    DONE = "white_check_mark"
-    FAILED = "warning"
-
-
 def _is_thread_message(message: dict, slack_user_id: str) -> bool:
     return message.get("user") == slack_user_id and not message.get("bot_id") and message.get("subtype") != "tombstone"
 
@@ -82,9 +77,9 @@ class AvailabilityProcessor:
     def is_live(self) -> bool:
         return self.config.is_live
 
-    def react(self, event: SlackMessageEvent, name: str):
+    def react_seen(self, event: SlackMessageEvent):
         if self.is_live and event.trigger_ts:
-            self.slack.add_reaction(event.channel_id, event.trigger_ts, name)
+            add_seen_reaction(self.slack, event.channel_id, event.trigger_ts)
 
     def resolve_user(self, slack_user_id: str) -> User | None:
         """
@@ -120,7 +115,7 @@ class AvailabilityProcessor:
 
         Slack and parser calls run outside database transactions. The thread's journal step runs in a short
         transaction that skips the run when a newer read of the thread was already applied.
-        The DONE reaction and the thread reply are sent separately by notify(), after the journal is committed.
+        The outcome reaction and the thread reply are sent separately by notify(), after the journal is committed.
         """
         if event.trigger == Trigger.DELETE:
             return self.process_delete(event)
@@ -137,7 +132,7 @@ class AvailabilityProcessor:
             return None
 
         try:
-            self.react(event, Reaction.SEEN)
+            self.react_seen(event)
         except SlackApiError:
             logger.warning(
                 "Failed to add seen reaction",
@@ -163,7 +158,6 @@ class AvailabilityProcessor:
         return local_datetime_from_ts(event.event_ts).date()
 
     def process_unmapped_user(self, event: SlackMessageEvent) -> SlackAvailabilityRun:
-        self.react(event, Reaction.FAILED)
         logger.error(
             "Slack user is not linked to an active Timur user",
             extra=log_extra({"slack_user_id": event.slack_user_id, "thread_ts": event.thread_ts}),
@@ -423,7 +417,7 @@ class AvailabilityProcessor:
 
     def notify(self, run: SlackAvailabilityRun):
         """
-        Send the DONE reaction and the thread reply of a committed run
+        Send the outcome reaction and the thread reply of a committed run
 
         Safe to call again: reactions are idempotent and the reply is sent once per run.
         """
@@ -435,9 +429,7 @@ class AvailabilityProcessor:
         thread.refresh_from_db(fields=("is_deleted",))
         if thread.is_deleted and (run.trigger != Trigger.DELETE or run.trigger_ts != thread.thread_ts):
             return
-        # A deleted message has nothing to react on
-        if run.status == Status.APPLIED and run.trigger != Trigger.DELETE:
-            self.slack.add_reaction(thread.channel_id, run.trigger_ts, Reaction.DONE)
+        set_outcome_reaction(self.slack, run)
         if run.reply_text and not run.reply_ts:
             response = self.slack.send_slack_message(
                 # Shown in notifications, and by clients that can't render blocks
@@ -521,7 +513,7 @@ class AvailabilityProcessor:
 
 def mark_notify_failed(slack: TimurSlack | None, run: SlackAvailabilityRun, error: BaseException):
     """
-    Record a run whose Slack reaction or reply failed after all retries
+    Record a run whose Slack reply failed after all retries
 
     The journal changes of the run stay applied.
     """
@@ -530,14 +522,10 @@ def mark_notify_failed(slack: TimurSlack | None, run: SlackAvailabilityRun, erro
         exc_info=error,
         extra=log_extra({"run_id": run.pk, "thread_id": run.thread_id}),
     )
-    # A deleted message has nothing to react on
-    if slack is not None and run.trigger != Trigger.DELETE:
-        try:
-            slack.add_reaction(run.thread.channel_id, run.trigger_ts, Reaction.FAILED)
-        except Exception:
-            logger.error("Failed to add failure reaction", exc_info=True)
     run.error = repr(error)
     run.save(update_fields=("error",))
+    if slack is not None:
+        set_outcome_reaction(slack, run)
 
 
 def mark_event_failed(slack: TimurSlack | None, event: SlackMessageEvent, error: BaseException):
@@ -550,18 +538,12 @@ def mark_event_failed(slack: TimurSlack | None, event: SlackMessageEvent, error:
         extra=log_extra({"thread_ts": event.thread_ts, "trigger_ts": event.trigger_ts}),
     )
     availability_config = config.SlackAvailability.load_config()
-    if slack is not None and availability_config.is_live and event.trigger_ts:
-        try:
-            slack.add_reaction(event.channel_id, event.trigger_ts, Reaction.FAILED)
-        except Exception:
-            logger.error("Failed to add failure reaction", exc_info=True)
-
     thread, _ = SlackAvailabilityThread.objects.get_or_create(
         channel_id=event.channel_id,
         thread_ts=event.thread_ts,
         defaults={"slack_user_id": event.slack_user_id},
     )
-    SlackAvailabilityRun.objects.create(
+    run = SlackAvailabilityRun.objects.create(
         thread=thread,
         mode=availability_config.mode,
         trigger=event.trigger,
@@ -570,3 +552,5 @@ def mark_event_failed(slack: TimurSlack | None, event: SlackMessageEvent, error:
         today=local_datetime_from_ts(event.event_ts).date(),
         error=repr(error),
     )
+    if slack is not None:
+        set_outcome_reaction(slack, run)

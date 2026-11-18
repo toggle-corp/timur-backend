@@ -9,7 +9,6 @@ from django.utils import timezone
 from apps.slack_availability.events import classify_event
 from apps.slack_availability.factories import SlackAvailabilityRunFactory, SlackAvailabilityThreadFactory
 from apps.slack_availability.models import SlackAvailabilityRun
-from apps.slack_availability.processor import Reaction
 from apps.slack_availability.tasks import (
     MAX_RETRIES,
     notify_slack_availability_run,
@@ -17,7 +16,7 @@ from apps.slack_availability.tasks import (
 )
 from main.tests import TestCase
 
-from . import AVAILABILITY_SETTINGS, CHANNEL_ID, FakeSlack, message_event, next_monday, ts_at
+from . import AVAILABILITY_SETTINGS, CHANNEL_ID, FAILED, FakeSlack, message_event, next_monday, ts_at
 
 
 @override_settings(**AVAILABILITY_SETTINGS)
@@ -87,7 +86,7 @@ class TestProcessSlackAvailabilityEvent(TestCase):
         run = SlackAvailabilityRun.objects.get()
         assert run.status == SlackAvailabilityRun.Status.FAILED
         slack = processor_mock.call_args.args[0]
-        assert slack.reactions == [(self.ts, Reaction.FAILED)]
+        assert slack.reactions == [(self.ts, FAILED)]
 
 
 @override_settings(**AVAILABILITY_SETTINGS)
@@ -119,7 +118,7 @@ class TestNotifySlackAvailabilityRun(TestCase):
         assert self.availability_run.status == SlackAvailabilityRun.Status.APPLIED
         assert "Slack is down" in self.availability_run.error
         slack = processor_mock.call_args.args[0]
-        assert slack.reactions == [(self.availability_run.trigger_ts, Reaction.FAILED)]
+        assert slack.reactions == [(self.availability_run.trigger_ts, FAILED)]
 
 
 class TestPurgeSlackAvailabilityRuns(TestCase):

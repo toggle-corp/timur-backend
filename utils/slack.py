@@ -96,6 +96,19 @@ class TimurSlack:
             if e.response.get("error") != "already_reacted":
                 raise
 
+    def remove_reaction(self, channel: str, ts: str, name: str):
+        try:
+            self.client.reactions_remove(channel=channel, timestamp=ts, name=name)
+        except SlackApiError as e:
+            if e.response.get("error") != "no_reaction":
+                raise
+
+    def fetch_custom_emoji_names(self) -> set[str]:
+        """
+        https://docs.slack.dev/reference/methods/emoji.list/ (needs the emoji:read scope)
+        """
+        return set(self.client.emoji_list().get("emoji") or {})
+
     def fetch_thread_messages(self, channel: str, thread_ts: str) -> list[dict]:
         """
         Return the parent message followed by its replies, oldest first

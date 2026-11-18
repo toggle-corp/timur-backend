@@ -19,7 +19,6 @@ from apps.slack_availability.models import (
 )
 from apps.slack_availability.processor import (
     AvailabilityProcessor,
-    Reaction,
     mark_event_failed,
     mark_notify_failed,
 )
@@ -31,8 +30,16 @@ from main.tests import TestCase
 from utils import frontend_urls
 
 from . import (
+    APPLIED,
     AVAILABILITY_SETTINGS,
     CHANNEL_ID,
+    FAILED,
+    MANUAL,
+    NO_CHANGE,
+    NOT_ABOUT,
+    SEEN,
+    STALE,
+    UNSURE,
     FakeParser,
     FakeSlack,
     message_event,
@@ -131,7 +138,9 @@ class TestAvailabilityProcessor(TestCase):
             (self.wednesday, JournalAvailabilityHistory.Source.SLACK_TIMUR),
         }
 
-        assert self.slack.reactions == [(self.parent_ts, Reaction.SEEN), (self.parent_ts, Reaction.DONE)]
+        # The seen reaction is replaced by the outcome
+        assert self.slack.reactions == [(self.parent_ts, APPLIED)]
+        assert (self.parent_ts, SEEN) in self.slack.removed_reactions
         assert len(self.slack.posted) == 1
         posted = self.slack.posted[0]
         assert posted["thread_ts"] == self.parent_ts
@@ -173,7 +182,7 @@ class TestAvailabilityProcessor(TestCase):
 
         assert run is not None
         assert run.status == Status.NO_CHANGE
-        assert self.slack.reactions == [(self.parent_ts, Reaction.SEEN)]
+        assert self.slack.reactions == [(self.parent_ts, NO_CHANGE)]
         assert self.slack.posted == []
 
     def test_not_about_availability(self):
@@ -188,8 +197,8 @@ class TestAvailabilityProcessor(TestCase):
         assert run.status == Status.NOT_ABOUT_AVAILABILITY
         assert run.reply_text == ""
         assert not Journal.objects.exists()
-        # Seen, but no result reaction and no question
-        assert self.slack.reactions == [(self.parent_ts, Reaction.SEEN)]
+        # No question
+        assert self.slack.reactions == [(self.parent_ts, NOT_ABOUT)]
         assert self.slack.posted == []
 
     def test_not_about_availability_reverts_earlier_writes(self):
@@ -246,7 +255,7 @@ class TestAvailabilityProcessor(TestCase):
         assert run is not None
         assert run.status == Status.LOW_CONFIDENCE
         assert not Journal.objects.exists()
-        assert self.slack.reactions == [(self.parent_ts, Reaction.SEEN)]
+        assert self.slack.reactions == [(self.parent_ts, UNSURE)]
         assert self.slack.posted == []
         assert run.trace is not None
         assert run.trace["low_confidence"] is True
@@ -318,8 +327,8 @@ class TestAvailabilityProcessor(TestCase):
         assert run.status == Status.APPLIED
         assert self.journal_state(self.tuesday) == DayState(wfh_type=WT.FULL)
         assert self.journal_state(self.wednesday) == DayState()
-        assert (reply_ts, Reaction.SEEN) in self.slack.reactions
-        assert (reply_ts, Reaction.DONE) in self.slack.reactions
+        assert (reply_ts, SEEN) not in self.slack.reactions
+        assert (reply_ts, APPLIED) in self.slack.reactions
         assert len(self.slack.posted) == 2
         assert "Removed from your Timur journal:" in self.slack.posted[1]["text"]
 
@@ -341,6 +350,9 @@ class TestAvailabilityProcessor(TestCase):
         assert run.trigger == SlackAvailabilityRun.Trigger.EDIT
         assert run.status == Status.NO_CHANGE
         assert len(self.slack.posted) == 1
+        # The outcome of the latest run replaces the earlier one
+        assert self.slack.reactions == [(self.parent_ts, NO_CHANGE)]
+        assert (self.parent_ts, APPLIED) in self.slack.removed_reactions
 
     def assert_delete_notice(self, posted: dict, *, parent_deleted: bool):
         assert posted["thread_ts"] == self.parent_ts
@@ -567,7 +579,7 @@ class TestAvailabilityProcessor(TestCase):
         assert run is not None
         assert run.status == Status.UNMAPPED_USER
         assert parser.calls == []
-        assert self.slack.reactions == [(self.parent_ts, Reaction.SEEN), (self.parent_ts, Reaction.FAILED)]
+        assert self.slack.reactions == [(self.parent_ts, FAILED)]
         assert self.slack.posted == []
 
     def test_inactive_user_is_unmapped(self):
@@ -603,7 +615,7 @@ class TestAvailabilityProcessor(TestCase):
 
         assert run is not None
         assert run.status == Status.UNMAPPED_USER
-        assert (self.parent_ts, Reaction.FAILED) in self.slack.reactions
+        assert (self.parent_ts, FAILED) in self.slack.reactions
         user.refresh_from_db()
         assert user.slack_user_id == "U-FIRST"
 
@@ -640,7 +652,7 @@ class TestAvailabilityProcessor(TestCase):
         run = self.process(self.parent_event(), self.default_parser())
         assert run is not None
         assert run.status == Status.NO_CHANGE
-        assert self.slack.reactions == [(self.parent_ts, Reaction.SEEN)]
+        assert self.slack.reactions == [(self.parent_ts, NO_CHANGE)]
         assert len(self.slack.posted) == 1
         text = self.slack.posted[0]["text"]
         assert "I've updated" not in text
@@ -681,7 +693,8 @@ class TestAvailabilityProcessor(TestCase):
         assert run is not None
         assert run.status == Status.NO_CHANGE
         assert run.llm_model == "fake-model"
-        assert self.slack.reactions == [(self.parent_ts, Reaction.SEEN)]
+        # Both dates hold values the user set
+        assert self.slack.reactions == [(self.parent_ts, MANUAL)]
         assert len(self.slack.posted) == 1
         assert "Thanks for already updating" in self.slack.posted[0]["text"]
 
@@ -895,7 +908,7 @@ class TestAvailabilityProcessor(TestCase):
         processor.notify(run)
         processor.notify(run)
         assert len(self.slack.posted) == 1
-        assert self.slack.reactions.count((self.parent_ts, Reaction.DONE)) == 1
+        assert self.slack.reactions.count((self.parent_ts, APPLIED)) == 1
         run.refresh_from_db()
         assert run.reply_ts == "9999999999.000001"
 
@@ -909,7 +922,7 @@ class TestAvailabilityProcessor(TestCase):
         run.refresh_from_db()
         assert run.status == Status.APPLIED
         assert "Slack is down" in run.error
-        assert (self.parent_ts, Reaction.FAILED) in self.slack.reactions
+        assert self.slack.reactions == [(self.parent_ts, FAILED)]
         assert self.journal_state(self.tuesday) == DayState(leave_type=LT.FULL)
 
     def test_stale_run_changes_nothing(self):
@@ -931,7 +944,7 @@ class TestAvailabilityProcessor(TestCase):
         assert self.journal_state(self.tuesday) == DayState(leave_type=LT.FULL)
         assert self.journal_state(self.wednesday) == DayState(wfh_type=WT.FULL)
         assert len(self.slack.posted) == 1
-        assert (reply_ts, Reaction.DONE) not in self.slack.reactions
+        assert (reply_ts, STALE) in self.slack.reactions
 
     def test_run_after_parent_deleted_changes_nothing(self):
         self.process(self.parent_event(), self.default_parser())
@@ -987,4 +1000,107 @@ class TestAvailabilityProcessor(TestCase):
         run = SlackAvailabilityRun.objects.get()
         assert run.status == Status.FAILED
         assert "Ollama is down" in run.error
-        assert self.slack.reactions == [(self.parent_ts, Reaction.FAILED)]
+        assert self.slack.reactions == [(self.parent_ts, FAILED)]
+
+    def edit_event(self, text: str, at: str) -> dict:
+        return {
+            "type": "message",
+            "subtype": "message_changed",
+            "channel": CHANNEL_ID,
+            "ts": at,
+            "event_ts": at,
+            "message": {**self.parent, "text": text},
+            "previous_message": self.parent,
+        }
+
+    def test_manual_change_is_kept(self):
+        self.process(self.parent_event(), self.default_parser())
+        # The user changes a date Timur wrote
+        Journal.objects.filter(user=self.user, date=self.tuesday).update(leave_type=None, wfh_type=WT.FULL)
+
+        reply_ts = ts_at(self.monday, 11)
+        reply = slack_message("U-AUTHOR", "Only WFH wednesday", reply_ts, thread_ts=self.parent_ts)
+        self.slack.threads[self.parent_ts].append(reply)
+        run = self.process(
+            message_event("U-AUTHOR", reply["text"], reply_ts, thread_ts=self.parent_ts),
+            FakeParser(ranges=[AvailabilityRange(self.wednesday, self.wednesday, wfh=Half.FULL)]),
+        )
+
+        assert run is not None
+        assert run.status == Status.NO_CHANGE
+        assert [(change["date"], change["action"]) for change in run.planned_changes["changes"]] == [
+            (self.tuesday.isoformat(), "drop"),
+        ]
+        assert self.journal_state(self.tuesday) == DayState(wfh_type=WT.FULL)
+        assert (reply_ts, MANUAL) in self.slack.reactions
+
+    def test_custom_emojis(self):
+        self.slack.custom_emojis = {"timur-seen", "timur-applied", "other-emoji"}
+
+        self.process(self.parent_event(), self.default_parser())
+        assert self.slack.reactions == [(self.parent_ts, "timur-applied")]
+        assert (self.parent_ts, "timur-seen") in self.slack.removed_reactions
+
+        # No custom emoji for this outcome: the native one is used
+        reply_ts = ts_at(self.monday, 11)
+        reply = slack_message("U-AUTHOR", "Same as above", reply_ts, thread_ts=self.parent_ts)
+        self.slack.threads[self.parent_ts].append(reply)
+        self.process(message_event("U-AUTHOR", reply["text"], reply_ts, thread_ts=self.parent_ts), self.default_parser())
+        assert (reply_ts, NO_CHANGE) in self.slack.reactions
+        # The emoji list is cached
+        assert self.slack.emoji_list_calls == 1
+
+    def test_emoji_list_failure_uses_native_emojis(self):
+        error = SlackApiError("missing_scope", typing.cast("typing.Any", {"ok": False, "error": "missing_scope"}))
+        with (
+            mock.patch.object(self.slack, "fetch_custom_emoji_names", side_effect=error),
+            self.assertLogs("apps.slack_availability.reactions", level="WARNING"),
+        ):
+            run = self.process(self.parent_event(), self.default_parser())
+
+        assert run is not None
+        assert run.status == Status.APPLIED
+        assert self.slack.reactions == [(self.parent_ts, APPLIED)]
+
+    def test_outcome_reaction_failure_does_not_fail_notify(self):
+        message_event_ = classify_event(self.parent_event(), CHANNEL_ID)
+        assert message_event_ is not None
+        processor = AvailabilityProcessor(self.slack, parser_factory=self.default_parser)
+        run = processor.process(message_event_)
+        assert run is not None
+
+        error = SlackApiError("ratelimited", typing.cast("typing.Any", {"ok": False, "error": "ratelimited"}))
+        with (
+            mock.patch.object(self.slack, "add_reaction", side_effect=error),
+            mock.patch.object(self.slack, "remove_reaction", side_effect=error),
+            self.assertLogs("apps.slack_availability.reactions", level="WARNING"),
+        ):
+            processor.notify(run)
+
+        run.refresh_from_db()
+        assert run.reply_ts
+        assert run.error == ""
+
+    def test_older_run_does_not_replace_newer_outcome(self):
+        message_event_ = classify_event(self.parent_event(), CHANNEL_ID)
+        assert message_event_ is not None
+        processor = AvailabilityProcessor(self.slack, parser_factory=self.default_parser)
+        first_run = processor.process(message_event_)
+        assert first_run is not None
+        processor.notify(first_run)
+
+        # An edit of the same message, then a retried notify of the first run
+        self.process(self.edit_event("On leave tomorrow, and WFH wednesday", ts_at(self.monday, 12)), self.default_parser())
+        processor.notify(first_run)
+
+        assert [name for ts, name in self.slack.reactions if ts == self.parent_ts] == [NO_CHANGE]
+
+    @override_settings(SLACK_AVAILABILITY_MODE="shadow")
+    def test_shadow_mode_failure_has_no_reaction(self):
+        message_event_ = classify_event(self.parent_event(), CHANNEL_ID)
+        assert message_event_ is not None
+
+        with self.assertLogs("apps.slack_availability.processor", level="ERROR"):
+            mark_event_failed(self.slack, message_event_, RuntimeError("Parser is down"))
+
+        assert self.slack.reactions == []

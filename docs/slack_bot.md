@@ -22,6 +22,7 @@ oauth_config:
     - users:read
     - users:read.email
     - reactions:write
+    - emoji:read
     # For Private channel
     - groups:history
     # (Optional) For Public channel
@@ -67,6 +68,7 @@ Standup messages go to `SLACK_STANDUP_CHANNEL_ID`, the channel ID (e.g. `C0123AB
 Timur reads leave and WFH messages from the availability channel (e.g. `#tc-availability`) and updates the poster's journal.
 
 - Endpoint: `POST /slack/events/` (Events API, verified with `SLACK_SIGNING_SECRET`)
+- Reactions: see [Availability: reactions](#availability-reactions)
 - Timur's replies have a "How did Timur decide?" button. It opens a modal with the steps of the run (message,
   understood dates with the quoted words, working days, journal before/after), only for the person who posted
   and for Timur admins (active superusers whose `slack_user_id` is the clicker's Slack id).
@@ -103,7 +105,8 @@ button clicks to it over HTTPS, so it must be reachable from the internet.
    |---|---|
    | `chat:write` | replies, standup messages (`chat.postMessage`) |
    | `chat:write.customize` | bot name and icon on messages |
-   | `reactions:write` | `:eyes:`, `:white_check_mark:`, `:warning:` reactions (new for availability) |
+   | `reactions:write` | adding and removing the seen and outcome reactions (`reactions.add`, `reactions.remove`) |
+   | `emoji:read` | finding the custom Timur emojis (`emoji.list`). Without it, Timur uses the native emojis |
    | `channels:history` | `message.channels` events, reading thread replies (`conversations.replies`) |
    | `groups:history` | the same for a private channel |
    | `users:read`, `users:read.email` | matching Slack users to Timur users (`users.list`, `users.info`, `users.lookupByEmail`) |
@@ -130,9 +133,9 @@ button clicks to it over HTTPS, so it must be reachable from the internet.
    1. `SLACK_AVAILABILITY_MODE=shadow`: Timur parses new posts and saves the planned journal changes, without
       writing the journal, reacting or replying. Check **Django admin > Slack availability runs** after a few
       posts.
-   2. `SLACK_AVAILABILITY_MODE=live`: Timur reacts (`:eyes:` on every post it reads, `:white_check_mark:` when
-      the journal changed, `:warning:` on failure or an unknown user), updates the journal and replies in the
-      thread. Click "How did Timur decide?" on a reply to see the steps.
+   2. `SLACK_AVAILABILITY_MODE=live`: Timur reacts (seen while it reads a post, then the outcome, see
+      [Availability: reactions](#availability-reactions)), updates the journal and replies in the thread.
+      Click "How did Timur decide?" on a reply to see the steps.
       Deleting a message doesn't change the journal right away. Changes and cancellations go in a thread reply.
       - A deleted reply is left out the next time Timur reads the thread (on its next reply or edit), so that
         read can change the journal.
@@ -140,6 +143,28 @@ button clicks to it over HTTPS, so it must be reachable from the internet.
       - When the journal still holds values from the thread, Timur replies once to a deleted reply and once to a
         deleted top-level message.
    3. Rollback: `SLACK_AVAILABILITY_MODE=off`. Events are then ignored.
+
+## Availability: reactions
+
+Timur adds the seen reaction to each post it reads. When the run is done, it replaces it with one outcome
+reaction. A later run on the same message (e.g. an edit) replaces the earlier outcome.
+
+Each reaction is a custom emoji. Upload the images (128x128 PNG) in Slack > **Customize workspace** > **Emoji**
+with exactly these names. Timur lists the workspace emojis (`emoji.list`, cached for an hour) and uses the native
+emoji for a name that is missing, or when the `emoji:read` scope is missing.
+
+| Custom emoji | Native fallback | Meaning |
+|---|---|---|
+| `:timur-seen:` | `:eyes:` | Reading the post |
+| `:timur-applied:` | `:white_check_mark:` | Journal updated |
+| `:timur-no-change:` | `:heavy_minus_sign:` | Read, nothing to change |
+| `:timur-not-about:` | `:see_no_evil:` | Not about leave or WFH |
+| `:timur-unsure:` | `:question:` | Not sure enough, nothing changed |
+| `:timur-manual:` | `:raised_hand:` | Kept a value set outside this thread (a date the thread asks for, or one it wrote that was changed since) |
+| `:timur-stale:` | `:hourglass:` | Skipped, the thread changed while Timur read it. A newer read applies |
+| `:timur-failed:` | `:warning:` | Failed, the Slack account isn't linked to a Timur user, or the reply couldn't be sent |
+
+Reaction errors are logged and never fail a run. In `shadow` mode there are no reactions.
 
 ### Troubleshooting
 
@@ -151,8 +176,10 @@ button clicks to it over HTTPS, so it must be reachable from the internet.
   - `SLACK_AVAILABILITY_CHANNEL_ID` is the channel name instead of the ID
   - the bot isn't in the channel, or `message.channels` isn't subscribed
   - the Celery worker isn't running (events are queued, check the worker logs)
-- **`:warning:` and no reply**: the poster's Slack account isn't linked to a Timur user (`slack_user_id`). Run
-  `python manage.py sync_slack_users_id` or set it in Django admin.
+- **`:timur-failed:` (`:warning:`) and no reply**: the poster's Slack account isn't linked to a Timur user
+  (`slack_user_id`). Run `python manage.py sync_slack_users_id` or set it in Django admin.
+- **Native emojis instead of the Timur ones**: the `emoji:read` scope is missing (add it and reinstall), or the
+  uploaded name differs from the table. The emoji list is cached for up to an hour.
 - **Button shows nothing**: Interactivity is off or its Request URL is wrong, or the mode is `off`.
 - **`missing_scope` or `not_allowed_token_type` in logs**: add the scope from step 2 and reinstall.
 - **`invalid_auth` from the backend**: the bot token changed, or `allowed_ip_address_ranges` in the app

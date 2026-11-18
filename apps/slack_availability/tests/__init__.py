@@ -7,6 +7,7 @@ from slack_sdk.web.slack_response import SlackResponse
 
 from apps.common.models import Event
 from apps.slack_availability.parsers import AvailabilityParser, build_user_prompt
+from apps.slack_availability.reactions import OUTCOME_EMOJI, SEEN_EMOJI, Outcome
 from apps.slack_availability.structs import AvailabilityRange, ParseResult, ThreadMessage, UnclearPart
 from utils.slack import TimurSlack
 
@@ -25,6 +26,17 @@ AVAILABILITY_SETTINGS = dict(
     OLLAMA_NUM_CTX=4096,
     OLLAMA_KEEP_ALIVE="5m",
 )
+
+
+# Native emoji names, used when the workspace has no custom Timur emoji
+SEEN = SEEN_EMOJI.native
+APPLIED = OUTCOME_EMOJI[Outcome.APPLIED].native
+NO_CHANGE = OUTCOME_EMOJI[Outcome.NO_CHANGE].native
+NOT_ABOUT = OUTCOME_EMOJI[Outcome.NOT_ABOUT_AVAILABILITY].native
+UNSURE = OUTCOME_EMOJI[Outcome.LOW_CONFIDENCE].native
+MANUAL = OUTCOME_EMOJI[Outcome.MANUAL_VALUE_KEPT].native
+STALE = OUTCOME_EMOJI[Outcome.STALE].native
+FAILED = OUTCOME_EMOJI[Outcome.FAILED].native
 
 
 def next_monday() -> datetime.date:
@@ -73,7 +85,11 @@ class FakeSlack(TimurSlack):
     ):
         self.threads = threads or {}
         self.emails = emails or {}
+        self.custom_emojis: set[str] = set()
+        self.emoji_list_calls = 0
         self.reactions: list[tuple[str, str]] = []
+        """Reactions on messages, oldest first"""
+        self.removed_reactions: list[tuple[str, str]] = []
         self.posted: list[dict] = []
         self.views: list[tuple[str, dict]] = []
         self.standup_channel_id = "C-STANDUP"
@@ -90,6 +106,17 @@ class FakeSlack(TimurSlack):
     def add_reaction(self, channel: str, ts: str, name: str):
         if (ts, name) not in self.reactions:
             self.reactions.append((ts, name))
+
+    @typing.override
+    def remove_reaction(self, channel: str, ts: str, name: str):
+        if (ts, name) in self.reactions:
+            self.reactions.remove((ts, name))
+            self.removed_reactions.append((ts, name))
+
+    @typing.override
+    def fetch_custom_emoji_names(self) -> set[str]:
+        self.emoji_list_calls += 1
+        return set(self.custom_emojis)
 
     @typing.override
     def open_view(self, trigger_id: str, view: dict):
