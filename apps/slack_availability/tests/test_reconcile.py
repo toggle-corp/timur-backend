@@ -5,12 +5,13 @@ import pytest
 from django.utils import timezone
 
 from apps.journal.factories import JournalFactory
-from apps.journal.models import Journal
+from apps.journal.models import Journal, JournalAvailabilityHistory
 from apps.slack_availability.factories import (
     SlackAvailabilityJournalEntryFactory,
+    SlackAvailabilityRunFactory,
     SlackAvailabilityThreadFactory,
 )
-from apps.slack_availability.models import SlackAvailabilityJournalEntry
+from apps.slack_availability.models import SlackAvailabilityJournalEntry, SlackAvailabilityRun
 from apps.slack_availability.reconcile import (
     ChangeAction,
     OwnedState,
@@ -24,6 +25,7 @@ from apps.slack_availability.reconcile import (
     serialize_desired,
 )
 from apps.slack_availability.structs import EMPTY_DAY_STATE, DayState
+from apps.slack_availability.tasks import purge_slack_availability_runs
 from apps.user.factories import UserFactory
 from main.tests import TestCase
 
@@ -247,6 +249,41 @@ class TestApplyChanges(TestCase):
             D[5]: OwnedState(self.thread.pk, LEAVE),
         }
 
+    def test_manual_change_ends_ownership(self):
+        j1 = JournalFactory.create(user=self.user, date=D[1], leave_type=LT.FULL)
+        j2 = JournalFactory.create(user=self.user, date=D[2], leave_type=LT.FULL)
+        SlackAvailabilityJournalEntryFactory.create(journal=j1, thread=self.thread, leave_type=LT.FULL)
+        SlackAvailabilityJournalEntryFactory.create(journal=j2, thread=self.thread, leave_type=LT.FULL)
+        # The user cleared D[1], then set the same value again
+        for leave_type_before, leave_type_after in [(LT.FULL, None), (None, LT.FULL)]:
+            JournalAvailabilityHistory.objects.create(
+                journal=j1,
+                leave_type_before=leave_type_before,
+                leave_type_after=leave_type_after,
+                source=JournalAvailabilityHistory.Source.MANUAL,
+                changed_by=self.user,
+            )
+
+        current, owned = load_journal_state(self.user, self.thread, dates=set())
+        assert current == {D[1]: LEAVE, D[2]: LEAVE}
+        assert owned == {
+            D[1]: OwnedState(self.thread.pk, LEAVE, manually_changed=True),
+            D[2]: OwnedState(self.thread.pk, LEAVE),
+        }
+        # The thread no longer asks for them: the manual value stays, the other is removed
+        assert plan_changes(thread_id=self.thread.pk, today=TODAY, desired={}, current=current, owned=owned) == [
+            PlannedChange(D[1], ChangeAction.DROP, before=LEAVE, after=LEAVE),
+            PlannedChange(D[2], ChangeAction.REMOVE, before=LEAVE, after=EMPTY_DAY_STATE),
+        ]
+        # The thread asks for another value: the manual value is skipped
+        assert plan_changes(
+            thread_id=self.thread.pk,
+            today=TODAY,
+            desired={D[1]: WFH},
+            current=current,
+            owned=owned,
+        )[0] == PlannedChange(D[1], ChangeAction.SKIP, before=LEAVE, after=WFH)
+
     def test_apply_changes(self):
         JournalFactory.create(user=self.user, date=D[1], journal_text="Did things")
         j2 = JournalFactory.create(user=self.user, date=D[2], leave_type=LT.FULL)
@@ -331,6 +368,77 @@ class TestApplyChanges(TestCase):
             assert entry is not None
             assert entry.thread_id == self.other_thread.pk
             assert DayState(entry.leave_type, entry.wfh_type) == LEAVE
+
+    def test_apply_changes_records_history(self):
+        JournalFactory.create(user=self.user, date=D[1], journal_text="Did things")
+        j2 = JournalFactory.create(user=self.user, date=D[2], leave_type=LT.FULL)
+        j3 = JournalFactory.create(user=self.user, date=D[3], leave_type=LT.FULL)
+        j4 = JournalFactory.create(user=self.user, date=D[4], leave_type=LT.FULL)
+        j5 = JournalFactory.create(user=self.user, date=D[5], wfh_type=WT.FULL)
+        j6 = JournalFactory.create(user=self.user, date=D[6], leave_type=LT.FULL)
+        JournalFactory.create(user=self.user, date=D[7], leave_type=LT.FULL)
+        JournalFactory.create(user=self.user, date=D[8], wfh_type=WT.FULL)
+        SlackAvailabilityJournalEntryFactory.create(journal=j2, thread=self.thread, leave_type=LT.FULL)
+        SlackAvailabilityJournalEntryFactory.create(journal=j3, thread=self.thread, leave_type=LT.FULL)
+        SlackAvailabilityJournalEntryFactory.create(journal=j4, thread=self.other_thread, leave_type=LT.FULL)
+        SlackAvailabilityJournalEntryFactory.create(journal=j5, thread=self.thread, leave_type=LT.FULL)
+        SlackAvailabilityJournalEntryFactory.create(journal=j6, thread=self.thread, leave_type=LT.FULL)
+        run = SlackAvailabilityRunFactory.create(thread=self.thread, today=TODAY)
+
+        apply_changes(
+            self.user,
+            self.thread,
+            [
+                PlannedChange(D[0], ChangeAction.ADD, before=EMPTY_DAY_STATE, after=LEAVE),
+                PlannedChange(D[1], ChangeAction.ADD, before=EMPTY_DAY_STATE, after=WFH),
+                PlannedChange(D[2], ChangeAction.UPDATE, before=LEAVE, after=LEAVE_FH),
+                PlannedChange(D[3], ChangeAction.REMOVE, before=LEAVE, after=EMPTY_DAY_STATE),
+                # Journal values unchanged
+                PlannedChange(D[4], ChangeAction.CLAIM, before=LEAVE, after=LEAVE),
+                PlannedChange(D[5], ChangeAction.DROP, before=WFH, after=WFH),
+                PlannedChange(
+                    D[6],
+                    ChangeAction.TRANSFER,
+                    before=LEAVE,
+                    after=LEAVE,
+                    owner_thread_id=self.other_thread.pk,
+                ),
+                PlannedChange(D[7], ChangeAction.MATCH, before=LEAVE, after=LEAVE),
+                PlannedChange(D[8], ChangeAction.SKIP, before=WFH, after=LEAVE),
+            ],
+            run=run,
+        )
+
+        Source = JournalAvailabilityHistory.Source
+        assert list(
+            JournalAvailabilityHistory.objects.order_by("journal__date").values_list(
+                "journal__date",
+                "leave_type_before",
+                "wfh_type_before",
+                "leave_type_after",
+                "wfh_type_after",
+                "source",
+                "changed_by",
+                "slack_availability_run",
+            ),
+        ) == [
+            (D[0], None, None, LT.FULL, None, Source.SLACK_TIMUR, None, run.pk),
+            (D[1], None, None, None, WT.FULL, Source.SLACK_TIMUR, None, run.pk),
+            (D[2], LT.FULL, None, LT.FIRST_HALF, None, Source.SLACK_TIMUR, None, run.pk),
+            (D[3], LT.FULL, None, None, None, Source.SLACK_TIMUR, None, run.pk),
+        ]
+
+        # The purge blanks message text only
+        SlackAvailabilityRun.objects.filter(pk=run.pk).update(
+            created_at=timezone.now() - datetime.timedelta(days=365),
+        )
+        assert purge_slack_availability_runs() == 1
+        assert JournalAvailabilityHistory.objects.filter(slack_availability_run=run).count() == 4
+
+        # History outlives the run
+        run.delete()
+        assert JournalAvailabilityHistory.objects.count() == 4
+        assert not JournalAvailabilityHistory.objects.filter(slack_availability_run__isnull=False).exists()
 
     def test_apply_changes_conflict(self):
         # Planned from an empty journal, but the user set WFH in the meantime

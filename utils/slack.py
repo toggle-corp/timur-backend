@@ -89,12 +89,41 @@ class TimurSlack:
 
         return resp
 
+    def post_ephemeral(self, channel: str, user: str, text: str, thread_ts: str | None = None):
+        """
+        Message only the user sees, until they reload Slack
+        https://docs.slack.dev/reference/methods/chat.postEphemeral/
+        """
+        self.client.chat_postEphemeral(
+            channel=channel,
+            user=user,
+            text=text,
+            thread_ts=thread_ts,
+            username=self.bot_name,
+            icon_url=self.bot_icon,
+            unfurl_links=False,
+            unfurl_media=False,
+        )
+
     def add_reaction(self, channel: str, ts: str, name: str):
         try:
             self.client.reactions_add(channel=channel, timestamp=ts, name=name)
         except SlackApiError as e:
             if e.response.get("error") != "already_reacted":
                 raise
+
+    def remove_reaction(self, channel: str, ts: str, name: str):
+        try:
+            self.client.reactions_remove(channel=channel, timestamp=ts, name=name)
+        except SlackApiError as e:
+            if e.response.get("error") != "no_reaction":
+                raise
+
+    def fetch_custom_emoji_names(self) -> set[str]:
+        """
+        https://docs.slack.dev/reference/methods/emoji.list/ (needs the emoji:read scope)
+        """
+        return set(self.client.emoji_list().get("emoji") or {})
 
     def fetch_thread_messages(self, channel: str, thread_ts: str) -> list[dict]:
         """
@@ -123,6 +152,13 @@ class TimurSlack:
             if next_cursor in (None, ""):
                 break
         return messages
+
+    def fetch_workspace_url(self) -> str | None:
+        """
+        Workspace URL, e.g. https://example.slack.com/
+        https://docs.slack.dev/reference/methods/auth.test/
+        """
+        return self.client.auth_test().get("url")
 
     def open_view(self, trigger_id: str, view: dict):
         """

@@ -418,11 +418,21 @@ def test_system_prompt_examples(example):
         '"Will miss the standup today"',
         '"Heading out early to rest"',
         '"Might WFH tomorrow if the plumber comes"',
+        '"AFK for a bit, back after lunch"',
+        '"Stepping away until the break"',
     ],
 )
 def test_system_prompt_not_about_availability_examples(phrase):
     not_about = flat_system_prompt().split("is_about_poster_availability false:")[1]
     assert phrase in not_about
+
+
+def test_system_prompt_short_absence_rules():
+    prompt = flat_system_prompt()
+    assert 'A short absence during the working day ("AFK", "brb", "away for a bit", "stepping away")' in prompt
+    assert '"until the break", "until lunch", "after lunch", "until 3", "back by 2") is false, with no range' in prompt
+    assert '"The break" is the daily lunch break, not a holiday or event' in prompt
+    assert 'A time of day, lunch or "the break" is never such an X' in prompt
 
 
 def test_system_prompt_holiday_rules():

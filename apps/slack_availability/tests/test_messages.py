@@ -4,9 +4,11 @@ from apps.journal.models import Journal
 from apps.slack_availability.messages import (
     MAX_SECTION_TEXT_LENGTH,
     WHY_ACTION_ID,
+    KeptNoticeDay,
     StandupNote,
     StandupRole,
     build_delete_notice,
+    build_kept_notice,
     build_reply,
     build_reply_blocks,
 )
@@ -210,4 +212,24 @@ def test_build_delete_notice():
     assert build_delete_notice("U123", "C123", parent_deleted=True) == (
         "<@U123> I don't handle deleted messages, so your Timur journal wasn't changed."
         " I no longer read this thread. To change it, post a new message in <#C123>. To cancel, update it in Timur."
+    )
+
+
+THREAD_LINK = "https://example.slack.com/archives/C1/p1"
+
+
+def test_build_kept_notice():
+    text = build_kept_notice(
+        [
+            KeptNoticeDay(THU, DayState(leave_type=LT.FULL), "set by you in Timur at Mon, Oct 12 15:04"),
+            KeptNoticeDay(FRI, EMPTY_DAY_STATE, f"set by <{THREAD_LINK}|another Slack thread>"),
+        ],
+    )
+    assert text == "\n".join(
+        [
+            "These days in your Timur journal were set outside this thread, so I won't change them:",
+            f"• {link(THU, 'Thu, Oct 15')}: Leave (full), set by you in Timur at Mon, Oct 12 15:04",
+            f"• {link(FRI, 'Fri, Oct 16')}: No leave/WFH, set by <{THREAD_LINK}|another Slack thread>",
+            "To change them, update them in Timur.",
+        ],
     )

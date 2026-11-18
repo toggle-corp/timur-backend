@@ -401,11 +401,15 @@ def build_notice_view(text: str) -> dict:
     return _modal([_section(text)])
 
 
-def build_trace_view(trace: dict) -> dict:
+def build_trace_view(trace: dict, outcome: str | None = None, history: list[str] | None = None) -> dict:
     """
     Slack modal view of a trace
+
+    outcome is the result of the run (mrkdwn), history the journal changes of its dates (one mrkdwn line each).
     """
     blocks: list[dict] = [{"type": "header", "text": {"type": "plain_text", "text": "How Timur read your message"}}]
+    if outcome:
+        blocks.append(_section(f"*Result:* {outcome}"))
 
     message_lines = []
     for message in trace.get("messages") or []:
@@ -482,6 +486,9 @@ def build_trace_view(trace: dict) -> dict:
     elif trace.get("dates") is not None:
         journal_lines = [line for item in trace["dates"] if (line := _date_line(item))]
         blocks.extend(_section(text) for text in _chunk_lines(["*4. Journal:*", *(journal_lines or ["• No changes"])]))
+
+    if history:
+        blocks.extend(_section(text) for text in _chunk_lines(["*5. Journal history:*", *history]))
 
     confidence = trace.get("confidence")
     details = [f"Model: {escape(trace.get('model') or 'unknown')}"]

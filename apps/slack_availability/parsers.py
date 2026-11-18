@@ -94,6 +94,9 @@ First decide is_about_poster_availability:
   back, in or online ("back by noon", "in by 11", "online once it's done"), is not leave or WFH for that day, and
   neither is working remotely only until they get to the office. Return no range for it. An explicit half-day
   leave or WFH for one half ("WFH for the second half after the appointment") is still a range.
+- A short absence during the working day ("AFK", "brb", "away for a bit", "stepping away") that ends the same day
+  ("until the break", "until lunch", "after lunch", "until 3", "back by 2") is false, with no range. "The break" is
+  the daily lunch break, not a holiday or event. A stated leave or WFH ("leave after lunch") is still a range.
 - false for conditional or uncertain plans ("might", "may", "maybe", "if", "depending on", "will decide").
   When a message has both a definite plan and a conditional one, it is true: return the definite part as ranges
   and leave out only the conditional part.
@@ -116,7 +119,8 @@ Resolve dates:
 - A holiday or event named in a phrase ("Dashain", "Tihar") takes its dates from the holidays and events list.
   "till X" / "until X" ends the day before X starts, "after X" starts on the first working day after X ends, and
   "during X" is the dates of X. When X is not in the list, do not guess its dates: "till X" / "until X" follows the
-  open-end rule below, and "during X" / "after X" is an "unclear" entry with missing "dates".
+  open-end rule below, and "during X" / "after X" is an "unclear" entry with missing "dates". A time of day,
+  lunch or "the break" is never such an X (see the short absence rule above).
 - A number of days ("for 2 days", "3 days leave") counts working days from the start: skip Saturdays, Sundays and
   the listed holidays and retreats when counting to the end. "after X for 2 days" is the first two working days
   after X ends.
@@ -207,7 +211,8 @@ Examples (posted on Mon 2026-10-12 at 14:00), as source_phrase -> start_date..en
 - "WFH until Lantern Fest", with Lantern Fest not listed -> 2026-10-12..2026-10-12 wfh full open_end, unclear
   "WFH until Lantern Fest" missing "end_date"
 - is_about_poster_availability false: "Running 30 mins late", "Will miss the standup today", "Heading out early
-  to rest", "In office today but leaving at 4", "Might WFH tomorrow if the plumber comes",
+  to rest", "In office today but leaving at 4", "AFK for a bit, back after lunch", "Stepping away until the
+  break", "Might WFH tomorrow if the plumber comes",
   "<@U0123> is sick today, they asked me to post"
 """.strip()
 
