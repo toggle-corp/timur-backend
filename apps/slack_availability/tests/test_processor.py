@@ -1104,3 +1104,215 @@ class TestAvailabilityProcessor(TestCase):
             mark_event_failed(self.slack, message_event_, RuntimeError("Parser is down"))
 
         assert self.slack.reactions == []
+
+
+@override_settings(**AVAILABILITY_SETTINGS)
+class TestKeptValueNotice(TestCase):
+    """
+    The author replies in a thread whose dates hold values set outside the thread
+    """
+
+    UPDATE_JOURNAL = """
+        mutation ($date: Date!, $data: JournalUpdateInput!) {
+          private {
+            updateJournal(date: $date, data: $data) {
+              ok
+            }
+          }
+        }
+    """
+
+    @classmethod
+    @typing.override
+    def setUpTestData(cls):
+        cls.user = UserFactory.create(slack_user_id="U-AUTHOR")
+        cls.monday = next_monday()
+        cls.tuesday = cls.monday + datetime.timedelta(days=1)
+        cls.wfh_ts = ts_at(cls.monday, 8)
+        cls.leave_ts = ts_at(cls.monday, 9)
+
+    @typing.override
+    def setUp(self):
+        super().setUp()
+        self.slack = FakeSlack(
+            threads={
+                self.wfh_ts: [slack_message("U-AUTHOR", "WFH tomorrow", self.wfh_ts)],
+                self.leave_ts: [slack_message("U-AUTHOR", "Leave tomorrow", self.leave_ts)],
+            },
+        )
+
+    def process(self, event: dict, parser: FakeParser) -> SlackAvailabilityRun:
+        message_event_ = classify_event(event, CHANNEL_ID)
+        assert message_event_ is not None
+        processor = AvailabilityProcessor(self.slack, parser_factory=lambda: parser)
+        run = processor.process(message_event_)
+        assert run is not None
+        processor.notify(run)
+        return run
+
+    def post_threads(self):
+        """
+        WFH from one thread, then leave from another thread over it
+        """
+        self.process(
+            message_event("U-AUTHOR", "WFH tomorrow", self.wfh_ts),
+            FakeParser(ranges=[AvailabilityRange(self.tuesday, self.tuesday, wfh=Half.FULL)]),
+        )
+        run = self.process(
+            message_event("U-AUTHOR", "Leave tomorrow", self.leave_ts),
+            FakeParser(ranges=[AvailabilityRange(self.tuesday, self.tuesday, leave=Half.FULL)]),
+        )
+        assert [change["action"] for change in run.planned_changes["changes"]] == ["update"]
+        assert Journal.objects.get(user=self.user, date=self.tuesday).leave_type == LT.FULL
+
+    def update_journal(self, user: User, data: dict):
+        self.force_login(user)
+        content = self.query_check(self.UPDATE_JOURNAL, variables={"date": self.tuesday.isoformat(), "data": data})
+        assert content["data"]["private"]["updateJournal"]["ok"] is True
+
+    def reply(self, text: str, hour: int = 11, parser: FakeParser | None = None) -> SlackAvailabilityRun:
+        reply_ts = ts_at(self.monday, hour)
+        reply = slack_message("U-AUTHOR", text, reply_ts, thread_ts=self.leave_ts)
+        self.slack.threads[self.leave_ts].append(reply)
+        return self.process(
+            message_event("U-AUTHOR", text, reply_ts, thread_ts=self.leave_ts),
+            parser or FakeParser(is_about_availability=False),
+        )
+
+    def kept_line(self) -> str:
+        assert len(self.slack.ephemerals) == 1
+        ephemeral = self.slack.ephemerals[0]
+        assert ephemeral["channel"] == CHANNEL_ID
+        assert ephemeral["user"] == "U-AUTHOR"
+        assert ephemeral["thread_ts"] == self.leave_ts
+        text = ephemeral["text"]
+        assert text.startswith("These days in your Timur journal were set outside this thread, so I won't change them:")
+        journal_link = f"<{frontend_urls.daily_journal(self.tuesday)}|{format_date(self.tuesday)}>"
+        [line] = [line for line in text.split("\n") if line.startswith("• ")]
+        assert line.startswith(f"• {journal_link}: ")
+        return line
+
+    def test_manual_value_after_timur_wrote_it(self):
+        self.post_threads()
+        # The user clears the day in Timur, then sets leave again
+        self.update_journal(self.user, {"leaveType": None, "wfhType": None})
+        self.update_journal(self.user, {"leaveType": "FULL"})
+        manual_at = JournalAvailabilityHistory.objects.filter(source=JournalAvailabilityHistory.Source.MANUAL).latest(
+            "id",
+        )
+
+        run = self.reply("not on leave today")
+
+        assert run.status == Status.NOT_ABOUT_AVAILABILITY
+        assert [change["action"] for change in run.planned_changes["changes"]] == ["drop"]
+        assert Journal.objects.get(user=self.user, date=self.tuesday).leave_type == LT.FULL
+        assert (run.trigger_ts, MANUAL) in self.slack.reactions
+        line = self.kept_line()
+        assert line.endswith(
+            f"Leave (full), set by you in Timur at {timezone.localtime(manual_at.created_at):%a, %b %-d %H:%M}",
+        )
+
+        # A later reply tells again, from the day's history
+        self.slack.ephemerals.clear()
+        run = self.reply("thanks", hour=12)
+        assert run.planned_changes["changes"] == []
+        assert (run.trigger_ts, MANUAL) in self.slack.reactions
+        assert "set by you in Timur at" in self.kept_line()
+
+    def test_value_set_by_someone_else(self):
+        self.post_threads()
+        admin = UserFactory.create(first_name="Alex", last_name="Admin")
+        journal = Journal.objects.get(user=self.user, date=self.tuesday)
+        journal.leave_type = None
+        journal.wfh_type = WT.FULL
+        journal.save()
+        JournalAvailabilityHistory.objects.create(
+            journal=journal,
+            leave_type_before=LT.FULL,
+            wfh_type_after=WT.FULL,
+            source=JournalAvailabilityHistory.Source.MANUAL,
+            changed_by=admin,
+        )
+
+        self.reply("ok")
+        assert ", set by Alex Admin in Timur at " in self.kept_line()
+
+    def test_value_set_in_admin(self):
+        self.post_threads()
+        admin = UserFactory.create(first_name="Alex", last_name="Admin")
+        journal = Journal.objects.get(user=self.user, date=self.tuesday)
+        # Cleared, then set to the same value again: the admin change still ends Timur's ownership
+        for leave_type_before, leave_type_after in [(LT.FULL, None), (None, LT.FULL)]:
+            JournalAvailabilityHistory.objects.create(
+                journal=journal,
+                leave_type_before=leave_type_before,
+                leave_type_after=leave_type_after,
+                source=JournalAvailabilityHistory.Source.ADMIN,
+                changed_by=admin,
+            )
+
+        run = self.reply("ok")
+        assert [change["action"] for change in run.planned_changes["changes"]] == ["drop"]
+        assert ", set by Alex Admin in Timur admin at " in self.kept_line()
+
+    def test_value_of_another_thread(self):
+        self.post_threads()
+        # A third thread sets WFH over the leave thread
+        other_ts = ts_at(self.monday, 10)
+        self.slack.threads[other_ts] = [slack_message("U-AUTHOR", "WFH tomorrow after all", other_ts)]
+        self.process(
+            message_event("U-AUTHOR", "WFH tomorrow after all", other_ts),
+            FakeParser(ranges=[AvailabilityRange(self.tuesday, self.tuesday, wfh=Half.FULL)]),
+        )
+
+        run = self.reply("ok")
+
+        assert run.planned_changes["changes"] == []
+        assert (run.trigger_ts, MANUAL) in self.slack.reactions
+        permalink = f"https://example.slack.com/archives/{CHANNEL_ID}/p{other_ts.replace('.', '')}"
+        assert self.kept_line().endswith(f"WFH (full), set by <{permalink}|another Slack thread>")
+
+    def test_value_without_history(self):
+        self.post_threads()
+        Journal.objects.filter(user=self.user, date=self.tuesday).update(leave_type=None, wfh_type=WT.FIRST_HALF)
+
+        self.reply("ok")
+        assert self.kept_line().endswith("WFH (first half), I don't know who set it")
+
+    def test_no_notice(self):
+        self.post_threads()
+        # Top-level message that is not about availability
+        other_ts = ts_at(self.monday, 10)
+        self.slack.threads[other_ts] = [slack_message("U-AUTHOR", "Lunch?", other_ts)]
+        self.process(message_event("U-AUTHOR", "Lunch?", other_ts), FakeParser(is_about_availability=False))
+        # Reply while the thread still owns its day
+        self.reply("ok")
+        assert self.slack.ephemerals == []
+
+    def test_one_notice_per_reply(self):
+        self.post_threads()
+        self.update_journal(self.user, {"leaveType": None, "wfhType": "FULL"})
+
+        reply_ts = ts_at(self.monday, 11)
+        self.slack.threads[self.leave_ts].append(slack_message("U-AUTHOR", "ok", reply_ts, thread_ts=self.leave_ts))
+        message_event_ = classify_event(message_event("U-AUTHOR", "ok", reply_ts, thread_ts=self.leave_ts), CHANNEL_ID)
+        assert message_event_ is not None
+        processor = AvailabilityProcessor(self.slack, parser_factory=lambda: FakeParser(is_about_availability=False))
+        run = processor.process(message_event_)
+        assert run is not None
+        processor.notify(run)
+        processor.notify(run)
+        assert len(self.slack.ephemerals) == 1
+
+    def test_notice_failure_does_not_fail_notify(self):
+        self.post_threads()
+        self.update_journal(self.user, {"leaveType": None, "wfhType": "FULL"})
+
+        with (
+            mock.patch.object(self.slack, "post_ephemeral", side_effect=ConnectionError("Slack is down")),
+            self.assertLogs("apps.slack_availability.processor", level="WARNING"),
+        ):
+            run = self.reply("ok")
+        run.refresh_from_db()
+        assert run.error == ""
+        assert (run.trigger_ts, MANUAL) in self.slack.reactions

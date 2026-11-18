@@ -13,6 +13,7 @@ class CacheKey:
     SLACK_EVENT_ID_FORMAT = "slack-event-{0}"
     SLACK_CUSTOM_EMOJI_NAMES = "slack-custom-emoji-names"
     SLACK_WORKSPACE_URL = "slack-workspace-url"
+    SLACK_AVAILABILITY_KEPT_NOTICE_FORMAT = "slack-availability-kept-notice-{0}"
 
     # Local (RAM) Cache
     TEMP_CLIENT_ID_KEY_FORMAT = "client-id-mixin-{request_hash}-{instance_type}-{instance_id}"

@@ -5,7 +5,7 @@ import enum
 from utils import frontend_urls
 
 from .reconcile import MANUAL_VALUE_ACTIONS, ChangeAction, PlannedChange
-from .structs import MissingDetail, UnclearPart
+from .structs import DayState, MissingDetail, UnclearPart
 
 
 class StandupRole(enum.StrEnum):
@@ -151,6 +151,28 @@ def build_delete_notice(slack_user_id: str, channel_id: str, *, parent_deleted: 
     return (
         f"<@{slack_user_id}> I don't handle deleted messages, so your Timur journal wasn't changed now."
         " I'll leave that message out the next time I read this thread. To change or cancel, reply in this thread."
+    )
+
+
+@dataclasses.dataclass(frozen=True)
+class KeptNoticeDay:
+    date: datetime.date
+    state: DayState
+    """Current journal value"""
+    source: str
+    """Who or what set it, e.g. "set by you in Timur at ..." (mrkdwn)"""
+
+
+def build_kept_notice(days: list[KeptNoticeDay]) -> str:
+    """
+    Message shown only to the poster when Timur leaves days of the thread that were set outside it
+    """
+    return "\n".join(
+        [
+            "These days in your Timur journal were set outside this thread, so I won't change them:",
+            *(f"• {format_journal_date(day.date)}: {day.state.label}, {day.source}" for day in days),
+            "To change them, update them in Timur.",
+        ],
     )
 
 

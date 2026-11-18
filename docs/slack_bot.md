@@ -115,7 +115,7 @@ button clicks to it over HTTPS, so it must be reachable from the internet.
 
    | Scope | Used for |
    |---|---|
-   | `chat:write` | replies, standup messages (`chat.postMessage`) |
+   | `chat:write` | replies, standup messages (`chat.postMessage`), notices only the poster sees (`chat.postEphemeral`) |
    | `chat:write.customize` | bot name and icon on messages |
    | `reactions:write` | adding and removing the seen and outcome reactions (`reactions.add`, `reactions.remove`) |
    | `emoji:read` | finding the custom Timur emojis (`emoji.list`). Without it, Timur uses the native emojis |
@@ -161,6 +161,21 @@ button clicks to it over HTTPS, so it must be reachable from the internet.
       - When the journal still holds values from the thread, Timur replies once to a deleted reply and once to a
         deleted top-level message.
    3. Rollback: `SLACK_AVAILABILITY_MODE=off`. Events are then ignored.
+
+## Availability: values set outside a thread
+
+Timur owns a journal day it wrote from a thread until the value changes outside that thread: in Timur (the
+`updateJournal` mutation, from the web app or an API token), in Django admin (the journal form, and reverting or
+recovering a version), or by another thread. A manual or admin change ends ownership even when the same value is
+set again. Each leave/WFH change of a journal is recorded in **Django admin > Journal availability history** (also
+inline on the journal), with its source: manual (who), Django admin (who) or Timur from Slack (which run).
+
+When the poster replies in a thread that changed their journal, and some of its days now hold a value the thread
+doesn't own (set in Timur, set by another thread, or a value Timur would have changed but was set by hand), Timur
+reacts with `:timur-manual:` and sends a notice only the poster sees (`chat.postEphemeral`), at most once per
+reply. Per day it says the current value, who set it (you or another person in Timur or in Timur admin, with the
+time, or a link to the other thread, or unknown when there is no matching history), and links to the journal page
+of that date.
 
 ## Availability: reactions
 

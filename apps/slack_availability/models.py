@@ -118,7 +118,8 @@ class SlackAvailabilityJournalEntry(models.Model):
     """
     Journal values written by Timur from a thread
 
-    Timur owns a journal's leave/wfh values while they still equal the values recorded here
+    Timur owns a journal's leave/wfh values while they still equal the values recorded here, and they were not
+    changed manually since (see JournalAvailabilityHistory)
     """
 
     journal = models.OneToOneField(Journal, on_delete=models.CASCADE, related_name="+")

@@ -249,6 +249,41 @@ class TestApplyChanges(TestCase):
             D[5]: OwnedState(self.thread.pk, LEAVE),
         }
 
+    def test_manual_change_ends_ownership(self):
+        j1 = JournalFactory.create(user=self.user, date=D[1], leave_type=LT.FULL)
+        j2 = JournalFactory.create(user=self.user, date=D[2], leave_type=LT.FULL)
+        SlackAvailabilityJournalEntryFactory.create(journal=j1, thread=self.thread, leave_type=LT.FULL)
+        SlackAvailabilityJournalEntryFactory.create(journal=j2, thread=self.thread, leave_type=LT.FULL)
+        # The user cleared D[1], then set the same value again
+        for leave_type_before, leave_type_after in [(LT.FULL, None), (None, LT.FULL)]:
+            JournalAvailabilityHistory.objects.create(
+                journal=j1,
+                leave_type_before=leave_type_before,
+                leave_type_after=leave_type_after,
+                source=JournalAvailabilityHistory.Source.MANUAL,
+                changed_by=self.user,
+            )
+
+        current, owned = load_journal_state(self.user, self.thread, dates=set())
+        assert current == {D[1]: LEAVE, D[2]: LEAVE}
+        assert owned == {
+            D[1]: OwnedState(self.thread.pk, LEAVE, manually_changed=True),
+            D[2]: OwnedState(self.thread.pk, LEAVE),
+        }
+        # The thread no longer asks for them: the manual value stays, the other is removed
+        assert plan_changes(thread_id=self.thread.pk, today=TODAY, desired={}, current=current, owned=owned) == [
+            PlannedChange(D[1], ChangeAction.DROP, before=LEAVE, after=LEAVE),
+            PlannedChange(D[2], ChangeAction.REMOVE, before=LEAVE, after=EMPTY_DAY_STATE),
+        ]
+        # The thread asks for another value: the manual value is skipped
+        assert plan_changes(
+            thread_id=self.thread.pk,
+            today=TODAY,
+            desired={D[1]: WFH},
+            current=current,
+            owned=owned,
+        )[0] == PlannedChange(D[1], ChangeAction.SKIP, before=LEAVE, after=WFH)
+
     def test_apply_changes(self):
         JournalFactory.create(user=self.user, date=D[1], journal_text="Did things")
         j2 = JournalFactory.create(user=self.user, date=D[2], leave_type=LT.FULL)

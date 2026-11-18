@@ -2,6 +2,7 @@ import datetime
 import logging
 import typing
 
+from django.core.cache import cache
 from django.db import models, transaction
 from django.utils import timezone
 from slack_sdk.errors import SlackApiError
@@ -9,12 +10,14 @@ from slack_sdk.errors import SlackApiError
 from apps.standup.models import DailyUserStandup
 from apps.user.models import User
 from main import config
+from main.caches import CacheKey
 from main.logging import log_extra
 from utils.slack import TimurSlack
 
 from .dates import ExpandedAvailability, expand_ranges, local_datetime_from_ts
 from .events import SlackMessageEvent
 from .guards import GuardResult, apply_guards
+from .kept import find_kept_days, render_kept_notice
 from .messages import StandupNote, StandupRole, build_delete_notice, build_reply, build_reply_blocks
 from .models import SlackAvailabilityRun, SlackAvailabilityThread
 from .parsers import AvailabilityParser, get_parser, load_prompt_events
@@ -53,6 +56,7 @@ Trigger = SlackAvailabilityRun.Trigger
 
 # Runs below this parser confidence change nothing
 MIN_CONFIDENCE = 0.5
+KEPT_NOTICE_DEDUPE_TTL = 60 * 60 * 24 * 7
 
 
 def _is_thread_message(message: dict, slack_user_id: str) -> bool:
@@ -368,6 +372,10 @@ class AvailabilityProcessor:
             changes = self._plan(thread, user, today, expanded)
             standup_notes = self._standup_notes(user, changes)
             planned_changes = self._planned_changes(changes, expanded, unclear, standup_notes, guard_result)
+            if self.is_live:
+                planned_changes["kept"] = [
+                    day.as_dict() for day in find_kept_days(user, thread, today, changes, set(expanded.unknown_half_dates))
+                ]
 
             reply_text = None
             if self._should_reply(thread, changes, planned_changes):
@@ -442,6 +450,34 @@ class AvailabilityProcessor:
             )
             run.reply_ts = response.get("ts") or ""
             run.save(update_fields=("reply_ts",))
+        if run.trigger == Trigger.REPLY:
+            self.send_kept_notice(run)
+
+    def send_kept_notice(self, run: SlackAvailabilityRun):
+        """
+        Tell the poster, and only them, which days of the thread hold values set outside it
+
+        Sent at most once per reply. A failure is logged and not retried.
+        """
+        text = render_kept_notice(run, self.slack)
+        if text is None:
+            return
+        if not cache.add(CacheKey.SLACK_AVAILABILITY_KEPT_NOTICE_FORMAT.format(run.pk), 1, KEPT_NOTICE_DEDUPE_TTL):
+            return
+        thread = run.thread
+        try:
+            self.slack.post_ephemeral(
+                channel=thread.channel_id,
+                user=thread.slack_user_id,
+                text=text,
+                thread_ts=thread.thread_ts,
+            )
+        except Exception:
+            logger.warning(
+                "Failed to send the kept values notice",
+                exc_info=True,
+                extra=log_extra({"run_id": run.pk, "thread_id": thread.pk}),
+            )
 
     def _plan(
         self,

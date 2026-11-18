@@ -3,6 +3,7 @@ import datetime
 import enum
 import typing
 
+from django.db import models
 from django.utils import timezone
 
 from apps.journal.models import Journal, JournalAvailabilityHistory
@@ -72,6 +73,8 @@ class OwnedState:
 
     thread_id: int
     state: DayState
+    manually_changed: bool = False
+    """The values were changed in Timur or its admin since, even when set back to the same values"""
 
 
 @dataclasses.dataclass(frozen=True)
@@ -97,7 +100,8 @@ def plan_changes(
     """
     Compare the thread's desired state with the user's journal
 
-    Timur only changes a date when the journal is empty or still holds the values Timur wrote.
+    Timur only changes a date when the journal is empty or still holds the values Timur wrote, with no manual change
+    since.
     Dates before today are never touched.
     A date this thread owns but no longer asks for goes to another thread that still asks for it.
     Held dates (e.g. waiting for the user to say which half) keep their current value and ownership.
@@ -113,7 +117,12 @@ def plan_changes(
 
         current_state = current.get(date, EMPTY_DAY_STATE)
         owned_state = owned.get(date)
-        is_owned_by_timur = owned_state is not None and owned_state.state == current_state and not current_state.is_empty
+        is_owned_by_timur = (
+            owned_state is not None
+            and not owned_state.manually_changed
+            and owned_state.state == current_state
+            and not current_state.is_empty
+        )
         is_writable = current_state.is_empty or is_owned_by_timur
 
         desired_state = desired.get(date)
@@ -187,14 +196,27 @@ def load_journal_state(
         .order_by("date")
         .only("date", "leave_type", "wfh_type")
     }
-    owned = {
-        date: OwnedState(thread_id, DayState(leave_type, wfh_type))
-        for date, thread_id, leave_type, wfh_type in SlackAvailabilityJournalEntry.objects.filter(
+    return current, load_owned(user, all_dates)
+
+
+def load_owned(user: User, dates: set[datetime.date]) -> dict[datetime.date, OwnedState]:
+    """
+    Timur's ownership of the user's journal values for the given dates
+    """
+    manual_change_since = JournalAvailabilityHistory.objects.filter(
+        journal=models.OuterRef("journal"),
+        source__in=(JournalAvailabilityHistory.Source.MANUAL, JournalAvailabilityHistory.Source.ADMIN),
+        created_at__gt=models.OuterRef("modified_at"),
+    )
+    return {
+        date: OwnedState(thread_id, DayState(leave_type, wfh_type), manually_changed=manually_changed)
+        for date, thread_id, leave_type, wfh_type, manually_changed in SlackAvailabilityJournalEntry.objects.filter(
             journal__user=user,
-            journal__date__in=all_dates,
-        ).values_list("journal__date", "thread_id", "leave_type", "wfh_type")
+            journal__date__in=dates,
+        )
+        .annotate(manually_changed=models.Exists(manual_change_since))
+        .values_list("journal__date", "thread_id", "leave_type", "wfh_type", "manually_changed")
     }
-    return current, owned
 
 
 def load_other_requests(

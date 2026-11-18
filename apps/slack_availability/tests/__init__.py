@@ -92,6 +92,7 @@ class FakeSlack(TimurSlack):
         self.removed_reactions: list[tuple[str, str]] = []
         self.posted: list[dict] = []
         self.views: list[tuple[str, dict]] = []
+        self.ephemerals: list[dict] = []
         self.standup_channel_id = "C-STANDUP"
 
     @typing.override
@@ -117,6 +118,10 @@ class FakeSlack(TimurSlack):
     def fetch_custom_emoji_names(self) -> set[str]:
         self.emoji_list_calls += 1
         return set(self.custom_emojis)
+
+    @typing.override
+    def post_ephemeral(self, channel: str, user: str, text: str, thread_ts: str | None = None):
+        self.ephemerals.append({"channel": channel, "user": user, "text": text, "thread_ts": thread_ts})
 
     @typing.override
     def fetch_workspace_url(self) -> str | None:

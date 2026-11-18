@@ -89,6 +89,22 @@ class TimurSlack:
 
         return resp
 
+    def post_ephemeral(self, channel: str, user: str, text: str, thread_ts: str | None = None):
+        """
+        Message only the user sees, until they reload Slack
+        https://docs.slack.dev/reference/methods/chat.postEphemeral/
+        """
+        self.client.chat_postEphemeral(
+            channel=channel,
+            user=user,
+            text=text,
+            thread_ts=thread_ts,
+            username=self.bot_name,
+            icon_url=self.bot_icon,
+            unfurl_links=False,
+            unfurl_media=False,
+        )
+
     def add_reaction(self, channel: str, ts: str, name: str):
         try:
             self.client.reactions_add(channel=channel, timestamp=ts, name=name)
