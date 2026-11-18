@@ -9,7 +9,7 @@ license = "GNU Affero General Public License v3.0"
 dependencies = [
     "requests",
     "django-environ",
-    "Django>=4.2,<4.3",
+    "Django>=6.1,<6.2",
     "drf-writable-nested",
     "djangorestframework",
     "psycopg2-binary>=2.9,<3",
