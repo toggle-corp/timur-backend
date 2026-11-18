@@ -1,5 +1,8 @@
 from unittest import mock
 
+import pytest
+from slack_sdk.errors import SlackApiError
+
 from utils.slack import TimurSlack
 
 PARENT_TS = "1760000000.000100"
@@ -38,3 +41,24 @@ def test_send_slack_message_unfurl():
     first, second = slack.client.chat_postMessage.call_args_list
     assert (first.kwargs["unfurl_links"], first.kwargs["unfurl_media"]) == (True, True)
     assert (second.kwargs["unfurl_links"], second.kwargs["unfurl_media"]) == (False, False)
+
+
+def test_remove_reaction_ignores_missing_reaction():
+    slack = TimurSlack.__new__(TimurSlack)
+    slack.client = mock.Mock()
+    slack.client.reactions_remove.side_effect = SlackApiError("no_reaction", {"ok": False, "error": "no_reaction"})
+    slack.remove_reaction("C1", PARENT_TS, "eyes")
+
+    slack.client.reactions_remove.side_effect = SlackApiError("ratelimited", {"ok": False, "error": "ratelimited"})
+    with pytest.raises(SlackApiError):
+        slack.remove_reaction("C1", PARENT_TS, "eyes")
+
+
+def test_fetch_custom_emoji_names_and_workspace_url():
+    slack = TimurSlack.__new__(TimurSlack)
+    slack.client = mock.Mock()
+    slack.client.emoji_list.return_value = {"emoji": {"timur-applied": "https://emoji.test/a.png", "alias": "alias:x"}}
+    slack.client.auth_test.return_value = {"url": "https://example.slack.com/"}
+
+    assert slack.fetch_custom_emoji_names() == {"timur-applied", "alias"}
+    assert slack.fetch_workspace_url() == "https://example.slack.com/"

@@ -137,6 +137,13 @@ class TimurSlack:
                 break
         return messages
 
+    def fetch_workspace_url(self) -> str | None:
+        """
+        Workspace URL, e.g. https://example.slack.com/
+        https://docs.slack.dev/reference/methods/auth.test/
+        """
+        return self.client.auth_test().get("url")
+
     def open_view(self, trigger_id: str, view: dict):
         """
         https://docs.slack.dev/reference/methods/views.open/

@@ -14,6 +14,11 @@ features:
   bot_user:
     display_name: Timur
     always_online: false
+  shortcuts:
+    - name: Why did Timur do this?
+      type: message
+      callback_id: timur_why
+      description: See how Timur read this message
 oauth_config:
   scopes:
     bot:
@@ -23,6 +28,7 @@ oauth_config:
     - users:read.email
     - reactions:write
     - emoji:read
+    - commands
     # For Private channel
     - groups:history
     # (Optional) For Public channel
@@ -73,6 +79,12 @@ Timur reads leave and WFH messages from the availability channel (e.g. `#tc-avai
   understood dates with the quoted words, working days, journal before/after), only for the person who posted
   and for Timur admins (active superusers whose `slack_user_id` is the clicker's Slack id).
   Endpoint: `POST /slack/interactions/` (interactivity request URL, verified with `SLACK_SIGNING_SECRET`)
+- The "Why did Timur do this?" message shortcut (callback ID `timur_why`, in a message's **More actions** menu)
+  opens the same modal for any message in the channel: the latest run triggered by that message, or for a
+  top-level message, by any message of its thread. The modal also shows the result of the run and the latest
+  journal changes of its dates (who changed them, and when). The author of the message and Timur admins can open
+  it. When there is no run, the modal says why (another channel, a bot message, a reply by someone other than
+  the poster, a deleted thread, an old message, or Timur is off).
 - Invite the bot to the channel and set `SLACK_AVAILABILITY_CHANNEL_ID`
 - `SLACK_AVAILABILITY_MODE`:
   - `off`: events are ignored. Slack's URL verification is still answered when `SLACK_SIGNING_SECRET` is set
@@ -107,11 +119,13 @@ button clicks to it over HTTPS, so it must be reachable from the internet.
    | `chat:write.customize` | bot name and icon on messages |
    | `reactions:write` | adding and removing the seen and outcome reactions (`reactions.add`, `reactions.remove`) |
    | `emoji:read` | finding the custom Timur emojis (`emoji.list`). Without it, Timur uses the native emojis |
+   | `commands` | the "Why did Timur do this?" message shortcut. Slack refuses shortcuts without it |
    | `channels:history` | `message.channels` events, reading thread replies (`conversations.replies`) |
    | `groups:history` | the same for a private channel |
    | `users:read`, `users:read.email` | matching Slack users to Timur users (`users.list`, `users.info`, `users.lookupByEmail`) |
 
-   Opening the "How did Timur decide?" modal (`views.open`) needs no scope.
+   Opening the "How did Timur decide?" modal (`views.open`) and reading the workspace URL for message links
+   (`auth.test`) need no scope.
    If you added a scope, click **Reinstall to Workspace** (the banner at the top). The bot token
    (`xoxb-...`, `SLACK_BOT_TOKEN`) stays the same after a reinstall. If it ever changes, update the secret.
 3. **Basic Information > App Credentials > Signing Secret**: copy it into `SLACK_SIGNING_SECRET` and redeploy.
@@ -126,7 +140,11 @@ button clicks to it over HTTPS, so it must be reachable from the internet.
 6. **Interactivity & Shortcuts**:
    1. Turn on **Interactivity**.
    2. **Request URL**: `https://<APP_DOMAIN>/slack/interactions/`. Slack doesn't verify this URL on save.
-   3. **Save Changes**.
+   3. **Shortcuts** > **Create New Shortcut** > **On messages**:
+      - Name: `Why did Timur do this?`
+      - Short description: `See how Timur read this message`
+      - Callback ID: `timur_why`
+   4. **Save Changes**. Reinstall if Slack asks.
 7. Invite the bot to the channel (`/invite @Timur`). Get the channel ID from the channel name > **About** >
    bottom (`C0...`) and set `SLACK_AVAILABILITY_CHANNEL_ID`.
 8. Roll out:
@@ -181,6 +199,8 @@ Reaction errors are logged and never fail a run. In `shadow` mode there are no r
 - **Native emojis instead of the Timur ones**: the `emoji:read` scope is missing (add it and reinstall), or the
   uploaded name differs from the table. The emoji list is cached for up to an hour.
 - **Button shows nothing**: Interactivity is off or its Request URL is wrong, or the mode is `off`.
+- **Shortcut missing from a message's menu**: the shortcut isn't created (step 6), or the app wasn't reinstalled.
+  Its callback ID must be `timur_why`.
 - **`missing_scope` or `not_allowed_token_type` in logs**: add the scope from step 2 and reinstall.
 - **`invalid_auth` from the backend**: the bot token changed, or `allowed_ip_address_ranges` in the app
   settings doesn't include the cluster's outbound IP.

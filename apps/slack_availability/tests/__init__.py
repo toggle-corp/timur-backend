@@ -119,6 +119,10 @@ class FakeSlack(TimurSlack):
         return set(self.custom_emojis)
 
     @typing.override
+    def fetch_workspace_url(self) -> str | None:
+        return "https://example.slack.com/"
+
+    @typing.override
     def open_view(self, trigger_id: str, view: dict):
         self.views.append((trigger_id, view))
 

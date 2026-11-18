@@ -155,6 +155,8 @@ def build_delete_notice(slack_user_id: str, channel_id: str, *, parent_deleted: 
 
 
 WHY_ACTION_ID = "slack_availability_why"
+# Message shortcut "Why did Timur do this?", set up in the Slack app
+WHY_SHORTCUT_CALLBACK_ID = "timur_why"
 # https://docs.slack.dev/reference/block-kit/blocks/section-block/
 MAX_SECTION_TEXT_LENGTH = 3000
 

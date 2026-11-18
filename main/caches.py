@@ -12,6 +12,7 @@ class CacheKey:
     DJANGO_FILE_S3_KEY_FORMAT = "dj-s3-file-{0}"
     SLACK_EVENT_ID_FORMAT = "slack-event-{0}"
     SLACK_CUSTOM_EMOJI_NAMES = "slack-custom-emoji-names"
+    SLACK_WORKSPACE_URL = "slack-workspace-url"
 
     # Local (RAM) Cache
     TEMP_CLIENT_ID_KEY_FORMAT = "client-id-mixin-{request_hash}-{instance_type}-{instance_id}"
