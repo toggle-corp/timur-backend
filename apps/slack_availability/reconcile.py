@@ -5,11 +5,11 @@ import typing
 
 from django.utils import timezone
 
-from apps.journal.models import Journal
+from apps.journal.models import Journal, JournalAvailabilityHistory
 from apps.user.models import User
 
 from .dates import MAX_DAYS_AHEAD
-from .models import SlackAvailabilityJournalEntry, SlackAvailabilityThread
+from .models import SlackAvailabilityJournalEntry, SlackAvailabilityRun, SlackAvailabilityThread
 from .structs import EMPTY_DAY_STATE, DayState
 
 
@@ -228,11 +228,16 @@ def serialize_desired(desired: dict[datetime.date, DayState]) -> dict[str, dict[
     return {date.isoformat(): state.as_dict() for date, state in sorted(desired.items())}
 
 
-def apply_changes(user: User, thread: SlackAvailabilityThread, changes: list[PlannedChange]):
+def apply_changes(
+    user: User,
+    thread: SlackAvailabilityThread,
+    changes: list[PlannedChange],
+    run: SlackAvailabilityRun | None = None,
+):
     """
-    Write planned changes to the journal and record ownership
+    Write planned changes to the journal and record ownership and history
 
-    Callers run this inside a transaction.
+    Callers run this inside a transaction. History rows link to the run, when given.
     Raises ReconcileConflictError when a journal no longer holds the value the change was planned from.
     """
     dates = [change.date for change in changes if change.action not in MANUAL_VALUE_ACTIONS]
@@ -257,6 +262,13 @@ def apply_changes(user: User, thread: SlackAvailabilityThread, changes: list[Pla
             journal.wfh_type = change.after.wfh_type
             journal.leave_wfh_check()
             journal.save()
+            JournalAvailabilityHistory.record(
+                journal,
+                leave_type_before=current_state.leave_type,
+                wfh_type_before=current_state.wfh_type,
+                source=JournalAvailabilityHistory.Source.SLACK_TIMUR,
+                slack_availability_run_id=run and run.pk,
+            )
 
         if journal is None:
             continue

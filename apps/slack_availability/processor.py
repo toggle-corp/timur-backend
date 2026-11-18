@@ -405,8 +405,10 @@ class AvailabilityProcessor:
             thread.user = user
             thread.slack_user_id = event.slack_user_id
             thread.snapshot_at = snapshot_at
+            # Saved first: the journal history links to the run
+            run.save()
             if self.is_live:
-                apply_changes(user, thread, changes)
+                apply_changes(user, thread, changes, run=run)
                 thread.desired_state = {
                     # Held-back dates keep what the thread asked for before
                     **{
@@ -417,7 +419,6 @@ class AvailabilityProcessor:
                     **serialize_desired(expanded.desired),
                 }
             thread.save(update_fields=("user", "slack_user_id", "snapshot_at", "desired_state", "modified_at"))
-            run.save()
             return run
 
     def notify(self, run: SlackAvailabilityRun):

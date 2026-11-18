@@ -9,7 +9,7 @@ from slack_sdk.errors import SlackApiError
 from apps.common.factories import EventFactory
 from apps.common.models import Event
 from apps.journal.factories import JournalFactory
-from apps.journal.models import Journal
+from apps.journal.models import Journal, JournalAvailabilityHistory
 from apps.slack_availability.events import classify_event
 from apps.slack_availability.messages import WHY_ACTION_ID, build_delete_notice, build_reply_blocks, format_date
 from apps.slack_availability.models import (
@@ -124,6 +124,12 @@ class TestAvailabilityProcessor(TestCase):
         assert self.journal_state(self.tuesday) == DayState(leave_type=LT.FULL)
         assert self.journal_state(self.wednesday) == DayState(wfh_type=WT.FULL)
         assert SlackAvailabilityJournalEntry.objects.filter(thread=run.thread).count() == 2
+        assert set(
+            JournalAvailabilityHistory.objects.filter(slack_availability_run=run).values_list("journal__date", "source"),
+        ) == {
+            (self.tuesday, JournalAvailabilityHistory.Source.SLACK_TIMUR),
+            (self.wednesday, JournalAvailabilityHistory.Source.SLACK_TIMUR),
+        }
 
         assert self.slack.reactions == [(self.parent_ts, Reaction.SEEN), (self.parent_ts, Reaction.DONE)]
         assert len(self.slack.posted) == 1
